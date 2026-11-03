@@ -8,6 +8,8 @@ from app.database import Base, get_db
 from app.main import app
 from app.models.department import Department
 from app.models.report import Report
+from app.models.report_assignment import ReportAssignment
+from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.user import User
 
 class ReportWorkflowTests(unittest.TestCase):
@@ -33,8 +35,13 @@ class ReportWorkflowTests(unittest.TestCase):
 
     def setUp(self):
         db = self.Session()
-        for model in (Report, User, Department):
+        # Delete dependent workflow rows first so the suite also works with
+        # SQLite foreign-key enforcement enabled.
+        for model in (ReportComment, ReportStatusHistory, ReportAssignment):
             db.query(model).delete()
+        db.query(Report).delete()
+        db.query(User).delete()
+        db.query(Department).delete()
         db.commit()
         db.close()
 
@@ -78,6 +85,26 @@ class ReportWorkflowTests(unittest.TestCase):
         self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":dep1.json()["id"]})
         denied = self.client.get(f"/api/v1/reports/{report_id}", headers=manager)
         self.assertEqual(denied.status_code, 403)
+
+    def test_department_manager_cannot_take_report_from_another_department(self):
+        _, root = self.user("root2@example.com", "system_admin")
+        _, citizen = self.user("citizen2@example.com", "citizen")
+        report_id = self.report(citizen)
+        first = self.client.post("/api/v1/departments", headers=root, json={"name":"First Department"})
+        second = self.client.post("/api/v1/departments", headers=root, json={"name":"Second Department"})
+        _, manager = self.user("manager2@example.com", "department_admin", second.json()["id"])
+        assigned = self.client.post(
+            f"/api/v1/reports/{report_id}/assignments",
+            headers=root,
+            json={"department_id":first.json()["id"]},
+        )
+        self.assertEqual(assigned.status_code, 201)
+        takeover = self.client.post(
+            f"/api/v1/reports/{report_id}/assignments",
+            headers=manager,
+            json={"department_id":second.json()["id"]},
+        )
+        self.assertEqual(takeover.status_code, 403)
 
     def test_status_transition_and_history(self):
         _, admin = self.user("root@example.com", "system_admin")

@@ -70,8 +70,11 @@ def assign_report(report_id: int, payload: ReportAssignmentCreate, db: Session =
     department = db.query(Department).filter(Department.id == payload.department_id, Department.is_active.is_(True)).first()
     if department is None:
         raise HTTPException(status_code=404, detail="Active department not found")
-    if current_user.role != "system_admin" and current_user.department_id != payload.department_id:
-        raise HTTPException(status_code=403, detail="You can only assign reports to your own department")
+    if current_user.role != "system_admin":
+        if current_user.department_id != payload.department_id:
+            raise HTTPException(status_code=403, detail="You can only assign reports to your own department")
+        if report.department_id not in (None, current_user.department_id):
+            raise HTTPException(status_code=403, detail="You cannot take a report from another department")
     if payload.assigned_to_user_id is not None:
         assignee = db.query(User).filter(User.id == payload.assigned_to_user_id, User.is_active.is_(True)).first()
         if assignee is None or assignee.role not in ("official", "department_admin", "supervisor") or assignee.department_id != payload.department_id:
