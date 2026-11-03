@@ -2,108 +2,118 @@
 
 GovConnect Nigeria is an early-stage citizen-reporting backend API built with **Python**, **FastAPI**, **SQLAlchemy**, **Pydantic**, and **SQLite**.
 
-This repository currently contains the API foundation and basic create/read operations for citizen reports. It is a development-stage project, not yet a production-ready government engagement platform.
-
 ## Current implementation
 
 - FastAPI application: `backend/app/main.py`
-- SQLite and SQLAlchemy session setup: `backend/app/database.py`
-- Citizen report model: `backend/app/models/report.py`
-- Report request/response schemas: `backend/app/schemas/report.py`
-- Report endpoints: `backend/app/routers/reports.py`
-- Pinned Python dependencies: `backend/requirements.txt`
+- Database configuration: `backend/app/database.py`
+- Citizen report model and API: `backend/app/models/report.py`, `backend/app/routers/reports.py`
+- User model and authentication: `backend/app/models/user.py`, `backend/app/routers/auth.py`
+- Password hashing, JWT handling, and role dependencies: `backend/app/core/`
+- Request/response schemas: `backend/app/schemas/`
 
-### API endpoints
+## Authentication and roles
 
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/` | Basic API-running response |
-| POST | `/api/v1/reports` | Create a report |
-| GET | `/api/v1/reports` | List reports |
-| GET | `/api/v1/reports/{report_id}` | Retrieve a report by ID |
+The authentication API is mounted at `/api/v1/auth`.
 
-Interactive API documentation is available at `/docs` when the development server is running.
+| Method | Endpoint | Access | Purpose |
+|---|---|---|---|
+| POST | `/api/v1/auth/register` | Public | Register a citizen account |
+| POST | `/api/v1/auth/login` | Public | Verify credentials and issue a JWT access token |
+| GET | `/api/v1/auth/me` | Authenticated | Return the current user's profile |
+| PATCH | `/api/v1/auth/users/{user_id}/role` | System administrator | Assign an account role |
 
-### Report data
+Supported roles:
 
-A report currently stores its title, description, category, latitude, longitude, optional address, status, and creation/update timestamps. New reports default to the `SUBMITTED` status.
+- `citizen`
+- `official`
+- `department_admin`
+- `supervisor`
+- `system_admin`
 
-## Project structure
+Public registration always creates a `citizen`. Government and administrator roles must be assigned by a system administrator. The first system administrator is created through the local bootstrap command below.
 
-```text
-govconnectx/
-├── .gitignore
-├── GOVCONNECT_PROGRESS.md
-├── README.md
-└── backend/
-    ├── app/
-    │   ├── __init__.py
-    │   ├── main.py
-    │   ├── database.py
-    │   ├── models/
-    │   │   ├── __init__.py
-    │   │   └── report.py
-    │   ├── routers/
-    │   │   └── reports.py
-    │   └── schemas/
-    │       ├── __init__.py
-    │       └── report.py
-    └── requirements.txt
-```
+Passwords are hashed using PBKDF2-HMAC-SHA256 with a random salt and 600,000 iterations. Login returns a signed JWT access token; protected routes expect it in the `Authorization: Bearer <token>` header. Tokens expire after 30 minutes by default.
 
-Local virtual environments, Python cache files, environment files, and SQLite database files are excluded from Git by `.gitignore`. The database is created locally when the application runs; it is not committed to the repository.
+### Report access rules
 
-## Run the backend locally
+All report endpoints now require authentication.
 
-Use Python 3.12 or a compatible Python version supported by the pinned dependencies.
+- Citizens can create reports and list/read only reports they submitted.
+- Officials, department administrators, supervisors, and system administrators can list/read reports across the platform.
+- Reports created by authenticated users are linked to their account.
+- Existing reports from the earlier database schema retain a null owner and are not visible to citizen accounts.
+
+## Report API
+
+| Method | Endpoint | Access | Description |
+|---|---|---|---|
+| GET | `/` | Public | API-running response |
+| POST | `/api/v1/reports` | Authenticated | Create a report |
+| GET | `/api/v1/reports` | Authenticated | List reports according to role |
+| GET | `/api/v1/reports/{report_id}` | Authenticated | Retrieve an authorized report |
+
+## Local setup
+
+Use Python 3.12 or a compatible Python version.
 
 ### Linux / macOS
-
-From the repository root:
 
 ```bash
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
+cp ../.env.example .env
 uvicorn app.main:app --reload
 ```
 
 ### Windows PowerShell
-
-From the repository root:
 
 ```powershell
 cd backend
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
+Copy-Item ..\.env.example .env
 python -m uvicorn app.main:app --reload
 ```
 
-The SQLite connection string is relative to the current working directory, so start Uvicorn from `backend/`.
+The SQLite URL is relative to the current working directory, so run Uvicorn from `backend/`. Set a strong, random `JWT_SECRET` in `backend/.env` or the deployment environment. Production startup refuses to use the development fallback secret.
 
-Once the server starts, open:
+Interactive API documentation: http://127.0.0.1:8000/docs
 
-- API root: http://127.0.0.1:8000/
-- Swagger UI: http://127.0.0.1:8000/docs
+## Create the first system administrator
 
-## Known gaps to address
+From the `backend/` directory with the virtual environment active:
 
-The following items were not found in the code inspected so far and need a full implementation audit before development proceeds:
+```bash
+python -m scripts.create_system_admin
+```
 
-- Authentication and secure user accounts.
-- Role-based authorization for citizens, officials, departments, and administrators.
-- Report assignment and a complete report status workflow.
-- Official responses, citizen progress tracking, and audit history.
-- Stronger request validation and explicit 404 handling for unknown report IDs.
-- Automated tests, database migrations, rate limiting, and production monitoring.
-- Production database configuration, such as PostgreSQL.
+The command prompts for the administrator email, name, and password. It refuses to create another system administrator if one already exists. Keep this command and the administrator credentials private.
 
-Do not assume these features are absent from every part of the repository until the complete codebase has been audited.
+## Run tests
 
-## Development checkpoint
+From the `backend/` directory:
 
-See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) for the detailed progress checkpoint, confirmed findings, known limitations, and recommended implementation stages.
+```bash
+python -m unittest discover -s tests -v
+```
 
-**Next recommended task:** audit the complete backend and its runtime behavior, then design authentication and role-based access control around the existing code rather than rebuilding the project.
+The current automated tests cover password hashing/verification and JWT creation/validation. API integration tests and authorization-matrix tests remain to be added.
+
+## Security and production gaps
+
+This is an initial authentication/RBAC implementation, not a complete production security review. Before public deployment, add and verify:
+
+- Login and registration rate limiting, email verification, and account recovery.
+- Refresh-token rotation or a documented re-authentication strategy; access tokens are currently stateless and expire after 30 minutes.
+- Audit logs for privileged role changes and administrative actions.
+- More granular department/organization scoping for officials; staff roles currently have platform-wide report read access.
+- Automated endpoint tests for 401/403/404 behavior and citizen data isolation.
+- Database migrations managed by a migration tool such as Alembic; the current startup migration only adds the report owner column to legacy databases.
+- Production database, HTTPS, secret management, backups, monitoring, and deployment hardening.
+
+## Project checkpoint
+
+See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) for the implementation history and current development checkpoint.
