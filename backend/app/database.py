@@ -31,6 +31,8 @@ def migrate_existing_schema(database_engine=None):
                 "user_id": "INTEGER REFERENCES users(id)",
                 "department_id": "INTEGER REFERENCES departments(id)",
                 "assigned_to_user_id": "INTEGER REFERENCES users(id)",
+                "sla_due_at": "DATETIME",
+                "resolved_at": "DATETIME",
             }
             for name, sql_type in additions.items():
                 if name not in columns:
@@ -38,6 +40,7 @@ def migrate_existing_schema(database_engine=None):
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_user_id ON reports (user_id)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_department_id ON reports (department_id)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_assigned_to_user_id ON reports (assigned_to_user_id)"))
+            connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_sla_due_at ON reports (sla_due_at)"))
         if "users" in tables:
             columns = {column["name"] for column in inspector.get_columns("users")}
             if "department_id" not in columns:

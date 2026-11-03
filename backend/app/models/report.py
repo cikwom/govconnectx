@@ -16,6 +16,8 @@ class Report(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True, index=True)
     assigned_to_user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    sla_due_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    resolved_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     owner = relationship("User", back_populates="reports", foreign_keys=[user_id])
