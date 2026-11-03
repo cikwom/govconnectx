@@ -10,7 +10,7 @@
 - Phases 1–5 are merged.
 - Phase 4 merge: `23b1f364f8a1fe37a37ae83f523371322705e154`.
 - Phase 5 merge: `f9c75a3a5875f5ab0ade0f364982a27f9fd438d9`.
-- Phase 6 is on `feature/citizen-report-details-evidence-phase-6`; changes go through a PR.
+- Phase 6 is proposed in PR #6: https://github.com/cikwom/govconnectx/pull/6 (open, not merged).
 - Latest verified main before Phase 6: `f9c75a3a5875f5ab0ade0f364982a27f9fd438d9`.
 
 ## Completed phases
@@ -33,7 +33,8 @@ Implemented on this branch:
 
 ## Verification and next work
 
-- Verify frontend type-check/build, dependency audit, and backend tests in GitHub Actions on the PR head.
+- On PR #6 head `b06f3296d6bdef0eecddfbfbf5b22dc1baadc01d`, GitHub Actions frontend dependency audit/type-check/build passed and backend tests passed.
+- Manual browser verification against a running backend remains outstanding.
 - Manually test report details, public history, comments, and evidence upload/download against a running backend.
 - Next: official/department dashboards, staff status/assignment controls, notification/SLA UI, then admin tools.
 
