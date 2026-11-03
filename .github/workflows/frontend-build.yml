@@ -17,5 +17,7 @@ jobs:
           node-version: "22"
       - name: Install frontend dependencies
         run: npm install
+      - name: Check dependency advisories
+        run: npm audit --audit-level=high
       - name: Type-check and build frontend
         run: npm run build
