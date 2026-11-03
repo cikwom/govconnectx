@@ -33,9 +33,11 @@ Implemented on this branch:
 
 ## Verification and next work
 
-- On PR #6 head `b06f3296d6bdef0eecddfbfbf5b22dc1baadc01d`, GitHub Actions frontend dependency audit/type-check/build passed and backend tests passed.
+- Latest PR #6 head before this follow-up: `482622cceb75402f42136e1266255c5aaf889651`.
+- On that head, GitHub Actions frontend dependency audit/type-check/build passed and backend tests passed.
 - Manual browser verification against a running backend remains outstanding.
 - Manually test report details, public history, comments, and evidence upload/download against a running backend.
+- Follow-up review: delay revoking the temporary download URL so browsers have time to start saving the authenticated file.
 - Next: official/department dashboards, staff status/assignment controls, notification/SLA UI, then admin tools.
 
 ## Production backlog
