@@ -12,7 +12,6 @@ engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-
 def get_db():
     db = SessionLocal()
     try:
@@ -20,20 +19,27 @@ def get_db():
     finally:
         db.close()
 
-
 def migrate_existing_schema(database_engine=None):
-    """Add the nullable report owner column and index to legacy databases."""
+    """Add nullable ownership and workflow columns to pre-workflow databases."""
     target_engine = database_engine or engine
     inspector = inspect(target_engine)
-    if "reports" not in inspector.get_table_names():
-        return
-
-    existing_columns = {column["name"] for column in inspector.get_columns("reports")}
+    tables = set(inspector.get_table_names())
     with target_engine.begin() as connection:
-        if "user_id" not in existing_columns:
-            connection.execute(
-                text("ALTER TABLE reports ADD COLUMN user_id INTEGER REFERENCES users(id)")
-            )
-        connection.execute(
-            text("CREATE INDEX IF NOT EXISTS ix_reports_user_id ON reports (user_id)")
-        )
+        if "reports" in tables:
+            columns = {column["name"] for column in inspector.get_columns("reports")}
+            additions = {
+                "user_id": "INTEGER REFERENCES users(id)",
+                "department_id": "INTEGER REFERENCES departments(id)",
+                "assigned_to_user_id": "INTEGER REFERENCES users(id)",
+            }
+            for name, sql_type in additions.items():
+                if name not in columns:
+                    connection.execute(text(f"ALTER TABLE reports ADD COLUMN {name} {sql_type}"))
+            connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_user_id ON reports (user_id)"))
+            connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_department_id ON reports (department_id)"))
+            connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_assigned_to_user_id ON reports (assigned_to_user_id)"))
+        if "users" in tables:
+            columns = {column["name"] for column in inspector.get_columns("users")}
+            if "department_id" not in columns:
+                connection.execute(text("ALTER TABLE users ADD COLUMN department_id INTEGER REFERENCES departments(id)"))
+            connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_department_id ON users (department_id)"))

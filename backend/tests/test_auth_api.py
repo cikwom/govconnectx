@@ -8,6 +8,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
+from app.models.department import Department
 from app.models.report import Report
 from app.models.user import User
 
@@ -130,13 +131,22 @@ class AuthenticationApiTests(unittest.TestCase):
 
         db = self.TestSession()
         try:
-            db.add(User(
+            department = Department(name="Road Maintenance")
+            db.add(department)
+            db.flush()
+            official = User(
                 email="official@example.com",
                 full_name="Test Official",
                 password_hash=hash_password("Strong-Test-Password-42"),
                 role="official",
+                department_id=department.id,
                 is_active=True,
-            ))
+            )
+            db.add(official)
+            db.flush()
+            report = db.query(Report).first()
+            report.department_id = department.id
+            report.assigned_to_user_id = official.id
             db.commit()
         finally:
             db.close()

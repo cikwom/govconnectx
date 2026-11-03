@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature/auth-rbac-phase-1
+      - feature/report-management-phase-2
   pull_request:
     branches:
       - main
