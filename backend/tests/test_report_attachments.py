@@ -165,7 +165,7 @@ class ReportAttachmentTests(unittest.TestCase):
 
 
     def test_configured_upload_size_limit_is_enforced(self):
-        png = b"\\x89PNG\\r\\n\\x1a\\nX"
+        png = b"\x89PNG\r\n\x1a\nX"
         with patch("app.routers.attachments.MAX_UPLOAD_BYTES", 8):
             response = self.client.post(
                 f"/api/v1/reports/{self.report_id}/attachments",
@@ -198,7 +198,7 @@ class ReportAttachmentTests(unittest.TestCase):
             db.close()
 
         official_headers = self.login("assigned-official@example.com")
-        png = b"\\x89PNG\\r\\n\\x1a\\n" + b"official-evidence"
+        png = b"\x89PNG\r\n\x1a\n" + b"official-evidence"
         uploaded = self.client.post(
             f"/api/v1/reports/{self.report_id}/attachments",
             headers=official_headers,
