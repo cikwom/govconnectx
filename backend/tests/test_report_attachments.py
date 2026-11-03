@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
+from app.models.department import Department
 from app.models.report import Report
 from app.models.report_attachment import ReportAttachment
 from app.models.user import User
@@ -161,6 +162,55 @@ class ReportAttachmentTests(unittest.TestCase):
             files={"file": ("%2e%2e%2fsecret.pdf", b"\x89PNG\r\n\x1a\nimage", "image/png")},
         )
         self.assertEqual(mismatch.status_code, 415)
+
+
+    def test_configured_upload_size_limit_is_enforced(self):
+        png = b"\\x89PNG\\r\\n\\x1a\\nX"
+        with patch("app.routers.attachments.MAX_UPLOAD_BYTES", 8):
+            response = self.client.post(
+                f"/api/v1/reports/{self.report_id}/attachments",
+                headers=self.owner_headers,
+                files={"file": ("large.png", png, "image/png")},
+            )
+        self.assertEqual(response.status_code, 413)
+
+    def test_assigned_department_official_can_access_report_evidence(self):
+        db = self.Session()
+        try:
+            department = Department(name="Road Maintenance")
+            db.add(department)
+            db.flush()
+            official = User(
+                email="assigned-official@example.com",
+                full_name="Assigned Official",
+                password_hash=hash_password("Strong-Test-Password-42"),
+                role="official",
+                department_id=department.id,
+                is_active=True,
+            )
+            db.add(official)
+            db.flush()
+            report = db.query(Report).filter(Report.id == self.report_id).one()
+            report.department_id = department.id
+            report.assigned_to_user_id = official.id
+            db.commit()
+        finally:
+            db.close()
+
+        official_headers = self.login("assigned-official@example.com")
+        png = b"\\x89PNG\\r\\n\\x1a\\n" + b"official-evidence"
+        uploaded = self.client.post(
+            f"/api/v1/reports/{self.report_id}/attachments",
+            headers=official_headers,
+            files={"file": ("inspection.png", png, "image/png")},
+        )
+        self.assertEqual(uploaded.status_code, 201)
+        listing = self.client.get(
+            f"/api/v1/reports/{self.report_id}/attachments",
+            headers=official_headers,
+        )
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(len(listing.json()), 1)
 
 
 if __name__ == "__main__":
