@@ -76,7 +76,8 @@ Do not merge into `main` until GitHub Actions passes and local database migratio
 - Email/SMS delivery is not included; this phase uses in-app notifications without an external provider.
 
 ### Verification still required
-- Confirm CI for the Phase 2 corrective branch and this Phase 3 branch.
+- Phase 2 corrective CI passed on commit 690ca4b (run 41644318542).
+- Phase 3 CI passed on commit d2fde44 (run 41645048150); notification/SLA endpoint regression coverage is being added next.
 - Verify migration against a backed-up local SQLite database before production rollout.
 - Set REPORT_SLA_HOURS to the actual service target.
 - Enable main branch protection in GitHub settings; the connected GitHub integration lacks administration permission to configure or verify it.

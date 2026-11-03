@@ -107,6 +107,35 @@ class ReportWorkflowTests(unittest.TestCase):
         )
         self.assertEqual(takeover.status_code, 403)
 
+    def test_notifications_are_private_and_can_be_marked_read(self):
+        _, root = self.user("notification-root@example.com", "system_admin")
+        _, citizen = self.user("notification-citizen@example.com", "citizen")
+        report_id = self.report(citizen)
+        department = self.client.post("/api/v1/departments", headers=root, json={"name":"Notification Test Department"})
+        assigned = self.client.post(
+            f"/api/v1/reports/{report_id}/assignments",
+            headers=root,
+            json={"department_id":department.json()["id"]},
+        )
+        self.assertEqual(assigned.status_code, 201)
+
+        inbox = self.client.get("/api/v1/notifications", headers=citizen)
+        self.assertEqual(inbox.status_code, 200)
+        self.assertEqual(len(inbox.json()), 1)
+        notification_id = inbox.json()[0]["id"]
+        self.assertEqual(self.client.get("/api/v1/notifications/unread-count", headers=citizen).json()["unread_count"], 1)
+        self.assertEqual(self.client.get("/api/v1/notifications", headers=root).json(), [])
+
+        marked = self.client.patch(f"/api/v1/notifications/{notification_id}/read", headers=citizen)
+        self.assertEqual(marked.status_code, 200)
+        self.assertTrue(marked.json()["is_read"])
+        self.assertEqual(self.client.get("/api/v1/notifications/unread-count", headers=citizen).json()["unread_count"], 0)
+
+        sla = self.client.get("/api/v1/sla/summary", headers=citizen)
+        self.assertEqual(sla.status_code, 200)
+        self.assertEqual(sla.json()["active_reports"], 1)
+        self.assertEqual(sla.json()["without_sla_deadline"], 0)
+
     def test_status_transition_and_history(self):
         _, admin = self.user("root@example.com", "system_admin")
         _, citizen = self.user("reporter@example.com", "citizen")
