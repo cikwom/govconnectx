@@ -22,11 +22,17 @@ def get_db():
 
 
 def migrate_existing_schema():
-    """Add the nullable report owner column to databases created by the earlier API."""
+    """Add the nullable report owner column and index to legacy databases."""
     inspector = inspect(engine)
     if "reports" not in inspector.get_table_names():
         return
+
     existing_columns = {column["name"] for column in inspector.get_columns("reports")}
-    if "user_id" not in existing_columns:
-        with engine.begin() as connection:
-            connection.execute(text("ALTER TABLE reports ADD COLUMN user_id INTEGER REFERENCES users(id)"))
+    with engine.begin() as connection:
+        if "user_id" not in existing_columns:
+            connection.execute(
+                text("ALTER TABLE reports ADD COLUMN user_id INTEGER REFERENCES users(id)")
+            )
+        connection.execute(
+            text("CREATE INDEX IF NOT EXISTS ix_reports_user_id ON reports (user_id)")
+        )
