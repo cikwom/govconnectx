@@ -3,17 +3,26 @@
 **Repository:** https://github.com/cikwom/govconnectx  
 **Base branch:** `main`  
 **Current feature branch:** `feature/citizen-report-details-evidence-phase-6`  
-**Checkpoint date:** 3 November 2026
+**Checkpoint:** 4 November 2026
 
-## Repository and PR status (verified)
+## Product direction
 
-- `main` is at `f9c75a3a5875f5ab0ade0f364982a27f9fd438d9`.
+GovConnectX should be powerful behind the scenes and simple for citizens:
+- Keep login and registration clear, uncluttered and mobile-friendly.
+- After login, make the main actions obvious: **Report an issue**, **My reports / Track progress**, **Lost something**, **Found something**, and **Get help**.
+- Avoid exposing staff workflows, department administration, SLA jargon or complex navigation to ordinary citizens.
+- Make issue reporting short: category, description, location, optional photo, submit; then show a reference and tracking link.
+- Lost & Found is a separate module from government complaints. It should support reports across all Nigerian states, possible-match suggestions, private communication, ownership verification and safe handover. Never publish sensitive item details, document numbers, home addresses or private contact details.
+
+## Repository and PR status
+
+- `main` last verified at `f9c75a3a5875f5ab0ade0f364982a27f9fd438d9`.
 - Phases 1–5 are merged (PRs #1–#5).
-- Phase 6 is in [PR #6](https://github.com/cikwom/govconnectx/pull/6), currently open and not merged.
-- Phase 6 branch head at this checkpoint: `8704aefbff6a43bfb03760c6183319ce0749de3f`.
-- PR #6 is reported mergeable. Do not mark it merged until GitHub reports merged and main advances.
-- All 7 currently listed branches are known historical/feature branches; only PR #6 is open among the recent PRs checked.
-- `main` is not protected. Configure protection/status checks in GitHub Settings when repository permissions permit.
+- Phase 6 is [PR #6](https://github.com/cikwom/govconnectx/pull/6), open and not merged.
+- Phase 6 branch: `feature/citizen-report-details-evidence-phase-6`; latest known head before this product-planning update: `6ae14c7f9382e49605ce9102f2b5d0efb1730bc6`.
+- PR #6 was reported mergeable. Recheck CI on the latest head before merge.
+- `main` is not protected; configure branch protection/status checks if repository permissions allow.
+- Do not claim work is merged until GitHub confirms it and main advances.
 
 ## Completed phases
 
@@ -25,16 +34,16 @@
 
 ## Phase 6 — citizen report details and evidence (PR #6)
 
-Implemented on `feature/citizen-report-details-evidence-phase-6`:
+Implemented:
 - Report detail route/page and dashboard links.
 - Public status history and comments; citizen public comment submission.
-- Evidence listing, JPEG/PNG/PDF upload, authenticated downloads.
-- Download URL cleanup delayed briefly after the browser download starts.
+- Evidence listing, JPEG/PNG/PDF upload and authenticated downloads.
+- Improved temporary download URL cleanup.
 
-Latest verified CI on exact head `8704aefbff6a43bfb03760c6183319ce0749de3f`:
-- Frontend build/typecheck/dependency audit: **PASS**, run 41717048388.
-- Backend tests: **PASS**, run 41717048474.
-- Manual browser checks: **NOT RUN**. The owner should run `docs/testing/MANUAL_REGRESSION_CHECKLIST.md` sections A, C, D and E before merging.
+Latest CI previously verified on commit `6ae14c7f9382e49605ce9102f2b5d0efb1730bc6`:
+- Frontend dependency audit, typecheck and build: **PASS**, run 41735481886.
+- Backend tests: **PASS**, run 41735482129.
+- Manual browser testing: **NOT RUN**. Run checklist sections A, C, D and E before merging.
 - PR #6 remains open for owner review/merge.
 
 ## Permanent testing documentation
@@ -42,29 +51,32 @@ Latest verified CI on exact head `8704aefbff6a43bfb03760c6183319ce0749de3f`:
 - `docs/testing/README.md` — testing hub and commands.
 - `docs/testing/MANUAL_REGRESSION_CHECKLIST.md` — repeatable end-to-end checks across roles and features.
 - `docs/testing/RELEASE_GATE.md` — merge and production release gates.
-- `docs/testing/TEST_EVIDENCE.md` — dated test evidence; manual Phase 6 run remains pending.
+- `docs/testing/TEST_EVIDENCE.md` — dated evidence; Phase 6 manual browser run remains pending.
 
-Record the exact branch and commit SHA for every run. Do not mark manual checks passed until executed.
+Record exact branch and commit SHA for every test. Never mark a test passed until it has actually run.
 
-## Next development phases (planned, not yet implemented)
+## Roadmap — planned, not yet implemented
 
-1. **Phase 7 — Official and department dashboards:** role-specific queues, department filters, report assignment UI, staff status actions, and permission-aware report views.
-2. **Phase 8 — Notifications and SLA frontend:** notification inbox, unread count/read actions, SLA summary, due-soon/overdue indicators.
-3. **Phase 9 — Administration and governance:** staff/department management, user administration, audit trail, operational configuration and admin UI.
-4. **Phase 10 — Production hardening:** secure session/refresh strategy, rate limiting, email verification/account recovery, durable private object storage, malware scanning, migrations, backups/restore, monitoring, HTTPS and deployment runbook.
-5. **Phase 11 — Final QA and release:** full regression, accessibility/usability, security review, performance checks, deployment rehearsal and release sign-off.
+1. **Phase 7 — Simple citizen experience:** simplify login/registration and citizen home; make report issue, my reports/track, lost/found and get help obvious; make report submission short and mobile-first. Keep staff/admin navigation separate and role-aware.
+2. **Phase 8 — Nationwide Lost & Found:** lost and found listings; structured item/category/location/date details; cross-state search; safe possible-match suggestions; private in-app contact; proof-of-ownership workflow; safe handover and item-return closure; abuse/scam reporting and moderation. Do not publicly expose sensitive details or private contact information.
+3. **Phase 9 — Official and department dashboards:** role-specific queues, department filters, report assignment UI, staff status actions, permission-aware report views.
+4. **Phase 10 — Notifications and SLA frontend:** notification inbox, unread/read actions, SLA summary and due-soon/overdue indicators.
+5. **Phase 11 — Administration and governance:** staff/department management, user administration, audit trail and operational configuration.
+6. **Phase 12 — Production hardening:** secure session/refresh strategy, rate limiting, email verification/account recovery, durable private object storage, malware scanning, migrations, backups/restore, monitoring, HTTPS and deployment runbook.
+7. **Phase 13 — Final QA and release:** full regression, accessibility/usability, security review, performance checks, deployment rehearsal and release sign-off.
 
-Phase 7 should begin from the latest main after PR #6 is merged, to avoid building on a temporary stacked branch.
+Start Phase 7 from latest main after PR #6 is merged. Start each subsequent phase from the latest merged main; do not stack long-running phases on unmerged branches.
 
-## Outstanding project-wide work
+## Outstanding work
 
-- Run Phase 6 manual browser checks and record results.
-- Review and merge PR #6 (owner action).
-- Configure main branch protection and require CI checks if permissions allow.
-- Build and test Phases 7–11 above.
+- Owner reviews and merges PR #6.
+- Run and record Phase 6 manual browser tests.
+- Build Phase 7 simple citizen UX and verify mobile usability/accessibility.
+- Build Phase 8 nationwide Lost & Found with privacy, verification and abuse prevention.
+- Configure main branch protection/status checks if possible.
+- Complete remaining roadmap phases.
 - Replace local-only evidence storage before production.
-- Implement production session hardening, rate limiting, email verification/account recovery, audit logs, database migrations, backup/restore and monitoring.
-- Complete deployment and security review before real citizen data is accepted.
+- Complete production security, migrations, backup/restore, monitoring and deployment review before accepting real citizen data.
 
 ## Resume commands
 
@@ -73,12 +85,12 @@ git fetch origin
 git switch feature/citizen-report-details-evidence-phase-6
 git pull --ff-only origin feature/citizen-report-details-evidence-phase-6
 
-# Terminal 1 — backend
+# Backend terminal
 cd backend
 python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 
-# Terminal 2 — frontend
+# Frontend terminal
 cd frontend
 npm ci
 npm run dev
@@ -86,4 +98,4 @@ npm run dev
 
 Frontend: `http://localhost:5173` · API docs: `http://localhost:8000/docs`.
 
-Testing hub: [docs/testing/README.md](docs/testing/README.md). Start with [the manual regression checklist](docs/testing/MANUAL_REGRESSION_CHECKLIST.md).
+Testing hub: [docs/testing/README.md](docs/testing/README.md).
