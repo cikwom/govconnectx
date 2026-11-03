@@ -2,58 +2,51 @@
 
 **Repository:** https://github.com/cikwom/govconnectx  
 **Base branch:** `main`  
-**Working branch:** `feature/frontend-foundation-phase-5`  
+**Working branch:** `feature/citizen-report-details-evidence-phase-6`  
 **Checkpoint date:** 3 November 2026
 
 ## Current Git status
 
-- Phase 1 authentication/RBAC, Phase 2 report workflow, Phase 3 notifications/SLA, and Phase 4 secure evidence attachments are merged.
-- Phase 4 merge commit: `23b1f364f8a1fe37a37ae83f523371322705e154`.
-- Phase 5 frontend foundation is proposed in PR #5: https://github.com/cikwom/govconnectx/pull/5.
-- Latest code commit before this checkpoint: `76b9884e1a95d2ec7a643f0d4625e1d32c0e54cc`.
-- On that code commit, GitHub Actions backend tests passed, frontend TypeScript/build passed, and `npm audit --audit-level=high` passed.
-- PR #5 remains open and unmerged. Keep `main` unchanged until the user reviews and merges it.
-- `main` was reported unprotected at the last settings check; do not assume branch protection is enabled.
+- Phases 1–5 are merged.
+- Phase 4 merge: `23b1f364f8a1fe37a37ae83f523371322705e154`.
+- Phase 5 merge: `f9c75a3a5875f5ab0ade0f364982a27f9fd438d9`.
+- Phase 6 is on `feature/citizen-report-details-evidence-phase-6`; changes go through a PR.
+- Latest verified main before Phase 6: `f9c75a3a5875f5ab0ade0f364982a27f9fd438d9`.
 
 ## Completed phases
 
-- **Phase 1:** citizen registration/login, PBKDF2 password hashing, JWT, role-based access, bootstrap system administrator, backend CI.
-- **Phase 2:** departments/staff assignment, report assignment, validated status history, public comments and staff-only notes.
-- **Phase 3:** in-app notification inbox/read actions, notifications on report changes, configurable 72-hour default SLA and role-scoped summary.
-- **Phase 4:** authenticated JPEG/PNG/PDF evidence upload/list/download, signature/extension validation, 10 MiB default cap, private local storage, authorization and attachment tests.
+- **Phase 1:** citizen registration/login, PBKDF2 password hashing, JWT, RBAC, admin bootstrap, backend CI.
+- **Phase 2:** department/staff assignment, report workflow, status history, comments.
+- **Phase 3:** in-app notifications and configurable SLA tracking.
+- **Phase 4:** authenticated JPEG/PNG/PDF evidence upload/list/download, signature validation, 10 MiB default cap, private local storage.
+- **Phase 5:** React + TypeScript + Vite frontend, auth/session restoration, protected routes, citizen dashboard and report submission, FastAPI CORS and frontend CI.
 
-## Phase 5 — frontend foundation and API integration
+## Phase 6 — citizen report details and evidence
 
 Implemented on this branch:
-- Added a React 18 + TypeScript + Vite frontend under `frontend/` in the same repository.
-- Added typed API client for the real auth and report API contracts.
-- Added registration, login, auth context, session restoration through `GET /auth/me`, protected routes, and sign-out.
-- Added citizen dashboard with report counts/list and a report submission form requiring coordinates.
-- Added configurable FastAPI CORS allowlist (default local Vite origins).
-- Added frontend CI type-check/build and dependency audit.
-- Updated frontend dependencies to React Router 7.18.5 and Vite 6.4.5 after the initial npm audit reported high-severity issues.
-- Token persistence currently uses localStorage to work with the existing bearer-token API; this is an interim security trade-off, not the final production session architecture.
+- Added report detail route/page using existing authenticated report API.
+- Added public status history and public comments display.
+- Added citizen comment submission.
+- Added evidence list, JPEG/PNG/PDF upload with 10 MiB client guard, and authenticated file download.
+- Dashboard report rows link to detail pages.
+- Backend authorization and validation remain authoritative; no backend API changes intended.
 
 ## Verification and next work
 
-- Recheck GitHub Actions on the latest PR head after this checkpoint/documentation commit.
-- Local backend: from `backend/`, run `python -m unittest discover -s tests -v` and `python -m uvicorn app.main:app --reload`.
-- Local frontend: from `frontend/`, run `npm install && npm run build && npm run dev`.
-- Verify registration/login and report create/list against the local API.
-- Set production `CORS_ORIGINS` to exact deployed frontend origins; never use wildcard origins.
-- Next: evidence upload/download UI, report detail/history, official/department dashboards, notification/SLA views, system-admin UI.
-- Add and commit a generated npm lockfile before relying on `npm ci` for deterministic dependency installation.
+- Verify frontend type-check/build, dependency audit, and backend tests in GitHub Actions on the PR head.
+- Manually test report details, public history, comments, and evidence upload/download against a running backend.
+- Next: official/department dashboards, staff status/assignment controls, notification/SLA UI, then admin tools.
 
 ## Production backlog
 
-Strong production JWT secret, HTTPS, production database/backups/monitoring, rate limiting, email verification/account recovery, refresh-token/session strategy, privileged audit logs, durable private object storage, malware scanning, Alembic migrations, and verified main-branch protection.
+Strong JWT secret, HTTPS, production database/backups/monitoring, rate limiting, email verification/account recovery, refresh-token/session strategy, privileged audit logs, durable private object storage, malware scanning, Alembic migrations, and main-branch protection.
 
 ## Resume commands
 
 ```bash
 git fetch origin
-git switch feature/frontend-foundation-phase-5
-git pull --ff-only origin feature/frontend-foundation-phase-5
+git switch feature/citizen-report-details-evidence-phase-6
+git pull --ff-only origin feature/citizen-report-details-evidence-phase-6
 
 # Terminal 1
 cd backend
@@ -66,4 +59,4 @@ npm install
 npm run dev
 ```
 
-Frontend: `http://localhost:5173` · API docs: `http://localhost:8000/docs`. Review the latest CI checks and PR diff before merging Phase 5.
+Frontend: `http://localhost:5173` · API docs: `http://localhost:8000/docs`. Review CI and the PR diff before merging Phase 6.
