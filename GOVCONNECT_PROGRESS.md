@@ -2,7 +2,7 @@
 
 **Repository:** https://github.com/cikwom/govconnectx  
 **Base branch:** `main`  
-**Working branch:** `feature/report-management-phase-2`  
+**Working branch:** `feature/notifications-sla-phase-3`  
 **Checkpoint date:** 3 November 2026
 
 ## Project status
@@ -60,3 +60,23 @@ python -m uvicorn app.main:app --reload
 ```
 
 Do not merge into `main` until GitHub Actions passes and local database migration is verified.
+
+
+## Phase 2 corrective review — pushed
+- Restricted department managers from taking reports already routed to another department.
+- Improved workflow test cleanup and migration regression coverage for idempotency and preservation of existing report rows.
+- Phase 2 PR #2 remains open and unmerged; its latest changes require a fresh CI run.
+
+## Phase 3 — notifications and SLA tracking
+- In-app notifications are created for report assignment and status changes.
+- Added authenticated notification inbox, unread count, mark-one-read, and mark-all-read endpoints.
+- Added configurable report SLA deadline (REPORT_SLA_HOURS, default 72 hours) and resolution timestamp.
+- Added SLA summary endpoint for active, overdue, due-within-24-hours, and missing-deadline reports, scoped to the caller.
+- Added compatibility migration for SLA columns and index.
+- Email/SMS delivery is not included; this phase uses in-app notifications without an external provider.
+
+### Verification still required
+- Confirm CI for the Phase 2 corrective branch and this Phase 3 branch.
+- Verify migration against a backed-up local SQLite database before production rollout.
+- Set REPORT_SLA_HOURS to the actual service target.
+- Enable main branch protection in GitHub settings; the connected GitHub integration lacks administration permission to configure or verify it.

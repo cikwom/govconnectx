@@ -10,6 +10,7 @@ from app.models.department import Department
 from app.models.report import Report
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
+from app.models.notification import Notification
 from app.models.user import User
 
 class ReportWorkflowTests(unittest.TestCase):
@@ -37,7 +38,7 @@ class ReportWorkflowTests(unittest.TestCase):
         db = self.Session()
         # Delete dependent workflow rows first so the suite also works with
         # SQLite foreign-key enforcement enabled.
-        for model in (ReportComment, ReportStatusHistory, ReportAssignment):
+        for model in (Notification, ReportComment, ReportStatusHistory, ReportAssignment):
             db.query(model).delete()
         db.query(Report).delete()
         db.query(User).delete()

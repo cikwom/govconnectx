@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta, timezone
+import os
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, require_roles
@@ -6,6 +9,7 @@ from app.models.department import Department
 from app.models.report import Report
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
+from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.report import ReportCreate, ReportResponse
 from app.schemas.workflow import AssignmentResponse, CommentCreate, CommentResponse, HistoryResponse, ReportAssignmentCreate, StatusUpdate
@@ -37,7 +41,8 @@ def get_accessible_report(report_id: int, db: Session, user: User) -> Report:
 
 @router.post("", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
 def create_report(report: ReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    new_report = Report(title=report.title, description=report.description, category=report.category, latitude=report.latitude, longitude=report.longitude, address=report.address, user_id=current_user.id, status="SUBMITTED")
+    sla_hours = max(1, int(os.getenv("REPORT_SLA_HOURS", "72")))
+    new_report = Report(title=report.title, description=report.description, category=report.category, latitude=report.latitude, longitude=report.longitude, address=report.address, user_id=current_user.id, status="SUBMITTED", sla_due_at=datetime.now(timezone.utc) + timedelta(hours=sla_hours))
     db.add(new_report)
     db.flush()
     db.add(ReportStatusHistory(report_id=new_report.id, changed_by_user_id=current_user.id, old_status=None, new_status="SUBMITTED", message="Report submitted", is_public=True))
@@ -87,6 +92,10 @@ def assign_report(report_id: int, payload: ReportAssignmentCreate, db: Session =
     assignment = ReportAssignment(report_id=report.id, department_id=payload.department_id, assigned_to_user_id=payload.assigned_to_user_id, assigned_by_user_id=current_user.id, note=payload.note)
     db.add(assignment)
     db.add(ReportStatusHistory(report_id=report.id, changed_by_user_id=current_user.id, old_status=previous_status, new_status=report.status, message=payload.note or "Report assigned", is_public=True))
+    recipients = {report.user_id, report.assigned_to_user_id}
+    recipients.discard(None)
+    for recipient_id in recipients:
+        db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_assigned", title="Report assignment updated", message=f'Report "{report.title}" has been routed to {department.name}.'))
     db.commit()
     db.refresh(assignment)
     return assignment
@@ -99,7 +108,18 @@ def update_report_status(report_id: int, payload: StatusUpdate, db: Session = De
         raise HTTPException(status_code=400, detail=f"Status cannot change from {report.status} to {new_status}")
     old_status = report.status
     report.status = new_status
+    if new_status == "RESOLVED":
+        report.resolved_at = datetime.now(timezone.utc)
+    elif old_status in ("RESOLVED", "REJECTED") and new_status == "UNDER_REVIEW":
+        report.resolved_at = None
+        sla_hours = max(1, int(os.getenv("REPORT_SLA_HOURS", "72")))
+        report.sla_due_at = datetime.now(timezone.utc) + timedelta(hours=sla_hours)
     db.add(ReportStatusHistory(report_id=report.id, changed_by_user_id=current_user.id, old_status=old_status, new_status=new_status, message=payload.message, is_public=True))
+    recipients = {report.user_id, report.assigned_to_user_id}
+    recipients.discard(None)
+    for recipient_id in recipients:
+        if recipient_id != current_user.id:
+            db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_status_changed", title="Report status updated", message=f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.'))
     db.commit()
     db.refresh(report)
     return report
