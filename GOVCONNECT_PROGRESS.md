@@ -2,93 +2,68 @@
 
 **Repository:** https://github.com/cikwom/govconnectx  
 **Base branch:** `main`  
-**Working branch:** `feature/report-evidence-attachments-phase-4`  
+**Working branch:** `feature/frontend-foundation-phase-5`  
 **Checkpoint date:** 3 November 2026
 
 ## Current Git status
 
-- Phase 1 authentication/RBAC is merged into `main`.
-- Phase 2 department-based report management is merged into `main` by PR #2.
-- Phase 3 in-app notifications and SLA tracking is merged into `main` by PR #3.
-- Phase 3 merge commit: `0b750383cded4c517fe48e44a95dd565480473bf`.
-- Phase 3 latest-head CI passed on commit `555466a01804b2856ef59c2e4aedf3a4d3b60c99`; PR #3 was marked ready and squash-merged.
-- Phase 4 working branch: `feature/report-evidence-attachments-phase-4`.
-- Phase 4 implementation commit: `eea5b888fb7bcfcfdb5a9e54041a97e3e66fc416`.
-- Phase 4 has not yet been merged. Keep `main` unchanged and use a pull request.
-- GitHub reports the `main` branch as unprotected. Enable branch protection in repository settings when admin access is available; do not assume it is active.
+- Phase 1 authentication/RBAC, Phase 2 report workflow, Phase 3 notifications/SLA, and Phase 4 secure evidence attachments are merged.
+- Phase 4 merge commit: `23b1f364f8a1fe37a37ae83f523371322705e154`.
+- Phase 5 frontend foundation is proposed in PR #5: https://github.com/cikwom/govconnectx/pull/5.
+- Latest code commit before this checkpoint: `76b9884e1a95d2ec7a643f0d4625e1d32c0e54cc`.
+- On that code commit, GitHub Actions backend tests passed, frontend TypeScript/build passed, and `npm audit --audit-level=high` passed.
+- PR #5 remains open and unmerged. Keep `main` unchanged until the user reviews and merges it.
+- `main` was reported unprotected at the last settings check; do not assume branch protection is enabled.
 
-## Phase 1 — authentication and RBAC — merged
+## Completed phases
 
-- Citizen registration and login with PBKDF2 password hashes and JWT access tokens.
-- Roles: citizen, official, department_admin, supervisor, system_admin.
-- Authenticated report creation and citizen ownership filtering.
-- System-admin role management and first-admin bootstrap script.
-- GitHub Actions backend test workflow.
+- **Phase 1:** citizen registration/login, PBKDF2 password hashing, JWT, role-based access, bootstrap system administrator, backend CI.
+- **Phase 2:** departments/staff assignment, report assignment, validated status history, public comments and staff-only notes.
+- **Phase 3:** in-app notification inbox/read actions, notifications on report changes, configurable 72-hour default SLA and role-scoped summary.
+- **Phase 4:** authenticated JPEG/PNG/PDF evidence upload/list/download, signature/extension validation, 10 MiB default cap, private local storage, authorization and attachment tests.
 
-## Phase 2 — report management workflow — merged
+## Phase 5 — frontend foundation and API integration
 
-- Department creation and staff department assignment.
-- Report assignment to departments and active staff members.
-- Assignment records preserve who assigned a report, to whom, when, and any note.
-- Validated status transitions and status history.
-- Public comments and staff-only internal notes.
-- Role/department-based report access scopes.
-- Compatibility migration for department and assignment fields.
+Implemented on this branch:
+- Added a React 18 + TypeScript + Vite frontend under `frontend/` in the same repository.
+- Added typed API client for the real auth and report API contracts.
+- Added registration, login, auth context, session restoration through `GET /auth/me`, protected routes, and sign-out.
+- Added citizen dashboard with report counts/list and a report submission form requiring coordinates.
+- Added configurable FastAPI CORS allowlist (default local Vite origins).
+- Added frontend CI type-check/build and dependency audit.
+- Updated frontend dependencies to React Router 7.18.5 and Vite 6.4.5 after the initial npm audit reported high-severity issues.
+- Token persistence currently uses localStorage to work with the existing bearer-token API; this is an interim security trade-off, not the final production session architecture.
 
-## Phase 3 — notifications and SLA tracking — merged
+## Verification and next work
 
-- Authenticated in-app notification inbox, unread count, and read actions.
-- Report assignment and status changes notify relevant report owners/assignees.
-- Configurable SLA deadline via `REPORT_SLA_HOURS` (default 72 hours).
-- Resolution timestamp; reopening resets the SLA deadline.
-- `GET /api/v1/sla/summary` provides role-scoped active, overdue, due-within-24-hours, and missing-deadline counts.
-- Notifications are in-app only; no email/SMS provider is connected.
+- Recheck GitHub Actions on the latest PR head after this checkpoint/documentation commit.
+- Local backend: from `backend/`, run `python -m unittest discover -s tests -v` and `python -m uvicorn app.main:app --reload`.
+- Local frontend: from `frontend/`, run `npm install && npm run build && npm run dev`.
+- Verify registration/login and report create/list against the local API.
+- Set production `CORS_ORIGINS` to exact deployed frontend origins; never use wildcard origins.
+- Next: evidence upload/download UI, report detail/history, official/department dashboards, notification/SLA views, system-admin UI.
+- Add and commit a generated npm lockfile before relying on `npm ci` for deterministic dependency installation.
 
-## Phase 4 — report evidence attachments — in progress
+## Production backlog
 
-Implemented on `feature/report-evidence-attachments-phase-4`:
-
-- New `ReportAttachment` metadata model with report, uploader, original filename, storage key, content type, byte size, SHA-256 digest, and timestamp.
-- Authenticated upload endpoint: `POST /api/v1/reports/{report_id}/attachments`.
-- Authenticated metadata listing endpoint: `GET /api/v1/reports/{report_id}/attachments`.
-- Authenticated download endpoint: `GET /api/v1/reports/{report_id}/attachments/{attachment_id}/download`.
-- Access is checked using the existing report authorization rules: citizens can access their own report evidence; staff access follows existing department/assignment scopes.
-- Accepted formats are JPEG, PNG, and PDF. Content signatures and filename extensions are checked; unsupported or mismatched files are rejected.
-- Default upload limit is 10 MiB; configure with `REPORT_ATTACHMENT_MAX_BYTES`.
-- Files are stored under `REPORT_ATTACHMENT_DIR`, defaulting to `./private_uploads/report-evidence`, using random UUID storage names. Do not place this directory under a public static/web root.
-- Downloads are sent as attachments with `application/octet-stream`, `nosniff`, and private/no-store caching.
-- `python-multipart` added for multipart upload handling.
-- Added attachment API tests for upload/list/download, cross-citizen access denial, invalid/mismatched content, configured size limits, and assigned department-official access.
-- Backend API only at this stage; no frontend upload UI or cloud object-storage integration has been added.
-
-## Phase 4 verification still required
-
-1. Run the full backend test suite in GitHub Actions against the Phase 4 branch head; fix any failures before merging.
-2. Recheck the upload-size and assigned-official tests in the fresh CI run; they were added after the initial PR run started.
-3. Confirm the production storage location is durable, private, backed up, and outside the web root. Local filesystem storage is the current implementation; object storage is a future production hardening option.
-4. Add deployment environment settings for `REPORT_ATTACHMENT_DIR` and, if needed, `REPORT_ATTACHMENT_MAX_BYTES`.
-5. Confirm existing production database startup creates the new attachment metadata table without data loss.
-6. Back up the existing SQLite database before any production migration/startup test.
-7. Enable and verify `main` branch protection in GitHub settings; the connected GitHub integration cannot configure or confirm it.
-
-## Production hardening backlog
-
-- Confirm production database, strong JWT secret, HTTPS, backups, rate limiting, monitoring, and durable private file storage.
-- Consider Alembic migrations as schema complexity grows.
-- Consider malware scanning and content-disarm/reconstruction for user-uploaded files before production use.
-- Build citizen and official frontend upload/evidence views.
-- Consider cloud object storage with private buckets and short-lived signed downloads.
+Strong production JWT secret, HTTPS, production database/backups/monitoring, rate limiting, email verification/account recovery, refresh-token/session strategy, privileged audit logs, durable private object storage, malware scanning, Alembic migrations, and verified main-branch protection.
 
 ## Resume commands
 
 ```bash
 git fetch origin
-git switch feature/report-evidence-attachments-phase-4
-git pull --ff-only origin feature/report-evidence-attachments-phase-4
+git switch feature/frontend-foundation-phase-5
+git pull --ff-only origin feature/frontend-foundation-phase-5
+
+# Terminal 1
 cd backend
 python -m pip install -r requirements.txt
-python -m unittest discover -s tests -v
 python -m uvicorn app.main:app --reload
+
+# Terminal 2
+cd frontend
+npm install
+npm run dev
 ```
 
-Before merging Phase 4, confirm all checks are green on the latest branch head and the PR is mergeable.
+Frontend: `http://localhost:5173` · API docs: `http://localhost:8000/docs`. Review the latest CI checks and PR diff before merging Phase 5.

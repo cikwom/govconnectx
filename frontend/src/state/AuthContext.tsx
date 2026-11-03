@@ -1,0 +1,8 @@
+import {createContext,useCallback,useContext,useEffect,useMemo,useState} from "react";
+import type {ReactNode} from "react";
+import type {RegisterPayload,User} from "../types/api";
+import {api,tokenStore} from "../services/api";
+interface AuthContextValue{user:User|null;loading:boolean;signIn:(email:string,password:string)=>Promise<void>;signUp:(payload:RegisterPayload)=>Promise<void>;signOut:()=>void}
+const AuthContext=createContext<AuthContextValue|undefined>(undefined);
+export function AuthProvider({children}:{children:ReactNode}){const[user,setUser]=useState<User|null>(null);const[loading,setLoading]=useState(true);useEffect(()=>{if(!tokenStore.get()){setLoading(false);return}api.me().then(setUser).catch(()=>{tokenStore.clear();setUser(null)}).finally(()=>setLoading(false))},[]);const signIn=useCallback(async(email:string,password:string)=>{const result=await api.login(email,password);tokenStore.set(result.access_token);setUser(result.user)},[]);const signUp=useCallback(async(payload:RegisterPayload)=>{await api.register(payload);await signIn(payload.email,payload.password)},[signIn]);const signOut=useCallback(()=>{tokenStore.clear();setUser(null)},[]);const value=useMemo(()=>({user,loading,signIn,signUp,signOut}),[user,loading,signIn,signUp,signOut]);return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>}
+export function useAuth(){const value=useContext(AuthContext);if(!value)throw new Error("useAuth must be used inside AuthProvider");return value}

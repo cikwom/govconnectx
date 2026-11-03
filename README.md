@@ -1,74 +1,38 @@
 # GovConnect Nigeria
 
-GovConnect Nigeria is an early-stage citizen-reporting backend API built with **Python**, **FastAPI**, **SQLAlchemy**, **Pydantic**, and **SQLite**.
+GovConnect Nigeria is a citizen-reporting application with a **Python FastAPI backend** and a **JavaScript/TypeScript React frontend** in one repository. The frontend and backend run as separate local processes but communicate through the versioned HTTP API; there is no need to rewrite the backend in JavaScript.
 
-## Current implementation
+## Application structure
 
-- FastAPI application: `backend/app/main.py`
-- Database configuration: `backend/app/database.py`
-- Citizen report model and API: `backend/app/models/report.py`, `backend/app/routers/reports.py`
-- User model and authentication: `backend/app/models/user.py`, `backend/app/routers/auth.py`
-- Password hashing, JWT handling, and role dependencies: `backend/app/core/`
-- Request/response schemas: `backend/app/schemas/`
+- `backend/` — FastAPI API, SQLAlchemy models, authentication, report workflow, notifications, SLA tracking, and private evidence attachments.
+- `frontend/` — React + TypeScript + Vite browser application.
+- `.github/workflows/` — backend tests and frontend build checks.
 
-## Authentication and roles
+## API contracts
 
-The authentication API is mounted at `/api/v1/auth`.
+Authentication: `POST /api/v1/auth/register` (email, full_name, password), `POST /api/v1/auth/login` (email, password), and `GET /api/v1/auth/me`. Login returns `access_token`, `token_type`, and `user`; send the token as `Authorization: Bearer <token>`.
 
-| Method | Endpoint | Access | Purpose |
-|---|---|---|---|
-| POST | `/api/v1/auth/register` | Public | Register a citizen account |
-| POST | `/api/v1/auth/login` | Public | Verify credentials and issue a JWT access token |
-| GET | `/api/v1/auth/me` | Authenticated | Return the current user's profile |
-| PATCH | `/api/v1/auth/users/{user_id}/role` | System administrator | Assign an account role |
+Reports: `POST /api/v1/reports`, `GET /api/v1/reports`, `GET /api/v1/reports/{report_id}`. Evidence endpoints support authenticated upload/list/download at `/api/v1/reports/{report_id}/attachments`. The API also provides department assignment, status history/comments, notifications, and SLA summaries. Explore `http://localhost:8000/docs` while the API is running.
 
-Supported roles:
+Public registration always creates a citizen. Roles are citizen, official, department_admin, supervisor, and system_admin. Backend authorization is authoritative; frontend visibility is not a security boundary. Passwords use PBKDF2-HMAC-SHA256; access tokens are signed JWTs with a 30-minute default expiry.
 
-- `citizen`
-- `official`
-- `department_admin`
-- `supervisor`
-- `system_admin`
+## Local development
 
-Public registration always creates a `citizen`. Government and administrator roles must be assigned by a system administrator. The first system administrator is created through the local bootstrap command below.
+Requirements: Python 3.12+ and Node.js 22+.
 
-Passwords are hashed using PBKDF2-HMAC-SHA256 with a random salt and 600,000 iterations. Login returns a signed JWT access token; protected routes expect it in the `Authorization: Bearer <token>` header. Tokens expire after 30 minutes by default.
+### Start the backend
 
-### Report access rules
-
-All report endpoints now require authentication.
-
-- Citizens can create reports and list/read only reports they submitted.
-- Officials, department administrators, supervisors, and system administrators can list/read reports across the platform.
-- Reports created by authenticated users are linked to their account.
-- Existing reports from the earlier database schema retain a null owner and are not visible to citizen accounts.
-
-## Report API
-
-| Method | Endpoint | Access | Description |
-|---|---|---|---|
-| GET | `/` | Public | API-running response |
-| POST | `/api/v1/reports` | Authenticated | Create a report |
-| GET | `/api/v1/reports` | Authenticated | List reports according to role |
-| GET | `/api/v1/reports/{report_id}` | Authenticated | Retrieve an authorized report |
-
-## Local setup
-
-Use Python 3.12 or a compatible Python version.
-
-### Linux / macOS
-
+Linux/macOS:
 ```bash
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 cp ../.env.example .env
-uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
-### Windows PowerShell
-
+Windows PowerShell:
 ```powershell
 cd backend
 py -3.12 -m venv .venv
@@ -78,41 +42,32 @@ Copy-Item ..\.env.example .env
 python -m uvicorn app.main:app --reload
 ```
 
-The SQLite URL is relative to the current working directory, so run Uvicorn from `backend/`. Set a strong, random `JWT_SECRET` in `backend/.env` or the deployment environment. Production mode refuses to use the development fallback secret.
+The API runs at `http://localhost:8000`. Set a strong random `JWT_SECRET` before deployment. `CORS_ORIGINS` is a comma-separated allowlist; defaults permit the local Vite origins on port 5173.
 
-Interactive API documentation: http://127.0.0.1:8000/docs
-
-## Create the first system administrator
-
-From the `backend/` directory with the virtual environment active:
+### Start the frontend (second terminal)
 
 ```bash
-python -m scripts.create_system_admin
+cd frontend
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-The command prompts for the administrator email, name, and password. It refuses to create another system administrator if one already exists. Keep this command and the administrator credentials private.
+Open `http://localhost:5173`. `VITE_API_URL` is the backend origin only (default `http://localhost:8000`); the client adds `/api/v1`.
 
-## Run tests
+### Checks
 
-From the `backend/` directory:
+Backend, from `backend/`: `python -m unittest discover -s tests -v`.
+Frontend, from `frontend/`: `npm install && npm run build`.
 
-```bash
-python -m unittest discover -s tests -v
-```
+## Frontend foundation
 
-The GitHub Actions workflow currently runs **14 passing tests** covering password hashing, JWT handling, registration/login, current-user profiles, citizen report isolation, official report visibility, role assignment permissions, and migration of an existing reports table.
+The initial connected UI includes citizen registration/login, session restoration via `GET /auth/me`, protected routes, sign-out, a citizen dashboard, report counts/list, and a report submission form with coordinates. Evidence upload UI, report detail/history, official/department dashboards, notification/SLA views, and production deployment are follow-on work.
 
-## Security and production gaps
+## Security and production notes
 
-This is an initial authentication/RBAC implementation, not a complete production security review. Before public deployment, add and verify:
+The initial browser client stores the short-lived bearer token in localStorage because the API does not yet implement an HttpOnly refresh-cookie flow. This is an interim trade-off and is exposed to token theft if an XSS vulnerability is introduced. Keep dependencies current, avoid unsafe HTML rendering, and plan a hardened refresh/session design before public production. Never put secrets in frontend environment variables; Vite variables are bundled into browser code.
 
-- Login and registration rate limiting, email verification, and account recovery.
-- Refresh-token rotation or a documented re-authentication strategy; access tokens are currently stateless and expire after 30 minutes.
-- Audit logs for privileged role changes and administrative actions.
-- More granular department/organization scoping for officials; staff roles currently have platform-wide report read access.
-- Production database, HTTPS, secret management, backups, monitoring, and deployment hardening.
-- A managed migration system such as Alembic as the schema grows; the current startup migration only adds the report owner column and index to legacy databases.
+Evidence files currently use local filesystem storage. Production needs durable private storage outside the web root, backups, and malware scanning. Other gaps include rate limiting, email verification/account recovery, audit logs, monitoring, HTTPS, production database, and managed migrations.
 
-## Project checkpoint
-
-See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) for the implementation history and current development checkpoint.
+See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) for phase history and the current development checkpoint.
