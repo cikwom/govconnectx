@@ -27,6 +27,8 @@ class ReportResponse(BaseModel):
     address: str | None
 
     status: str
+    sla_due_at: datetime | None
+    resolved_at: datetime | None
 
     created_at: datetime
     updated_at: datetime
