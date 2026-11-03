@@ -78,7 +78,7 @@ Copy-Item ..\.env.example .env
 python -m uvicorn app.main:app --reload
 ```
 
-The SQLite URL is relative to the current working directory, so run Uvicorn from `backend/`. Set a strong, random `JWT_SECRET` in `backend/.env` or the deployment environment. Production startup refuses to use the development fallback secret.
+The SQLite URL is relative to the current working directory, so run Uvicorn from `backend/`. Set a strong, random `JWT_SECRET` in `backend/.env` or the deployment environment. Production mode refuses to use the development fallback secret.
 
 Interactive API documentation: http://127.0.0.1:8000/docs
 
@@ -100,7 +100,7 @@ From the `backend/` directory:
 python -m unittest discover -s tests -v
 ```
 
-The current automated tests cover password hashing/verification and JWT creation/validation. API integration tests and authorization-matrix tests remain to be added.
+The GitHub Actions workflow currently runs **14 passing tests** covering password hashing, JWT handling, registration/login, current-user profiles, citizen report isolation, official report visibility, role assignment permissions, and migration of an existing reports table.
 
 ## Security and production gaps
 
@@ -110,9 +110,8 @@ This is an initial authentication/RBAC implementation, not a complete production
 - Refresh-token rotation or a documented re-authentication strategy; access tokens are currently stateless and expire after 30 minutes.
 - Audit logs for privileged role changes and administrative actions.
 - More granular department/organization scoping for officials; staff roles currently have platform-wide report read access.
-- Automated endpoint tests for 401/403/404 behavior and citizen data isolation.
-- Database migrations managed by a migration tool such as Alembic; the current startup migration only adds the report owner column to legacy databases.
 - Production database, HTTPS, secret management, backups, monitoring, and deployment hardening.
+- A managed migration system such as Alembic as the schema grows; the current startup migration only adds the report owner column and index to legacy databases.
 
 ## Project checkpoint
 
