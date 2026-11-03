@@ -5,79 +5,78 @@
 **Working branch:** `feature/notifications-sla-phase-3`  
 **Checkpoint date:** 3 November 2026
 
-## Project status
-GovConnect Nigeria is a FastAPI citizen-reporting API using SQLAlchemy, Pydantic, and SQLite. Phase 1 authentication and RBAC has been merged into `main`. Phase 2 report workflow is implemented on its own feature branch and must pass CI before merge.
+## Current Git status
+
+- Phase 1 authentication/RBAC is merged into `main`.
+- Phase 2 department-based report management is merged into `main` by PR #2.
+- Phase 2 merge commit: `5c5ca133ee971e1d4562b7a1093a9cf53f24def0`.
+- Phase 3 is in PR #3: https://github.com/cikwom/govconnectx/pull/3.
+- Phase 3 branch was synchronized with the current `main` history using merge commit `1522267c74e0242a8364a7bef843e50f0f7c5bf2`. The Phase 2 base tree was verified identical to the Phase 2 merge tree before this operation.
+- PR #3 now compares only Phase 3 changes against `main`; GitHub reports it as mergeable. It remains a draft while fresh CI runs.
+- Do not push Phase 3 directly to `main`. Merge through PR #3 only after fresh checks pass.
 
 ## Phase 1 — merged
+
 - Citizen registration and login with PBKDF2 password hashes and JWT access tokens.
 - Roles: citizen, official, department_admin, supervisor, system_admin.
 - Authenticated report creation and citizen ownership filtering.
 - System-admin role management and first-admin bootstrap script.
 - GitHub Actions backend test workflow.
 
-## Phase 2 — report management workflow
-Implemented on `feature/report-management-phase-2`:
+## Phase 2 — report management workflow — merged
+
 - Departments can be created by system administrators and listed by authenticated users.
 - Staff users can be assigned to departments by system administrators.
 - Reports can be assigned to a department and optionally an active staff member in that department.
 - Assignment records preserve who assigned a report, to whom, when, and any note.
-- Report status transitions are validated: SUBMITTED → UNDER_REVIEW / REJECTED; UNDER_REVIEW → ASSIGNED / REJECTED; ASSIGNED → IN_PROGRESS / UNDER_REVIEW / REJECTED; IN_PROGRESS → RESOLVED / UNDER_REVIEW / REJECTED; terminal RESOLVED/REJECTED reports may be reopened to UNDER_REVIEW.
-- Status history records actor, previous/new status, timestamp, message, and visibility.
+- Validated report status transitions and status history.
 - Comments support internal staff-only notes and citizen-visible comments.
 - Citizens see only their own reports and public history/comments.
-- Officials see only reports assigned to them within their department; department admins and supervisors see reports in their department; system admins retain platform-wide access.
-- Existing databases receive nullable department/assignee columns and department indexes through the compatibility migration. New workflow tables are created by SQLAlchemy metadata.
+- Officials see reports assigned to them within their department; department admins and supervisors see reports in their department; system admins retain platform-wide access.
+- Compatibility migration adds nullable department/assignee columns and indexes while preserving existing report data in tests.
+- PR #2 merged successfully; CI passed before merge.
 
-## API routes added
-- POST /api/v1/departments — system admin creates a department.
-- GET /api/v1/departments — authenticated department listing.
-- PATCH /api/v1/departments/members/{user_id} — system admin assigns/removes a staff member's department.
-- POST /api/v1/reports/{report_id}/assignments — authorized department manager/supervisor or system admin assigns a report.
-- GET /api/v1/reports/{report_id}/assignments — staff assignment history.
-- PATCH /api/v1/reports/{report_id}/status — staff updates status through allowed transitions.
-- GET /api/v1/reports/{report_id}/history — report status history; citizens see public entries only.
-- POST/GET /api/v1/reports/{report_id}/comments — comments; internal notes hidden from citizens.
+## Phase 3 — notifications and SLA tracking — implemented, awaiting fresh CI
 
-## Tests
-New workflow tests cover department creation/listing, report assignment, department isolation, status transitions/history, and internal comment privacy. Full suite must pass in GitHub Actions before merging.
+- In-app notification model and authenticated inbox.
+- `GET /api/v1/notifications` with unread filtering and pagination.
+- `GET /api/v1/notifications/unread-count`.
+- `PATCH /api/v1/notifications/{notification_id}/read`.
+- `POST /api/v1/notifications/read-all`.
+- Users can access only their own notifications.
+- Report assignment and status changes create in-app notifications for relevant report owners/assignees.
+- Configurable SLA deadline via `REPORT_SLA_HOURS` (default 72 hours).
+- Report resolution timestamp; reopening a resolved/rejected report clears the resolution timestamp and resets the SLA deadline.
+- `GET /api/v1/sla/summary` reports active, overdue, due-within-24-hours, and missing-deadline counts scoped by user role/department.
+- Compatibility migration adds SLA fields and index.
+- No email/SMS provider is connected; notifications are in-app only.
 
-## Remaining review items
-1. Confirm the local existing SQLite database backup and migration preserve all records.
-2. Decide whether department admins should be allowed to assign staff to their own department (currently only system admins can set staff department membership).
-3. Add pagination, file attachments/evidence, notifications, SLA/overdue tracking, and audit events as later phases.
-4. Consider replacing startup compatibility migration with Alembic before schema complexity increases.
-5. Production deployment still needs strong JWT secret, production database, HTTPS, backups, rate limiting, and monitoring.
+## Phase 3 verification
 
-## Resume and verify
+- Earlier Phase 3 test run passed on the pre-sync branch head.
+- After syncing with `main`, GitHub Actions started a new `backend-tests` run on commit `1522267c74e0242a8364a7bef843e50f0f7c5bf2`.
+- PR #3 was confirmed mergeable after synchronization.
+- Fresh CI result is pending at this checkpoint. Do not merge until it is successful.
+- The progress checkpoint itself may trigger another CI run when committed; verify the latest head SHA and its checks before merge.
+
+## Remaining checks before production
+
+1. Back up the existing local SQLite database and verify startup migration preserves all existing records. CI migration tests do not replace this backup-first local verification.
+2. Confirm the intended `REPORT_SLA_HOURS` production value.
+3. Enable and verify `main` branch protection in GitHub settings. The connected GitHub integration has not confirmed that protection is active.
+4. Review production deployment configuration: strong JWT secret, production database, HTTPS, backups, rate limiting, and monitoring.
+5. Consider moving startup compatibility migrations to Alembic as schema complexity grows.
+
+## Resume commands
+
 ```bash
 git fetch origin
-git switch feature/report-management-phase-2
-git pull --ff-only origin feature/report-management-phase-2
+git switch feature/notifications-sla-phase-3
+git pull --ff-only origin feature/notifications-sla-phase-3
 cd backend
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python -m uvicorn app.main:app --reload
 ```
 
-Do not merge into `main` until GitHub Actions passes and local database migration is verified.
-
-
-## Phase 2 corrective review — pushed
-- Restricted department managers from taking reports already routed to another department.
-- Improved workflow test cleanup and migration regression coverage for idempotency and preservation of existing report rows.
-- Phase 2 PR #2 remains open and unmerged; its latest changes require a fresh CI run.
-
-## Phase 3 — notifications and SLA tracking
-- In-app notifications are created for report assignment and status changes.
-- Added authenticated notification inbox, unread count, mark-one-read, and mark-all-read endpoints.
-- Added configurable report SLA deadline (REPORT_SLA_HOURS, default 72 hours) and resolution timestamp.
-- Added SLA summary endpoint for active, overdue, due-within-24-hours, and missing-deadline reports, scoped to the caller.
-- Added compatibility migration for SLA columns and index.
-- Email/SMS delivery is not included; this phase uses in-app notifications without an external provider.
-
-### Verification still required
-- Phase 2 corrective CI passed on commit 690ca4b (run 41644318542).
-- Phase 3 CI passed on commit d2fde44 (run 41645048150); notification/SLA endpoint regression coverage is being added next.
-- Verify migration against a backed-up local SQLite database before production rollout.
-- Set REPORT_SLA_HOURS to the actual service target.
-- Enable main branch protection in GitHub settings; the connected GitHub integration lacks administration permission to configure or verify it.
+Before merging PR #3, confirm the latest commit's GitHub Actions checks are green and the PR remains mergeable.
