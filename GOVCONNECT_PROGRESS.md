@@ -1,151 +1,138 @@
-# GovConnect Nigeria — Project Progress Checkpoint
+# GovConnect Nigeria — Development Checkpoint
 
 **Repository:** https://github.com/cikwom/govconnectx  
-**Branch reviewed:** `main`  
+**Base branch:** `main`  
+**Working branch:** `feature/auth-rbac-phase-1`  
+**Latest working commit:** `53d8f678211b7719f8a8a3a9aed2a012a07114b4`  
 **Checkpoint date:** 3 November 2026
 
-## 1. Project overview
+## Project status
 
-GovConnect Nigeria is an early-stage backend API intended to support citizen reports to government. The code inspected so far provides a basic FastAPI service and a citizen-reporting API backed by SQLite and SQLAlchemy.
+GovConnect Nigeria is an early-stage citizen-reporting API built with FastAPI, SQLAlchemy, Pydantic, and SQLite.
 
-This checkpoint records the files and functionality confirmed during the repository review. It does not claim that the project is production-ready or that uninspected functionality does not exist elsewhere in the repository.
+Phase 1 authentication and role-based access control has been implemented on the feature branch. It has not been merged into `main`.
 
-## 2. Technology stack confirmed
+## Completed before this phase
 
-- Python
-- FastAPI
-- SQLAlchemy ORM
-- SQLite
-- Pydantic v2
-- Uvicorn
+- Basic FastAPI application and health/root endpoint.
+- SQLAlchemy database/session setup.
+- Report model, request/response schemas, and create/list/get endpoints.
+- Repository hygiene: Python virtual environments, cache files, and local SQLite database excluded from the current Git tree.
+- README updated to reflect the verified project structure.
 
-Backend dependencies are listed in `backend/requirements.txt`.
+## Phase 1: authentication and RBAC — implemented
 
-## 3. Work completed and confirmed
+### User accounts and credentials
 
-### Application setup — `backend/app/main.py`
+- Added SQLAlchemy `User` model with unique email, full name, password hash, role, active flag, and creation timestamp.
+- Public registration creates citizen accounts only.
+- Email is normalized to lowercase and validated.
+- Password minimum is 8 characters at API registration; hashes use PBKDF2-HMAC-SHA256, per-password random salt, and 600,000 iterations.
+- Login verifies credentials and returns a signed JWT access token.
+- JWT lifetime defaults to 30 minutes and can be configured with `ACCESS_TOKEN_MINUTES`.
+- Added `GET /api/v1/auth/me` for the current authenticated profile.
 
-- Creates database tables with `Base.metadata.create_all(bind=engine)` at application startup.
-- Creates the FastAPI application titled **GovConnect Nigeria**, version `1.0.0`.
-- Exposes `GET /` as a basic API-running endpoint.
-- Registers the reports router.
+### Roles and authorization
 
-### Database setup — `backend/app/database.py`
+Supported roles:
 
-- Configures SQLite with `sqlite:///./govconnect.db`.
-- Creates the SQLAlchemy engine with `check_same_thread=False`.
-- Defines `SessionLocal` with `autocommit=False` and `autoflush=False`.
-- Defines the shared SQLAlchemy `Base`.
-- Provides a `get_db()` dependency that yields a session and closes it in `finally`.
+- `citizen`
+- `official`
+- `department_admin`
+- `supervisor`
+- `system_admin`
 
-**Run-location note:** The SQLite URL is relative. Running the backend from the `backend/` directory will normally place the database at `backend/govconnect.db`.
+- Added reusable current-user and role-check dependencies.
+- Added system-admin-only role assignment endpoint.
+- Added a local bootstrap script to create the first system administrator.
+- Authorization checks the current role from the database, so role changes take effect without waiting for an existing JWT to expire.
 
-### Citizen reports API — `backend/app/routers/reports.py`
+### Report access protection
 
-The router uses the prefix `/api/v1/reports` and currently exposes:
+- All report routes now require a valid bearer token.
+- New reports are linked to the submitting user.
+- Citizens can only list and retrieve their own reports.
+- Staff roles currently have platform-wide report read access.
+- Unknown or inaccessible report IDs return 404.
+- Added a nullable `user_id` relationship to reports.
+- Added a startup compatibility migration to add `reports.user_id` and its index to older database schemas. Existing reports remain unowned and are hidden from citizen accounts.
 
-| Method | Endpoint | Purpose |
-|---|---|---|
-| GET | `/` | Confirm the API is running |
-| POST | `/api/v1/reports` | Create a citizen report |
-| GET | `/api/v1/reports` | Retrieve all reports |
-| GET | `/api/v1/reports/{report_id}` | Retrieve a report by ID |
+### Configuration and tests
 
-### Report model — `backend/app/models/report.py`
+- Added `.env.example` and dotenv loading.
+- Added configurable `DATABASE_URL`, `JWT_SECRET`, and `ACCESS_TOKEN_MINUTES`.
+- Production mode refuses to start without a configured JWT secret of at least 32 characters.
+- Added PyJWT, python-dotenv, and HTTPX dependencies.
+- Added unit and API tests.
+- Added GitHub Actions workflow to install dependencies and run the backend test suite.
 
-The `Report` model maps to the `reports` table and contains:
+## Verification
 
-- `id`
-- `title`
-- `description`
-- `category`
-- `latitude` and `longitude`
-- `address`
-- `status`, defaulting to `SUBMITTED`
-- `created_at` and `updated_at`
+<badge>14 tests passed</badge>
 
-### Report schemas — `backend/app/schemas/report.py`
+Latest GitHub Actions run: [Backend tests — successful](https://github.com/cikwom/govconnectx/actions/runs/41640402571)
 
-- `ReportCreate` defines the fields accepted when creating a report.
-- `ReportResponse` defines the report data returned by the API.
-- `ConfigDict(from_attributes=True)` allows Pydantic to serialize SQLAlchemy model instances.
+The 14 passing tests cover:
 
-## 4. Current report request flow
+- Password hashing, unique salts, wrong-password rejection, and malformed hashes.
+- JWT claim creation and invalid-token rejection.
+- Public registration always creating citizens.
+- Login and current-user profile.
+- Rejection of unauthenticated report access.
+- Citizen report isolation.
+- Official access to cross-citizen reports.
+- Denial of role assignment to citizens.
+- System administrator role assignment.
+- Migration of a legacy reports table to include owner column and index.
 
-1. An API client sends a request to `POST /api/v1/reports`.
-2. FastAPI routes the request to the reports router.
-3. Pydantic validates the payload using `ReportCreate`.
-4. The router creates a SQLAlchemy `Report` object.
-5. The database session saves the report to SQLite.
-6. The router refreshes the object and returns it using the response schema.
+## Files added or updated
 
-Retrieval endpoints query the SQLAlchemy model and return the matching report data.
-
-## 5. Known limitations and items to investigate
-
-These are findings from the files inspected so far, not an exhaustive audit of every repository file.
-
-### API security and access control
-
-- The inspected report endpoints do not show authentication dependencies.
-- Role-based authorization for citizens, government officials, departments, and administrators was not confirmed.
-- A user model and authentication flow were not confirmed in the inspected files.
-- Review public access to report data before deployment, especially if reports may contain personal or sensitive information.
-
-### Report lifecycle and validation
-
-- The single-report endpoint does not explicitly return HTTP 404 when a report ID does not exist.
-- The inspected router provides create and read operations; update, delete, assignment, status-transition, official-response, and audit-history functionality were not confirmed.
-- Consider validation for empty text, field lengths, and valid latitude/longitude ranges.
-- A complete report status workflow has not yet been confirmed.
-
-### Database and production readiness
-
-- SQLite is suitable for early development. Consider PostgreSQL before production use with concurrent users and operational workloads.
-- Introduce database migrations as the schema grows.
-- Model timestamps use `datetime.utcnow`, which creates naive UTC timestamps; consider a consistent timezone-aware strategy.
-- Automated tests, rate limiting, logging, monitoring, backups, and deployment hardening were not verified during this review.
-
-## 6. Recommended next implementation stages
-
-1. **Inspect the complete backend:** map all routers, models, schemas, configuration, dependencies, and tests before adding functionality.
-2. **Authentication and users:** implement secure password hashing, registration/login, token handling, and user roles if not already present.
-3. **Authorization:** define what citizens, officials, department administrators, supervisors, and system administrators can view or change.
-4. **Report lifecycle:** add permitted updates, assignment, status changes, official responses, and audit history.
-5. **Geographic features:** support map display, location-based filtering, and filtering by state, LGA, and community where required.
-6. **Administration and citizen engagement:** add dashboards, notifications, progress tracking, and feedback.
-7. **Production readiness:** add tests, migrations, validation, rate limiting, secure configuration, monitoring, and a production database.
-
-## 7. Repository checkpoint
-
-The repository default branch was identified as `main`. The latest commits observed during the review were:
-
-- `799e75b` — `docs: add GovConnect project README` (12 October 2026)
-- `403e808` — `feat: add citizen reports API` (8 October 2026)
-- `29b5e79` — Initial commit (6 October 2026)
-
-No pull requests were returned by the repository review.
-
-The review did not inspect or modify a local working tree. This documentation checkpoint is being committed directly to the repository's `main` branch through GitHub.
-
-## 8. Files inspected
-
-- `README.md`
-- `backend/requirements.txt`
-- `backend/app/main.py`
-- `backend/app/database.py`
+- `.env.example`
+- `.github/workflows/backend-tests.yml`
+- `backend/app/config.py`
+- `backend/app/core/security.py`
+- `backend/app/core/dependencies.py`
+- `backend/app/models/user.py`
+- `backend/app/models/__init__.py`
+- `backend/app/schemas/auth.py`
+- `backend/app/routers/auth.py`
 - `backend/app/routers/reports.py`
-- `backend/app/models/report.py`
-- `backend/app/schemas/report.py`
+- `backend/app/database.py`
+- `backend/app/main.py`
+- `backend/scripts/create_system_admin.py`
+- `backend/tests/test_security.py`
+- `backend/tests/test_auth_api.py`
+- `backend/tests/test_database_migration.py`
+- `backend/requirements.txt`
+- `README.md`
 
-## 9. Next session starting point
+## Remaining checks before merging into main
 
-Begin by checking the current branch and working tree. Then inspect the complete `backend/app` directory and existing tests. Map all existing functionality before implementing authentication or additional report features. Preserve working code and avoid creating duplicate models, routes, or services.
+1. Run the app locally against the user's existing database after making a backup. Confirm the startup migration adds the owner column and preserves existing report rows.
+2. Confirm `backend/.env` contains a strong `JWT_SECRET` before deploying. Never use the development fallback secret in production.
+3. Run the first-system-admin bootstrap command locally and verify login.
+4. Review whether staff should see all reports or only reports assigned to their department. Department and organization scoping are not implemented yet.
+5. Add login/registration rate limiting, account recovery/email verification, and administrative audit logs before public launch.
 
-Suggested local checks:
+The automated test suite passed in GitHub Actions. The local existing database and production deployment environment have not been exercised in this session.
+
+## Git workflow
+
+- The feature branch is on GitHub for review and automated testing.
+- `main` has not been changed by this authentication implementation.
+- Merge this phase only after the local database and administrator-bootstrap checks above are confirmed.
+
+## Resume commands
+
+From a local clone:
 
 ```bash
+git fetch origin
+git switch feature/auth-rbac-phase-1
+git pull --ff-only origin feature/auth-rbac-phase-1
 git status
-git branch --show-current
-git pull --ff-only origin main
+cd backend
+python -m pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python -m uvicorn app.main:app --reload
 ```
