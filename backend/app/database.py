@@ -21,14 +21,15 @@ def get_db():
         db.close()
 
 
-def migrate_existing_schema():
+def migrate_existing_schema(database_engine=None):
     """Add the nullable report owner column and index to legacy databases."""
-    inspector = inspect(engine)
+    target_engine = database_engine or engine
+    inspector = inspect(target_engine)
     if "reports" not in inspector.get_table_names():
         return
 
     existing_columns = {column["name"] for column in inspector.get_columns("reports")}
-    with engine.begin() as connection:
+    with target_engine.begin() as connection:
         if "user_id" not in existing_columns:
             connection.execute(
                 text("ALTER TABLE reports ADD COLUMN user_id INTEGER REFERENCES users(id)")

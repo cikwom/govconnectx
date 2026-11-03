@@ -112,6 +112,40 @@ class AuthenticationApiTests(unittest.TestCase):
         hidden_report = self.client.get(f"/api/v1/reports/{report_id}", headers=second_headers)
         self.assertEqual(hidden_report.status_code, 404)
 
+    def test_official_can_read_reports_across_citizens(self):
+        self.assertEqual(self.register("reporter@example.com").status_code, 201)
+        reporter_headers = self.login("reporter@example.com")
+        created = self.client.post(
+            "/api/v1/reports",
+            headers=reporter_headers,
+            json={
+                "title": "Blocked drainage",
+                "description": "Drainage is blocked",
+                "category": "Environment",
+                "latitude": 6.5244,
+                "longitude": 3.3792,
+            },
+        )
+        self.assertEqual(created.status_code, 201)
+
+        db = self.TestSession()
+        try:
+            db.add(User(
+                email="official@example.com",
+                full_name="Test Official",
+                password_hash=hash_password("Strong-Test-Password-42"),
+                role="official",
+                is_active=True,
+            ))
+            db.commit()
+        finally:
+            db.close()
+
+        official_headers = self.login("official@example.com")
+        listing = self.client.get("/api/v1/reports", headers=official_headers)
+        self.assertEqual(listing.status_code, 200)
+        self.assertEqual(len(listing.json()), 1)
+
     def test_citizen_cannot_assign_roles(self):
         self.assertEqual(self.register("citizen@example.com").status_code, 201)
         headers = self.login("citizen@example.com")
@@ -125,14 +159,13 @@ class AuthenticationApiTests(unittest.TestCase):
     def test_system_admin_can_assign_roles(self):
         db = self.TestSession()
         try:
-            admin = User(
+            db.add(User(
                 email="root@example.com",
                 full_name="Test Administrator",
                 password_hash=hash_password("Strong-Test-Password-42"),
                 role="system_admin",
                 is_active=True,
-            )
-            db.add(admin)
+            ))
             db.commit()
         finally:
             db.close()
