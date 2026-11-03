@@ -2,20 +2,22 @@
 
 **Repository:** https://github.com/cikwom/govconnectx  
 **Base branch:** `main`  
-**Working branch:** `feature/notifications-sla-phase-3`  
+**Working branch:** `feature/report-evidence-attachments-phase-4`  
 **Checkpoint date:** 3 November 2026
 
 ## Current Git status
 
 - Phase 1 authentication/RBAC is merged into `main`.
 - Phase 2 department-based report management is merged into `main` by PR #2.
-- Phase 2 merge commit: `5c5ca133ee971e1d4562b7a1093a9cf53f24def0`.
-- Phase 3 is in PR #3: https://github.com/cikwom/govconnectx/pull/3.
-- Phase 3 branch was synchronized with the current `main` history using merge commit `1522267c74e0242a8364a7bef843e50f0f7c5bf2`. The Phase 2 base tree was verified identical to the Phase 2 merge tree before this operation.
-- PR #3 now compares only Phase 3 changes against `main`; GitHub reports it as mergeable. It remains a draft while fresh CI runs.
-- Do not push Phase 3 directly to `main`. Merge through PR #3 only after fresh checks pass.
+- Phase 3 in-app notifications and SLA tracking is merged into `main` by PR #3.
+- Phase 3 merge commit: `0b750383cded4c517fe48e44a95dd565480473bf`.
+- Phase 3 latest-head CI passed on commit `555466a01804b2856ef59c2e4aedf3a4d3b60c99`; PR #3 was marked ready and squash-merged.
+- Phase 4 working branch: `feature/report-evidence-attachments-phase-4`.
+- Phase 4 implementation commit: `eea5b888fb7bcfcfdb5a9e54041a97e3e66fc416`.
+- Phase 4 has not yet been merged. Keep `main` unchanged and use a pull request.
+- GitHub reports the `main` branch as unprotected. Enable branch protection in repository settings when admin access is available; do not assume it is active.
 
-## Phase 1 — merged
+## Phase 1 — authentication and RBAC — merged
 
 - Citizen registration and login with PBKDF2 password hashes and JWT access tokens.
 - Roles: citizen, official, department_admin, supervisor, system_admin.
@@ -25,58 +27,68 @@
 
 ## Phase 2 — report management workflow — merged
 
-- Departments can be created by system administrators and listed by authenticated users.
-- Staff users can be assigned to departments by system administrators.
-- Reports can be assigned to a department and optionally an active staff member in that department.
+- Department creation and staff department assignment.
+- Report assignment to departments and active staff members.
 - Assignment records preserve who assigned a report, to whom, when, and any note.
-- Validated report status transitions and status history.
-- Comments support internal staff-only notes and citizen-visible comments.
-- Citizens see only their own reports and public history/comments.
-- Officials see reports assigned to them within their department; department admins and supervisors see reports in their department; system admins retain platform-wide access.
-- Compatibility migration adds nullable department/assignee columns and indexes while preserving existing report data in tests.
-- PR #2 merged successfully; CI passed before merge.
+- Validated status transitions and status history.
+- Public comments and staff-only internal notes.
+- Role/department-based report access scopes.
+- Compatibility migration for department and assignment fields.
 
-## Phase 3 — notifications and SLA tracking — implemented, awaiting fresh CI
+## Phase 3 — notifications and SLA tracking — merged
 
-- In-app notification model and authenticated inbox.
-- `GET /api/v1/notifications` with unread filtering and pagination.
-- `GET /api/v1/notifications/unread-count`.
-- `PATCH /api/v1/notifications/{notification_id}/read`.
-- `POST /api/v1/notifications/read-all`.
-- Users can access only their own notifications.
-- Report assignment and status changes create in-app notifications for relevant report owners/assignees.
+- Authenticated in-app notification inbox, unread count, and read actions.
+- Report assignment and status changes notify relevant report owners/assignees.
 - Configurable SLA deadline via `REPORT_SLA_HOURS` (default 72 hours).
-- Report resolution timestamp; reopening a resolved/rejected report clears the resolution timestamp and resets the SLA deadline.
-- `GET /api/v1/sla/summary` reports active, overdue, due-within-24-hours, and missing-deadline counts scoped by user role/department.
-- Compatibility migration adds SLA fields and index.
-- No email/SMS provider is connected; notifications are in-app only.
+- Resolution timestamp; reopening resets the SLA deadline.
+- `GET /api/v1/sla/summary` provides role-scoped active, overdue, due-within-24-hours, and missing-deadline counts.
+- Notifications are in-app only; no email/SMS provider is connected.
 
-## Phase 3 verification
+## Phase 4 — report evidence attachments — in progress
 
-- Earlier Phase 3 test run passed on the pre-sync branch head.
-- After syncing with `main`, GitHub Actions started a new `backend-tests` run on commit `1522267c74e0242a8364a7bef843e50f0f7c5bf2`.
-- PR #3 was confirmed mergeable after synchronization.
-- Fresh CI result is pending at this checkpoint. Do not merge until it is successful.
-- The progress checkpoint itself may trigger another CI run when committed; verify the latest head SHA and its checks before merge.
+Implemented on `feature/report-evidence-attachments-phase-4`:
 
-## Remaining checks before production
+- New `ReportAttachment` metadata model with report, uploader, original filename, storage key, content type, byte size, SHA-256 digest, and timestamp.
+- Authenticated upload endpoint: `POST /api/v1/reports/{report_id}/attachments`.
+- Authenticated metadata listing endpoint: `GET /api/v1/reports/{report_id}/attachments`.
+- Authenticated download endpoint: `GET /api/v1/reports/{report_id}/attachments/{attachment_id}/download`.
+- Access is checked using the existing report authorization rules: citizens can access their own report evidence; staff access follows existing department/assignment scopes.
+- Accepted formats are JPEG, PNG, and PDF. Content signatures and filename extensions are checked; unsupported or mismatched files are rejected.
+- Default upload limit is 10 MiB; configure with `REPORT_ATTACHMENT_MAX_BYTES`.
+- Files are stored under `REPORT_ATTACHMENT_DIR`, defaulting to `./private_uploads/report-evidence`, using random UUID storage names. Do not place this directory under a public static/web root.
+- Downloads are sent as attachments with `application/octet-stream`, `nosniff`, and private/no-store caching.
+- `python-multipart` added for multipart upload handling.
+- Added attachment API tests for upload/list/download, cross-citizen access denial, and invalid/mismatched content.
+- Backend API only at this stage; no frontend upload UI or cloud object-storage integration has been added.
 
-1. Back up the existing local SQLite database and verify startup migration preserves all existing records. CI migration tests do not replace this backup-first local verification.
-2. Confirm the intended `REPORT_SLA_HOURS` production value.
-3. Enable and verify `main` branch protection in GitHub settings. The connected GitHub integration has not confirmed that protection is active.
-4. Review production deployment configuration: strong JWT secret, production database, HTTPS, backups, rate limiting, and monitoring.
-5. Consider moving startup compatibility migrations to Alembic as schema complexity grows.
+## Phase 4 verification still required
+
+1. Run the full backend test suite in GitHub Actions against the Phase 4 branch head; fix any failures before merging.
+2. Add a test for the configured upload-size limit and a test for an authorized department official accessing evidence.
+3. Confirm the production storage location is durable, private, backed up, and outside the web root. Local filesystem storage is the current implementation; object storage is a future production hardening option.
+4. Add deployment environment settings for `REPORT_ATTACHMENT_DIR` and, if needed, `REPORT_ATTACHMENT_MAX_BYTES`.
+5. Confirm existing production database startup creates the new attachment metadata table without data loss.
+6. Back up the existing SQLite database before any production migration/startup test.
+7. Enable and verify `main` branch protection in GitHub settings; the connected GitHub integration cannot configure or confirm it.
+
+## Production hardening backlog
+
+- Confirm production database, strong JWT secret, HTTPS, backups, rate limiting, monitoring, and durable private file storage.
+- Consider Alembic migrations as schema complexity grows.
+- Consider malware scanning and content-disarm/reconstruction for user-uploaded files before production use.
+- Build citizen and official frontend upload/evidence views.
+- Consider cloud object storage with private buckets and short-lived signed downloads.
 
 ## Resume commands
 
 ```bash
 git fetch origin
-git switch feature/notifications-sla-phase-3
-git pull --ff-only origin feature/notifications-sla-phase-3
+git switch feature/report-evidence-attachments-phase-4
+git pull --ff-only origin feature/report-evidence-attachments-phase-4
 cd backend
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 python -m uvicorn app.main:app --reload
 ```
 
-Before merging PR #3, confirm the latest commit's GitHub Actions checks are green and the PR remains mergeable.
+Before merging Phase 4, confirm all checks are green on the latest branch head and the PR is mergeable.
