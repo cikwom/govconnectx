@@ -58,13 +58,13 @@ Implemented on `feature/report-evidence-attachments-phase-4`:
 - Files are stored under `REPORT_ATTACHMENT_DIR`, defaulting to `./private_uploads/report-evidence`, using random UUID storage names. Do not place this directory under a public static/web root.
 - Downloads are sent as attachments with `application/octet-stream`, `nosniff`, and private/no-store caching.
 - `python-multipart` added for multipart upload handling.
-- Added attachment API tests for upload/list/download, cross-citizen access denial, and invalid/mismatched content.
+- Added attachment API tests for upload/list/download, cross-citizen access denial, invalid/mismatched content, configured size limits, and assigned department-official access.
 - Backend API only at this stage; no frontend upload UI or cloud object-storage integration has been added.
 
 ## Phase 4 verification still required
 
 1. Run the full backend test suite in GitHub Actions against the Phase 4 branch head; fix any failures before merging.
-2. Add a test for the configured upload-size limit and a test for an authorized department official accessing evidence.
+2. Recheck the upload-size and assigned-official tests in the fresh CI run; they were added after the initial PR run started.
 3. Confirm the production storage location is durable, private, backed up, and outside the web root. Local filesystem storage is the current implementation; object storage is a future production hardening option.
 4. Add deployment environment settings for `REPORT_ATTACHMENT_DIR` and, if needed, `REPORT_ATTACHMENT_MAX_BYTES`.
 5. Confirm existing production database startup creates the new attachment metadata table without data loss.
