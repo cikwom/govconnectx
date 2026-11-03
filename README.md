@@ -1,113 +1,109 @@
 # GovConnect Nigeria
 
-GovConnect Nigeria is a backend API project built with **Python**,
-**FastAPI**, **SQLAlchemy**, and **SQLite**.
+GovConnect Nigeria is an early-stage citizen-reporting backend API built with **Python**, **FastAPI**, **SQLAlchemy**, **Pydantic**, and **SQLite**.
 
-This README records the project's current setup and implementation so
-development can continue from the current point without restarting or
-repeatedly inspecting the same files.
+This repository currently contains the API foundation and basic create/read operations for citizen reports. It is a development-stage project, not yet a production-ready government engagement platform.
 
-## Current Project Status
+## Current implementation
 
--   Repository: `govconnectx`
--   Branch: `main`
--   Last observed Git status: clean and up to date with `origin/main`
--   Backend directory: `backend/`
--   API framework: FastAPI
--   Database: SQLite
--   ORM: SQLAlchemy
--   ASGI server: Uvicorn
+- FastAPI application: `backend/app/main.py`
+- SQLite and SQLAlchemy session setup: `backend/app/database.py`
+- Citizen report model: `backend/app/models/report.py`
+- Report request/response schemas: `backend/app/schemas/report.py`
+- Report endpoints: `backend/app/routers/reports.py`
+- Pinned Python dependencies: `backend/requirements.txt`
 
-## Project Structure
+### API endpoints
 
-``` text
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/` | Basic API-running response |
+| POST | `/api/v1/reports` | Create a report |
+| GET | `/api/v1/reports` | List reports |
+| GET | `/api/v1/reports/{report_id}` | Retrieve a report by ID |
+
+Interactive API documentation is available at `/docs` when the development server is running.
+
+### Report data
+
+A report currently stores its title, description, category, latitude, longitude, optional address, status, and creation/update timestamps. New reports default to the `SUBMITTED` status.
+
+## Project structure
+
+```text
 govconnectx/
-├── backend/
-│   ├── app/
-│   │   ├── __init__.py
-│   │   ├── main.py
-│   │   ├── database.py
-│   │   └── routers/
-│   │       └── reports.py  # Imported by main.py; confirm the file exists
-│   ├── govconnect.db
-│   ├── requirements.txt
-│   └── .venv/
-└── README.md
+├── .gitignore
+├── GOVCONNECT_PROGRESS.md
+├── README.md
+└── backend/
+    ├── app/
+    │   ├── __init__.py
+    │   ├── main.py
+    │   ├── database.py
+    │   ├── models/
+    │   │   ├── __init__.py
+    │   │   └── report.py
+    │   ├── routers/
+    │   │   └── reports.py
+    │   └── schemas/
+    │       ├── __init__.py
+    │       └── report.py
+    └── requirements.txt
 ```
 
-The `routers/reports.py` path is referenced in `main.py`, but it was not
-visible in the last shallow file listing. Confirm it exists if the
-application fails to start.
+Local virtual environments, Python cache files, environment files, and SQLite database files are excluded from Git by `.gitignore`. The database is created locally when the application runs; it is not committed to the repository.
 
-## What Is Implemented So Far
+## Run the backend locally
 
-### FastAPI application
+Use Python 3.12 or a compatible Python version supported by the pinned dependencies.
 
-The entry point is `backend/app/main.py`.
-
-It currently: - Creates a FastAPI application titled **GovConnect
-Nigeria**. - Sets the API version to `1.0.0`. - Defines a root endpoint
-at `GET /`. - Includes the reports router from `app.routers.reports`. -
-Calls SQLAlchemy's `Base.metadata.create_all(bind=engine)` to create
-tables for models registered with the metadata.
-
-The root endpoint returns:
-
-``` json
-{
-  "message": "GovConnect Nigeria API is running"
-}
-```
-
-### Database setup
-
-The database configuration is in `backend/app/database.py`.
-
-It currently: - Uses the SQLite URL `sqlite:///./govconnect.db`. -
-Creates a SQLAlchemy engine with `check_same_thread=False`, which is
-commonly used for SQLite in FastAPI applications. - Defines
-`SessionLocal` for database sessions. - Defines `Base` for SQLAlchemy
-models. - Provides `get_db()`, a generator dependency that yields a
-database session and closes it afterward.
-
-**Important:** The SQLite URL is relative to the process's current
-working directory. Run the server from `backend/` so the database file
-is created or accessed at `backend/govconnect.db`.
-
-### Dependencies
-
-The pinned dependencies are listed in `backend/requirements.txt`. They
-include: - FastAPI `0.143.0` - SQLAlchemy `2.1.4` - Uvicorn `0.54.0`
-
-## Running the Backend
+### Linux / macOS
 
 From the repository root:
 
-``` bash
+```bash
 cd backend
+python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Then open these local URLs in a browser: - API root:
-http://127.0.0.1:8000/ - Interactive API documentation:
-http://127.0.0.1:8000/docs
+### Windows PowerShell
 
-If startup fails, check the exact Python traceback first. One known
-point to verify is whether `backend/app/routers/reports.py` exists and
-correctly defines `router`.
+From the repository root:
 
-## Current Known Limitations
+```powershell
+cd backend
+py -3.12 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
 
-This README documents only what was confirmed from the files inspected
-so far. The report endpoints, database models, validation schemas, and
-tests have not yet been confirmed, so they are not described as
-completed features here.
+The SQLite connection string is relative to the current working directory, so start Uvicorn from `backend/`.
 
-## Development Approach
+Once the server starts, open:
 
-Continue from the existing code rather than rebuilding the project. Work
-in small steps: 1. Confirm the current backend starts. 2. Verify the
-reports router and its endpoints. 3. Inspect or implement the report
-database model and schemas. 4. Test the API through `/docs`. 5. Add
-tests and update this README as features are completed.
+- API root: http://127.0.0.1:8000/
+- Swagger UI: http://127.0.0.1:8000/docs
+
+## Known gaps to address
+
+The following items were not found in the code inspected so far and need a full implementation audit before development proceeds:
+
+- Authentication and secure user accounts.
+- Role-based authorization for citizens, officials, departments, and administrators.
+- Report assignment and a complete report status workflow.
+- Official responses, citizen progress tracking, and audit history.
+- Stronger request validation and explicit 404 handling for unknown report IDs.
+- Automated tests, database migrations, rate limiting, and production monitoring.
+- Production database configuration, such as PostgreSQL.
+
+Do not assume these features are absent from every part of the repository until the complete codebase has been audited.
+
+## Development checkpoint
+
+See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) for the detailed progress checkpoint, confirmed findings, known limitations, and recommended implementation stages.
+
+**Next recommended task:** audit the complete backend and its runtime behavior, then design authentication and role-based access control around the existing code rather than rebuilding the project.
