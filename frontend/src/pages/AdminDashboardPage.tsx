@@ -26,7 +26,7 @@ type Oversight = {
   items: OversightItem[];
   notice: string;
 };
-const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\\/$/, "");
+const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 async function adminRequest<T>(path: string): Promise<T> {
   const response = await fetch(`${API_URL}/api/v1/admin${path}`, { headers: { Authorization: `Bearer ${tokenStore.get() ?? ""}` } });
   if (!response.ok) { const body = await response.json().catch(() => ({})); throw new Error(body.detail ?? `Request failed (${response.status})`); }
