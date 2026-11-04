@@ -8,9 +8,12 @@ on:
       - feature/report-management-phase-2
       - feature/notifications-sla-phase-3
       - feature/report-evidence-attachments-phase-4
+      - feature/admin-command-centre-phase-9
+      - feature/admin-oversight-enforcement-phase-10
   pull_request:
     branches:
       - main
+      - feature/admin-command-centre-phase-9
 
 jobs:
   backend-tests:
