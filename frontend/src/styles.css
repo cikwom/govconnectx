@@ -193,8 +193,8 @@ h1,h2,h3,.brand,.stat-card strong,.role-line strong,.oversight-stat-grid strong{
 .home-nav-actions .button-primary:hover,.button-primary:hover{background:var(--civic-deep)}
 .civic-hero{width:min(1240px,92vw);min-height:650px;grid-template-columns:.92fr 1.08fr;gap:45px;padding:54px 0 76px}
 .civic-hero .home-hero-copy .eyebrow{color:var(--civic-green);font-weight:900;letter-spacing:.16em}
-.civic-hero .home-hero h1{font-size:clamp(3rem,5.8vw,5.15rem);line-height:1.04;letter-spacing:-.075em;color:#102f25}
-.civic-hero .home-hero h1 span{color:var(--civic-green)}
+.civic-hero .home-hero-copy h1{font-size:clamp(3rem,5.8vw,5.15rem);line-height:1.04;letter-spacing:-.075em;color:#102f25}
+.civic-hero .home-hero-copy h1 span{color:var(--civic-green)}
 .civic-hero .home-hero-description{font-size:1.06rem;max-width:510px;color:#536b5e}
 .civic-hero .home-primary-cta{background:var(--civic-green);border-radius:4px 13px 4px 13px;padding:16px 23px;box-shadow:0 10px 25px #00865332}
 .movement-art{height:510px;position:relative;overflow:hidden;isolation:isolate;background:#008653;display:flex;align-items:center;justify-content:center;clip-path:polygon(3% 0,100% 0,97% 100%,0 96%);box-shadow:18px 18px 0 #dcebe2}
@@ -227,7 +227,7 @@ h1,h2,h3,.brand,.stat-card strong,.role-line strong,.oversight-stat-grid strong{
 .citizen-dashboard-banner p:last-child{color:#d8f1e3;line-height:1.65;margin:0}
 .dashboard-fist{font-size:8rem;line-height:1;filter:grayscale(1) brightness(0) invert(1);opacity:.95;transform:rotate(-9deg);position:relative;z-index:1}
 :root[data-theme="dark"] .home-page{background:#101d18;color:#e9f4ed}
-:root[data-theme="dark"] .civic-hero .home-hero h1,:root[data-theme="dark"] .home-section-heading h2{color:#f0f8f2}
+:root[data-theme="dark"] .civic-hero .home-hero-copy h1,:root[data-theme="dark"] .home-section-heading h2{color:#f0f8f2}
 :root[data-theme="dark"] .civic-hero .home-hero-description{color:#b0c8b8}
 :root[data-theme="dark"] .movement-art{box-shadow:18px 18px 0 #203c30}
 :root[data-theme="dark"] .home-highlights{background:#14231b}
