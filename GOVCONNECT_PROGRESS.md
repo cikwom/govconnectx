@@ -83,7 +83,8 @@ Admin page: http://localhost:5173/admin
 - Updated the admin handoff documentation.
 - No new database migration is needed for this first analytics-only phase.
 - Signals are not proof of false reporting and do not trigger automatic account or report penalties. Verified findings and enforcement controls belong in subsequent phases.
-- **Not yet verified:** automated backend tests, frontend typecheck/build, GitHub Actions and manual browser regression. Do not merge until these pass.
+- **Verified:** GitHub Actions backend tests passed and frontend dependency audit/typecheck/build passed on the PR head commit `e399fa6`.
+- **Still pending:** manual browser regression against a running backend and review of the rendered admin workflow. Do not merge until those pass.
 
 ### Remaining implementation phases
 1. User Management — warn, suspend, block and reinstate with safeguards.
