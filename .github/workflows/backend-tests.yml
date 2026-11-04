@@ -17,6 +17,7 @@ on:
       - main
       - feature/admin-command-centre-phase-9
       - feature/admin-oversight-enforcement-phase-10
+      - feature/public-home-theme-login-phase-11
 
 jobs:
   backend-tests:
