@@ -35,8 +35,8 @@ All admin endpoints use `require_roles("system_admin")`. Backend authorization i
 These phases should build on the existing users, reports, report history and notifications architecture. Do not create a parallel administration subsystem.
 
 ## Verification still required
-- Run backend unit/API tests and frontend typecheck/build.
-- Verify citizens receive HTTP 403 from `/api/v1/admin/oversight`.
-- Verify the admin dashboard renders the review panel and that no-signal results are handled.
-- Verify window and threshold validation, burst boundaries and repeated-content detection.
-- Complete manual browser regression and review CI before merging.
+- GitHub Actions backend unit/API tests passed on the initial implementation commit.
+- GitHub Actions frontend dependency audit, typecheck and production build passed on the initial implementation commit.
+- Still required: manual verification that citizens receive HTTP 403 from `/api/v1/admin/oversight`.
+- Still required: verify the dashboard panel, no-signal state, threshold validation, burst boundaries and repeated-content detection against a running backend.
+- Complete manual browser regression and confirm the latest documentation-only commit checks before merging.
