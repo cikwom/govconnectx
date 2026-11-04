@@ -164,3 +164,41 @@ def get_activity(
 
     events.sort(key=lambda item: item["created_at"] or "", reverse=True)
     return events[:limit]
+
+
+@router.get("/reports")
+def list_all_reports(
+    search: str | None = Query(default=None, max_length=160),
+    status_filter: str | None = Query(default=None, alias="status", max_length=40),
+    limit: int = Query(default=100, ge=1, le=250),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    query = db.query(Report, User).outerjoin(User, User.id == Report.user_id)
+    if search:
+        term = f"%{search.strip()}%"
+        query = query.filter(or_(Report.title.ilike(term), Report.description.ilike(term), Report.category.ilike(term), Report.address.ilike(term), User.full_name.ilike(term), User.email.ilike(term)))
+    if status_filter:
+        query = query.filter(Report.status == status_filter.strip().upper())
+    total = query.count()
+    rows = query.order_by(Report.created_at.desc()).offset(offset).limit(limit).all()
+    return {
+        "total": total,
+        "items": [
+            {
+                "id": report.id,
+                "title": report.title,
+                "description": report.description,
+                "category": report.category,
+                "status": report.status,
+                "address": report.address,
+                "department_id": report.department_id,
+                "assigned_to_user_id": report.assigned_to_user_id,
+                "created_at": report.created_at.isoformat() if report.created_at else None,
+                "sla_due_at": report.sla_due_at.isoformat() if report.sla_due_at else None,
+                "reporter": {"id": reporter.id, "full_name": reporter.full_name, "email": reporter.email} if reporter else None,
+            }
+            for report, reporter in rows
+        ],
+    }
