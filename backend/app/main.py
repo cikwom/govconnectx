@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine, migrate_existing_schema
 from app.models import Department, Report, ReportAssignment, ReportAttachment, ReportComment, ReportStatusHistory, User
 from app.models.notification import Notification  # noqa: F401
+from app.routers.admin import router as admin_router
 from app.routers.attachments import router as attachments_router
 from app.routers.auth import router as auth_router
 from app.routers.departments import router as departments_router
@@ -25,6 +26,7 @@ def root():
     return {"message": "GovConnect Nigeria API is running"}
 
 app.include_router(auth_router)
+app.include_router(admin_router)
 app.include_router(departments_router)
 app.include_router(reports_router)
 app.include_router(attachments_router)
