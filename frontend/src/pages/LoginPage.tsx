@@ -1,3 +1,64 @@
-import {useState} from "react";import type {FormEvent} from "react";import {Link,Navigate,useLocation,useNavigate} from "react-router-dom";import {useAuth} from "../state/AuthContext";
-export default function LoginPage(){const{user,signIn}=useAuth();const navigate=useNavigate();const location=useLocation();const[email,setEmail]=useState("");const[password,setPassword]=useState("");const[error,setError]=useState("");const[busy,setBusy]=useState(false);if(user)return <Navigate to="/dashboard" replace/>;async function submit(e:FormEvent){e.preventDefault();setError("");setBusy(true);try{await signIn(email,password);const destination=(location.state as {from?:{pathname?:string}}|null)?.from?.pathname;navigate(destination||"/dashboard",{replace:true})}catch(err){setError(err instanceof Error?err.message:"Unable to sign in")}finally{setBusy(false)}}return <AuthLayout title="Welcome back" subtitle="Sign in to follow community reports and public service updates."><form className="form-stack" onSubmit={submit}><label>Email address<input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)}/></label><label>Password<input type="password" autoComplete="current-password" required value={password} onChange={e=>setPassword(e.target.value)}/></label>{error&&<p className="form-error" role="alert">{error}</p>}<button className="button button-primary button-full" disabled={busy}>{busy?"Signing in…":"Sign in"}</button></form><p className="auth-switch">New to GovConnect? <Link to="/register">Create an account</Link></p></AuthLayout>}
-function AuthLayout({title,subtitle,children}:{title:string;subtitle:string;children:React.ReactNode}){return <main className="auth-page"><section className="auth-aside"><div className="brand brand-inverse"><span className="brand-mark">G</span><span>GovConnect Nigeria</span></div><div><p className="eyebrow">CITIZEN VOICE · PUBLIC ACTION</p><h1>Better communities begin with being heard.</h1><p>Report local issues, keep track of progress, and help build more responsive public services.</p></div><span className="aside-foot">A clearer connection between citizens and public institutions.</span></section><section className="auth-main"><div className="auth-card"><p className="eyebrow">YOUR ACCOUNT</p><h2>{title}</h2><p className="muted">{subtitle}</p>{children}</div></section></main>}
+import { useState } from "react";
+import type { FormEvent } from "react";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle";
+import { useAuth } from "../state/AuthContext";
+
+export default function LoginPage() {
+  const { user, signIn } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  if (user) return <Navigate to={user.role === "system_admin" ? "/admin" : "/dashboard"} replace />;
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      await signIn(email, password);
+      const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
+      navigate(destination || "/dashboard", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sign in");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <main className="auth-page">
+      <div className="auth-theme-control"><ThemeToggle /></div>
+      <section className="auth-aside">
+        <Link className="brand brand-inverse" to="/"><span className="brand-mark">G</span><span>GovConnect Nigeria</span></Link>
+        <div className="auth-aside-message">
+          <p className="eyebrow">CITIZEN VOICE · PUBLIC ACTION</p>
+          <h1>Good communities grow when every voice counts.</h1>
+          <p>Speak up about the things that matter. Follow progress. Be part of a more responsive public service.</p>
+          <div className="auth-aside-points"><span><b>✓</b> Report local issues</span><span><b>✓</b> Follow real updates</span><span><b>✓</b> Stay part of the change</span></div>
+        </div>
+        <span className="aside-foot">A clearer connection between citizens and public institutions.</span>
+        <div className="auth-decor auth-decor-one" /><div className="auth-decor auth-decor-two" />
+      </section>
+      <section className="auth-main">
+        <div className="auth-card">
+          <Link className="auth-back-link" to="/">← Back to home</Link>
+          <p className="eyebrow">WELCOME BACK</p>
+          <h2>Good to see you again.</h2>
+          <p className="muted">Sign in to follow your reports and community updates.</p>
+          <form className="form-stack auth-form" onSubmit={submit}>
+            <label>Email address<input type="email" autoComplete="email" placeholder="you@example.com" required value={email} onChange={event => setEmail(event.target.value)} /></label>
+            <label>Password<input type="password" autoComplete="current-password" placeholder="Enter your password" required value={password} onChange={event => setPassword(event.target.value)} /></label>
+            {error && <p className="form-error" role="alert">{error}</p>}
+            <button className="button button-primary button-full auth-submit" disabled={busy}>{busy ? "Signing you in…" : "Sign in to GovConnect"} <span aria-hidden="true">→</span></button>
+          </form>
+          <p className="auth-switch">New to GovConnect? <Link to="/register">Create an account</Link></p>
+          <p className="auth-secure-note"><span>●</span> Your account and reports stay protected.</p>
+        </div>
+      </section>
+    </main>
+  );
+}
