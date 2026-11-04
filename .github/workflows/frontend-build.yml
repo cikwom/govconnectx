@@ -1,9 +1,9 @@
 name: Frontend build
 on:
   push:
-    branches: [main, feature/frontend-foundation-phase-5]
+    branches: [main, feature/frontend-foundation-phase-5, feature/admin-command-centre-phase-9, feature/admin-oversight-enforcement-phase-10]
   pull_request:
-    branches: [main]
+    branches: [main, feature/admin-command-centre-phase-9]
 jobs:
   frontend-build:
     runs-on: ubuntu-latest
