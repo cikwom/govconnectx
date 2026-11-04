@@ -12,3 +12,28 @@
 .admin-page{width:100%}.admin-section-label{font-size:.68rem;font-weight:800;letter-spacing:.13em;color:#718096;margin:0 0 12px}.admin-stat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:22px}.admin-split{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:22px}.admin-split .panel{margin-bottom:0}.role-breakdown{display:flex;flex-direction:column;gap:12px;margin-top:18px}.role-line{display:flex;justify-content:space-between;align-items:center;text-transform:capitalize;color:#64748b;font-size:.83rem}.role-line strong{color:#16324f;font-family:Manrope}.admin-search{display:flex;gap:10px;margin:-4px 0 16px}.admin-search input{max-width:460px}.admin-count{font-size:.72rem;color:#718096;background:#f1f5f8;padding:6px 9px;border-radius:20px;white-space:nowrap}.admin-table-wrap{width:100%;overflow-x:auto}.admin-table{width:100%;border-collapse:collapse;text-align:left;font-size:.8rem}.admin-table th{font-size:.67rem;text-transform:uppercase;letter-spacing:.08em;color:#8a98a8;background:#f8fafb;padding:12px}.admin-table td{padding:13px 12px;border-top:1px solid #edf1f5;color:#526477;vertical-align:middle}.admin-table td:first-child strong,.admin-table td:first-child small{display:block}.admin-table td:first-child strong{color:#243b53}.admin-table td:first-child small{font-size:.7rem;color:#8a98a8;margin-top:4px}.admin-role{text-transform:capitalize;font-size:.68rem;font-weight:700;color:#486273;background:#eef3f6;border-radius:20px;padding:5px 8px;white-space:nowrap}.account-active,.account-inactive{font-size:.7rem;font-weight:800}.account-active{color:#27733d}.account-inactive{color:#a53d3d}.admin-report-list{display:flex;flex-direction:column}.admin-report{padding:17px 0;border-top:1px solid #edf1f5}.admin-report-top{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.admin-report-top strong{font-size:.88rem;color:#243b53}.admin-report-top p,.admin-reporter,.admin-description{font-size:.77rem;color:#718096;line-height:1.55;margin:6px 0}.admin-reporter{color:#66788a}.admin-reporter strong{color:#34495e}.admin-description{color:#526477;margin-top:9px}.activity-list{display:flex;flex-direction:column}.activity-row{display:flex;gap:12px;padding:13px 0;border-top:1px solid #edf1f5}.activity-dot{width:9px;height:9px;border-radius:50%;background:#0b9582;margin:6px 0 0 3px;flex:none;box-shadow:0 0 0 4px #e4f5f1}.activity-row>div{min-width:0}.activity-row p{font-size:.8rem;color:#526477;line-height:1.6;margin:0}.activity-row p strong{color:#243b53}.activity-row small{display:block;color:#94a3b8;font-size:.68rem;margin-top:5px}.admin-privacy{font-size:.73rem;color:#8291a3;text-align:center;line-height:1.6;margin:4px auto 20px;max-width:760px}.admin-error{margin-bottom:18px}
 @media(max-width:900px){.admin-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.admin-split{grid-template-columns:1fr}.admin-search{align-items:stretch;flex-direction:column}.admin-search input{max-width:none}.admin-report-top{flex-direction:column}.admin-nav-link{font-size:.7rem;padding:8px}.topbar-user{gap:8px}}
+
+
+/* Phase 10 — explainable reporting oversight */
+.oversight-stat-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.oversight-stat-grid>div{display:flex;flex-direction:column;gap:5px;padding:15px;border:1px solid #e7edf2;border-radius:10px;background:#fbfcfd}
+.oversight-stat-grid strong{font-family:Manrope;font-size:1.55rem;color:#16324f}
+.oversight-stat-grid span,.oversight-thresholds{font-size:.74rem;color:#718096}
+.oversight-thresholds{line-height:1.6;margin:0 0 12px}
+.oversight-item{padding:17px 0;border-top:1px solid #edf1f5}
+.oversight-item-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.oversight-item-heading>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.oversight-item-heading>div>strong{font-size:.9rem;color:#243b53}
+.oversight-item-heading small{font-size:.72rem;color:#718096;overflow-wrap:anywhere}
+.oversight-priority{font-size:.67rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:6px 9px;border-radius:20px;white-space:nowrap}
+.priority-high{background:#fff0e8;color:#a34c20}
+.priority-medium{background:#fff7df;color:#87621b}
+.oversight-signals{margin:12px 0;padding-left:20px;color:#526477;font-size:.78rem;line-height:1.7}
+.oversight-signals strong{color:#34495e}
+.oversight-reports{font-size:.77rem;color:#087f70}
+.oversight-reports summary{cursor:pointer;font-weight:700}
+.oversight-report{display:flex;flex-direction:column;gap:4px;padding:10px 0 8px 12px;border-left:2px solid #dceeea;margin:9px 0 0 3px;color:#526477}
+.oversight-report strong{font-size:.76rem;color:#34495e}
+.oversight-report span,.oversight-report small{font-size:.7rem;color:#718096}
+.oversight-notice{font-size:.73rem;line-height:1.6;color:#718096;background:#f6f9fb;border-radius:8px;padding:12px 14px;margin:15px 0 0}
+@media(max-width:600px){.oversight-stat-grid{gap:8px}.oversight-stat-grid>div{padding:11px}.oversight-stat-grid strong{font-size:1.25rem}.oversight-item-heading{flex-direction:column}.oversight-priority{align-self:flex-start}}
