@@ -1,89 +1,73 @@
-# GovConnect Nigeria — Development Checkpoint
+# GovConnectX — Development Checkpoint
 
 **Repository:** https://github.com/cikwom/govconnectx  
 **Base branch:** `main`  
-**Current feature branch:** `feature/citizen-report-details-evidence-phase-6`  
-**Checkpoint date:** 3 November 2026
+**Current feature branch:** `feature/admin-command-centre-phase-9`  
+**Checkpoint date:** 4 November 2026
 
-## Repository and PR status (verified)
+## Verified GitHub state
 
-- `main` is at `f9c75a3a5875f5ab0ade0f364982a27f9fd438d9`.
-- Phases 1–5 are merged (PRs #1–#5).
-- Phase 6 is in [PR #6](https://github.com/cikwom/govconnectx/pull/6), currently open and not merged.
-- Phase 6 branch head at this checkpoint: `8704aefbff6a43bfb03760c6183319ce0749de3f`.
-- PR #6 is reported mergeable. Do not mark it merged until GitHub reports merged and main advances.
-- All 7 currently listed branches are known historical/feature branches; only PR #6 is open among the recent PRs checked.
-- `main` is not protected. Configure protection/status checks in GitHub Settings when repository permissions permit.
+- `main` is at `d9e64cd0717487323e8b1b4e5036721e87e569c4`.
+- PRs #1–#6 are merged. PR #6 merge commit: `d9e64cd0717487323e8b1b4e5036721e87e569c4`.
+- `feature/simple-citizen-experience-phase-7` exists at the same commit as `main`; Phase 7 implementation has not been pushed.
+- Current work is isolated on `feature/admin-command-centre-phase-9`; do not commit directly to `main`.
+- `main` is not protected; configure branch protection and required CI separately.
 
 ## Completed phases
 
-- **Phase 1:** citizen registration/login, PBKDF2 password hashing, JWT, RBAC, admin bootstrap, backend CI.
-- **Phase 2:** departments/staff, report assignment, status workflow/history, public comments and internal notes.
-- **Phase 3:** in-app notifications and configurable SLA tracking.
-- **Phase 4:** authenticated JPEG/PNG/PDF evidence upload/list/download, signature validation, 10 MiB default cap, private local storage.
-- **Phase 5:** React + TypeScript + Vite frontend, auth/session restoration, protected routes, citizen dashboard/report submission, FastAPI CORS and frontend CI.
+1. **Phase 1:** citizen authentication, password hashing, JWT, role-based access, first-admin bootstrap and backend CI.
+2. **Phase 2:** departments, assignments, report workflow, history and comments.
+3. **Phase 3:** in-app notifications and SLA tracking.
+4. **Phase 4:** authenticated private evidence upload and download.
+5. **Phase 5:** React + TypeScript + Vite frontend and citizen report submission.
+6. **Phase 6:** report detail, public history/comments and evidence UI. PR #6 is merged.
 
-## Phase 6 — citizen report details and evidence (PR #6)
+## Current work — System Admin Command Centre (Phase 9)
 
-Implemented on `feature/citizen-report-details-evidence-phase-6`:
-- Report detail route/page and dashboard links.
-- Public status history and comments; citizen public comment submission.
-- Evidence listing, JPEG/PNG/PDF upload, authenticated downloads.
-- Download URL cleanup delayed briefly after the browser download starts.
+Branch: `feature/admin-command-centre-phase-9`
 
-Latest verified CI on exact head `8704aefbff6a43bfb03760c6183319ce0749de3f`:
-- Frontend build/typecheck/dependency audit: **PASS**, run 41717048388.
-- Backend tests: **PASS**, run 41717048474.
-- Manual browser checks: **NOT RUN**. The owner should run `docs/testing/MANUAL_REGRESSION_CHECKLIST.md` sections A, C, D and E before merging.
-- PR #6 remains open for owner review/merge.
+Implemented in this branch:
+- Admin-only API: `GET /api/v1/admin/overview` for user totals, active/inactive counts, role distribution, report totals/status distribution and overdue SLA count.
+- Admin-only user directory: `GET /api/v1/admin/users` with name/email search, role/active filters, pagination and report-submission counts. Password hashes and credentials are never returned.
+- Admin-only report oversight: `GET /api/v1/admin/reports` with search across report content, category, location and reporter.
+- Admin activity feed: `GET /api/v1/admin/activity` based on existing registrations, report status history and assignments.
+- React Command Centre at `/admin`, linked only for System Admin users.
+- Overview cards, role/status breakdowns, searchable user directory, report feed showing reporter identity and description, and recent activity.
+- Backend tests covering role restriction, summary counts, user privacy, report visibility and activity feed.
 
-## Permanent testing documentation
+Important limitations:
+- The activity feed is derived from existing records; this is not yet a complete immutable audit log. Role changes, comments, login events and administrative account actions are not comprehensively audited.
+- User directory is currently read-only. Account suspension, role-management UI, department administration, exports, charts and live push updates are future work.
+- No manual browser test or CI result is recorded yet. Do not claim the feature is production-ready until CI and manual checks pass.
+- This is operational visibility for activity recorded inside GovConnectX, not surveillance of users outside the platform.
 
-- `docs/testing/README.md` — testing hub and commands.
-- `docs/testing/MANUAL_REGRESSION_CHECKLIST.md` — repeatable end-to-end checks across roles and features.
-- `docs/testing/RELEASE_GATE.md` — merge and production release gates.
-- `docs/testing/TEST_EVIDENCE.md` — dated test evidence; manual Phase 6 run remains pending.
+## Next steps
 
-Record the exact branch and commit SHA for every run. Do not mark manual checks passed until executed.
+1. Pull this branch locally and run backend tests and frontend typecheck/build.
+2. Verify System Admin login opens `/admin`; verify a citizen cannot open the admin APIs or page.
+3. Verify totals, user search, report search and recent activity using local data.
+4. Review CI and fix any failures.
+5. Open/review/merge the PR only after tests pass.
+6. Follow-up: immutable audit events for report submission, comments, assignments, status changes, user role/status changes; user management controls with safeguards; department oversight; export and date filters.
 
-## Next development phases (planned, not yet implemented)
+## Resume commands (Windows PowerShell)
 
-1. **Phase 7 — Official and department dashboards:** role-specific queues, department filters, report assignment UI, staff status actions, and permission-aware report views.
-2. **Phase 8 — Notifications and SLA frontend:** notification inbox, unread count/read actions, SLA summary, due-soon/overdue indicators.
-3. **Phase 9 — Administration and governance:** staff/department management, user administration, audit trail, operational configuration and admin UI.
-4. **Phase 10 — Production hardening:** secure session/refresh strategy, rate limiting, email verification/account recovery, durable private object storage, malware scanning, migrations, backups/restore, monitoring, HTTPS and deployment runbook.
-5. **Phase 11 — Final QA and release:** full regression, accessibility/usability, security review, performance checks, deployment rehearsal and release sign-off.
-
-Phase 7 should begin from the latest main after PR #6 is merged, to avoid building on a temporary stacked branch.
-
-## Outstanding project-wide work
-
-- Run Phase 6 manual browser checks and record results.
-- Review and merge PR #6 (owner action).
-- Configure main branch protection and require CI checks if permissions allow.
-- Build and test Phases 7–11 above.
-- Replace local-only evidence storage before production.
-- Implement production session hardening, rate limiting, email verification/account recovery, audit logs, database migrations, backup/restore and monitoring.
-- Complete deployment and security review before real citizen data is accepted.
-
-## Resume commands
-
-```bash
+```powershell
+cd C:\Users\gentle\govconnectx
 git fetch origin
-git switch feature/citizen-report-details-evidence-phase-6
-git pull --ff-only origin feature/citizen-report-details-evidence-phase-6
+git switch feature/admin-command-centre-phase-9
+git pull --ff-only origin feature/admin-command-centre-phase-9
 
 # Terminal 1 — backend
 cd backend
-python -m pip install -r requirements.txt
-python -m uvicorn app.main:app --reload
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
 
 # Terminal 2 — frontend
 cd frontend
-npm ci
-npm run dev
+npm.cmd install
+npm.cmd run dev
 ```
 
-Frontend: `http://localhost:5173` · API docs: `http://localhost:8000/docs`.
-
-Testing hub: [docs/testing/README.md](docs/testing/README.md). Start with [the manual regression checklist](docs/testing/MANUAL_REGRESSION_CHECKLIST.md).
+Frontend: http://localhost:5173  
+API docs: http://localhost:8000/docs  
+Admin page: http://localhost:5173/admin
