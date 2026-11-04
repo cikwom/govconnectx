@@ -202,3 +202,140 @@ def list_all_reports(
             for report, reporter in rows
         ],
     }
+
+
+@router.get("/oversight")
+def get_reporting_oversight(
+    window_days: int = Query(default=30, ge=1, le=365),
+    min_reports: int = Query(default=5, ge=2, le=50),
+    burst_threshold: int = Query(default=4, ge=2, le=20),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """Return explainable reporting-pattern signals for human review.
+
+    These signals identify unusual volume, short bursts and repeated content.
+    They are not findings of fraud and must never trigger automatic penalties.
+    """
+    from collections import Counter, defaultdict
+    from datetime import timedelta
+
+    now = datetime.now(timezone.utc)
+    since = now - timedelta(days=window_days)
+    rows = (
+        db.query(Report, User)
+        .join(User, User.id == Report.user_id)
+        .filter(User.role == "citizen", Report.created_at >= since)
+        .order_by(User.id.asc(), Report.created_at.asc())
+        .all()
+    )
+
+    grouped = defaultdict(list)
+    for report, reporter in rows:
+        grouped[reporter.id].append((report, reporter))
+
+    candidates = []
+    for user_rows in grouped.values():
+        reporter = user_rows[0][1]
+        reports = [item[0] for item in user_rows]
+        timestamps = []
+        for report in reports:
+            created = report.created_at
+            if created is None:
+                continue
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            timestamps.append(created)
+        timestamps.sort()
+
+        max_24h = 0
+        left = 0
+        for right, timestamp in enumerate(timestamps):
+            while timestamp - timestamps[left] > timedelta(hours=24):
+                left += 1
+            max_24h = max(max_24h, right - left + 1)
+
+        fingerprints = Counter()
+        for report in reports:
+            title = " ".join((report.title or "").casefold().split())
+            description = " ".join((report.description or "").casefold().split())
+            category = " ".join((report.category or "").casefold().split())
+            fingerprints[(category, title, description)] += 1
+        repeated_content = sum(count - 1 for count in fingerprints.values() if count > 1)
+
+        signals = []
+        if len(reports) >= min_reports:
+            signals.append({
+                "code": "high_reporting_volume",
+                "label": "High reporting volume",
+                "detail": f"{len(reports)} reports submitted in {window_days} days (review threshold: {min_reports})",
+            })
+        if max_24h >= burst_threshold:
+            signals.append({
+                "code": "submission_burst",
+                "label": "Submission burst",
+                "detail": f"{max_24h} reports submitted within a 24-hour period (review threshold: {burst_threshold})",
+            })
+        if repeated_content:
+            signals.append({
+                "code": "repeated_report_content",
+                "label": "Repeated report content",
+                "detail": f"{repeated_content} report(s) repeat the same category, title and description",
+            })
+        if not signals:
+            continue
+
+        priority = "high" if len(signals) >= 2 else "medium"
+        candidates.append({
+            "user": {
+                "id": reporter.id,
+                "full_name": reporter.full_name,
+                "email": reporter.email,
+                "is_active": reporter.is_active,
+            },
+            "review_priority": priority,
+            "reports_in_window": len(reports),
+            "max_reports_in_24h": max_24h,
+            "signals": signals,
+            "reports": [
+                {
+                    "id": report.id,
+                    "title": report.title,
+                    "category": report.category,
+                    "status": report.status,
+                    "address": report.address,
+                    "created_at": report.created_at.isoformat() if report.created_at else None,
+                }
+                for report in sorted(
+                    reports,
+                    key=lambda item: item.created_at or datetime.min.replace(tzinfo=timezone.utc),
+                    reverse=True,
+                )[:10]
+            ],
+        })
+
+    candidates.sort(
+        key=lambda item: (
+            item["review_priority"] != "high",
+            -len(item["signals"]),
+            -item["reports_in_window"],
+        )
+    )
+    selected = candidates[:limit]
+    return {
+        "window_days": window_days,
+        "thresholds": {
+            "min_reports": min_reports,
+            "burst_threshold": burst_threshold,
+            "burst_window_hours": 24,
+        },
+        "summary": {
+            "citizens_reviewed": len(grouped),
+            "flagged_citizens": len(candidates),
+            "high_priority": sum(item["review_priority"] == "high" for item in candidates),
+            "reports_analyzed": len(rows),
+        },
+        "items": selected,
+        "notice": "These are review signals, not proof of false reporting. An administrator must examine the reports and evidence before taking action.",
+    }
