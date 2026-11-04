@@ -11,6 +11,7 @@ on:
       - feature/admin-command-centre-phase-9
       - feature/admin-oversight-enforcement-phase-10
       - feature/public-home-theme-login-phase-11
+      - feature/civic-identity-theme-phase-12
   pull_request:
     branches:
       - main
