@@ -182,3 +182,71 @@ h1,h2,h3,.brand,.stat-card strong,.role-line strong,.oversight-stat-grid strong{
 :root[data-theme="dark"] .auth-secure-note{color:#9bb2a8}
 :root[data-theme="dark"] .home-trust-note{color:#9bb2a8}
 :root[data-theme="dark"] .home-bottom-cta{background:linear-gradient(115deg,#123e39,#12695d)}
+
+
+/* Phase 12 — bold civic identity inspired by Nigerian people-power artwork */
+:root{--civic-green:#008653;--civic-deep:#075c3e;--civic-ink:#102f25;--civic-paper:#f7faf7}
+.home-page{background:var(--civic-paper);color:var(--civic-ink)}
+.home-nav{width:min(1240px,92vw);height:88px}
+.home-nav .brand-mark{background:var(--civic-green);border-radius:4px 13px 4px 13px}
+.home-nav-actions .button-primary,.button-primary{background:var(--civic-green)}
+.home-nav-actions .button-primary:hover,.button-primary:hover{background:var(--civic-deep)}
+.civic-hero{width:min(1240px,92vw);min-height:650px;grid-template-columns:.92fr 1.08fr;gap:45px;padding:54px 0 76px}
+.civic-hero .home-hero-copy .eyebrow{color:var(--civic-green);font-weight:900;letter-spacing:.16em}
+.civic-hero .home-hero-copy h1{font-size:clamp(3rem,5.8vw,5.15rem);line-height:1.04;letter-spacing:-.075em;color:#102f25}
+.civic-hero .home-hero-copy h1 span{color:var(--civic-green)}
+.civic-hero .home-hero-description{font-size:1.06rem;max-width:510px;color:#536b5e}
+.civic-hero .home-primary-cta{background:var(--civic-green);border-radius:4px 13px 4px 13px;padding:16px 23px;box-shadow:0 10px 25px #00865332}
+.movement-art{height:510px;position:relative;overflow:hidden;isolation:isolate;background:#008653;display:flex;align-items:center;justify-content:center;clip-path:polygon(3% 0,100% 0,97% 100%,0 96%);box-shadow:18px 18px 0 #dcebe2}
+.movement-art:before{content:"";position:absolute;inset:-20px;z-index:-1;opacity:.6;background:repeating-radial-gradient(ellipse at 18% 23%,#fff 0 1px,transparent 2px 8px),repeating-linear-gradient(112deg,transparent 0 13px,#ffffff22 14px 16px,transparent 17px 32px);mix-blend-mode:screen}
+.movement-art:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(100deg,#007b4b 0 42%,transparent 42% 100%),radial-gradient(ellipse at 80% 70%,#006b42 0 35%,transparent 67%)}
+.movement-brush{position:absolute;background:#f8fff9;opacity:.96;filter:contrast(1.4)}
+.brush-a{width:48%;height:120%;left:-22%;top:-10%;transform:rotate(8deg);clip-path:polygon(0 0,100% 0,85% 13%,100% 22%,79% 33%,97% 48%,80% 61%,100% 77%,78% 90%,92% 100%,0 100%)}
+.brush-b{width:13%;height:120%;left:43%;top:-8%;transform:rotate(3deg);clip-path:polygon(25% 0,100% 0,72% 18%,100% 35%,60% 54%,100% 70%,58% 100%,0 100%,31% 75%,0 54%,37% 30%,0 13%)}
+.movement-copy{position:absolute;left:8%;top:13%;z-index:2;display:flex;flex-direction:column;color:#fff;font-weight:900;line-height:.9;letter-spacing:.08em;text-shadow:0 3px 15px #004b2d55}
+.movement-copy span{font-size:clamp(.8rem,1.3vw,1.05rem);letter-spacing:.32em}
+.movement-copy strong{font-family:"Plus Jakarta Sans",sans-serif;font-size:clamp(2.5rem,5vw,4.6rem);letter-spacing:-.08em}
+.movement-fist{position:absolute;z-index:2;font-family:"Apple Color Emoji","Segoe UI Emoji",sans-serif;filter:grayscale(1) brightness(0) invert(1);line-height:1;user-select:none}
+.fist-one{font-size:clamp(11rem,23vw,19rem);right:5%;top:4%;transform:rotate(-8deg)}
+.fist-two{font-size:clamp(8rem,16vw,13rem);right:42%;bottom:3%;transform:rotate(7deg)}
+.movement-caption{position:absolute;right:5%;bottom:5%;z-index:3;color:#fff;font-size:.65rem;font-weight:900;letter-spacing:.17em;display:flex;align-items:center;gap:9px}
+.movement-dot{width:8px;height:8px;background:#fff;border-radius:50%;box-shadow:0 0 0 5px #ffffff30}
+.home-highlights{background:#fff;padding-top:95px}
+.home-section-heading h2{color:#102f25}
+.home-section-heading h2 span{color:var(--civic-green)}
+.home-feature{border-radius:4px 16px 4px 16px;background:#f8fbf8;border-color:#dfeae2}
+.feature-icon-1,.feature-icon-2,.feature-icon-3{border-radius:4px 12px 4px 12px;background:#e1f2e8;color:#007b4b}
+.home-bottom-cta{border-radius:4px 22px 4px 22px;background:#006f43;position:relative;overflow:hidden}
+.home-bottom-cta:after{content:"✊";position:absolute;right:24%;top:-52px;font-size:13rem;opacity:.1;filter:grayscale(1) brightness(0) invert(1);pointer-events:none}
+.home-footer .brand-mark{background:#008653}
+.citizen-dashboard-banner{position:relative;overflow:hidden;min-height:225px;padding:34px 42px;margin:0 0 34px;background:#007c4b;color:#fff;display:flex;align-items:center;justify-content:space-between;clip-path:polygon(1% 0,100% 0,99% 100%,0 96%)}
+.citizen-dashboard-banner:before{content:"";position:absolute;inset:0;opacity:.25;background:repeating-linear-gradient(115deg,transparent 0 18px,#fff 19px 20px,transparent 21px 42px)}
+.citizen-dashboard-banner>div{position:relative;z-index:1;max-width:620px}
+.citizen-dashboard-banner .eyebrow{color:#b8f0d0}
+.citizen-dashboard-banner h2{font-size:clamp(1.6rem,3.2vw,2.6rem);letter-spacing:-.06em;margin:0 0 9px;color:#fff}
+.citizen-dashboard-banner p:last-child{color:#d8f1e3;line-height:1.65;margin:0}
+.dashboard-fist{font-size:8rem;line-height:1;filter:grayscale(1) brightness(0) invert(1);opacity:.95;transform:rotate(-9deg);position:relative;z-index:1}
+:root[data-theme="dark"] .home-page{background:#101d18;color:#e9f4ed}
+:root[data-theme="dark"] .civic-hero .home-hero-copy h1,:root[data-theme="dark"] .home-section-heading h2{color:#f0f8f2}
+:root[data-theme="dark"] .civic-hero .home-hero-description{color:#b0c8b8}
+:root[data-theme="dark"] .movement-art{box-shadow:18px 18px 0 #203c30}
+:root[data-theme="dark"] .home-highlights{background:#14231b}
+:root[data-theme="dark"] .home-feature{background:#192b21;border-color:#2e4838}
+:root[data-theme="dark"] .home-feature h3{color:#e7f4e9}
+:root[data-theme="dark"] .home-bottom-cta{background:#075c3e}
+:root[data-theme="dark"] .citizen-dashboard-banner{background:#075c3e}
+:root[data-theme="dark"] .citizen-dashboard-banner .eyebrow{color:#a8eac2}
+:root[data-theme="dark"] .home-nav .brand{color:#e8f4eb}
+:root[data-theme="dark"] .home-nav-actions>a:not(.button){color:#b5cbbd}
+:root[data-theme="dark"] .home-footer{border-color:#2b4436}
+:root[data-theme="dark"] .page-content{color:#e7f2eb}
+:root[data-theme="dark"] .stat-card,:root[data-theme="dark"] .panel{background:#192b22;border-color:#30483a;box-shadow:none}
+:root[data-theme="dark"] .stat-card strong{color:#eff8f0}
+:root[data-theme="dark"] .stat-card span,:root[data-theme="dark"] .stat-card small{color:#a8c0ae}
+:root[data-theme="dark"] .panel h2,:root[data-theme="dark"] .empty-state h3{color:#edf7ef}
+:root[data-theme="dark"] .report-symbol,:root[data-theme="dark"] .empty-icon{background:#244b35;color:#9fe0b6}
+:root[data-theme="dark"] .report-main p,:root[data-theme="dark"] .report-main small{color:#a8c0ae}
+:root[data-theme="dark"] .form-grid label{color:#d1e3d5}
+:root[data-theme="dark"] .report-form-panel{border-color:#37634a}
+@media(max-width:850px){.civic-hero{grid-template-columns:1fr;gap:32px;padding-top:44px}.movement-art{height:440px;width:100%}}
+@media(max-width:600px){.civic-hero{padding-bottom:48px}.movement-art{height:340px;box-shadow:9px 9px 0 #dcebe2}.movement-copy{top:10%;left:7%}.fist-one{font-size:11rem;right:0;top:10%}.fist-two{font-size:7rem;right:42%;bottom:2%}.movement-caption{font-size:.52rem}.citizen-dashboard-banner{min-height:190px;padding:26px 22px}.dashboard-fist{font-size:5rem}.citizen-dashboard-banner h2{font-size:1.55rem}}
