@@ -45,7 +45,7 @@ export default function AdminDashboardPage() {
   async function searchReports(e: React.FormEvent) { e.preventDefault(); setFilterBusy(true); try { const data = await adminRequest<{items: AdminReport[]}>(`/reports?limit=100&search=${encodeURIComponent(reportSearch)}`); setReports(data.items); } catch (e) { setError(e instanceof Error ? e.message : "Report search failed"); } finally { setFilterBusy(false); } }
   if (busy) return <div className="screen-state">Loading command centre…</div>;
   return <div className="admin-page">
-    <section className="welcome-row"><div><p className="eyebrow">SYSTEM ADMINISTRATION</p><h1>Command Centre</h1><p className="muted">A live operational view of people, reports and activity across GovConnectX.</p></div><button className="button button-primary" onClick={() => { setBusy(true); void load(); }}>Refresh data</button></section>
+    <section className="welcome-row"><div><p className="eyebrow">SYSTEM ADMINISTRATION</p><h1>Command Centre</h1><p className="muted">An operational view of people, reports and activity across GovConnectX.</p></div><button className="button button-primary" onClick={() => { setBusy(true); void load(); }}>Refresh data</button></section>
     {error && <p className="form-error admin-error" role="alert">{error}</p>}
     {overview && <><div className="admin-section-label">PLATFORM OVERVIEW</div><section className="admin-stat-grid">
       <AdminStat label="Registered users" value={overview.users.total} hint={`${overview.users.registered_today} registered today`} />
