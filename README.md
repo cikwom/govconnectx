@@ -90,3 +90,21 @@ See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) for phase history and the c
   ```
 
 See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) and [docs/ADMIN_COMMAND_CENTRE_HANDOFF.md](docs/ADMIN_COMMAND_CENTRE_HANDOFF.md) for detailed handoff notes.
+
+
+## Current development checkpoint — 4 November 2026 (Phase 11)
+
+- Public experience refresh is on `feature/public-home-theme-login-phase-11`, stacked on `feature/admin-oversight-enforcement-phase-10`.
+- Added a public landing page at `/` with clear sign-in and registration calls to action.
+- Added a persistent light/dark theme toggle shared by the landing page, sign-in, registration and authenticated application shell.
+- Updated typography to Nunito Sans and Plus Jakarta Sans and refreshed the sign-in layout.
+- Existing login API, role-based authorization, citizen dashboard and System Admin Command Centre routes remain unchanged.
+- PR #9: https://github.com/cikwom/govconnectx/pull/9 (open; not merged).
+- Next: run frontend CI/build, pull this branch locally, refresh `http://localhost:5173/`, test both themes and sign in. Then review PR #9 before merge.
+- Resume commands:
+  ```powershell
+  cd C:\\Users\\gentle\\govconnectx
+  git fetch origin
+  git switch feature/public-home-theme-login-phase-11
+  git pull --ff-only origin feature/public-home-theme-login-phase-11
+  ```
