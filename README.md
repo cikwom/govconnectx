@@ -79,7 +79,7 @@ See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) for phase history and the c
 - Follow-up implementation is on `feature/admin-oversight-enforcement-phase-10`, based on the existing admin branch. Do not commit directly to `main`.
 - Phase 10 currently adds an admin-only reporting oversight API and dashboard panel for high reporting volume, 24-hour submission bursts and repeated report content.
 - These are human-review indicators only, not findings of false reporting and not automatic grounds for penalties.
-- Backend API tests were added. Automated test execution, frontend typecheck/build, CI and manual browser regression are still pending.
+- Backend API tests were added. GitHub Actions backend tests and frontend dependency audit/typecheck/build passed on PR head `e399fa6`; manual browser regression is still pending.
 - Next: validate this branch, then continue with user management, report enforcement, notifications and immutable admin audit logs.
 - Resume commands:
   ```powershell
