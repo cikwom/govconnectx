@@ -99,3 +99,18 @@ git fetch origin
 git switch feature/admin-oversight-enforcement-phase-10
 git pull --ff-only origin feature/admin-oversight-enforcement-phase-10
 ```
+
+
+## Follow-up — Public homepage, theme and sign-in refresh (Phase 11)
+
+Branch: `feature/public-home-theme-login-phase-11` (stacked on Phase 10).
+
+- Added a public landing page at `/` instead of redirecting visitors immediately to the dashboard.
+- Added a device-persistent light/dark preference using a shared React theme context and accessible toggle.
+- Theme toggle appears on the public home page, login, registration and authenticated app header.
+- Refreshed the typography with Nunito Sans and Plus Jakarta Sans.
+- Refined the login page while retaining the existing sign-in API and protected-route behavior.
+- Preserved existing admin/citizen dashboard and report routes.
+- PR #9 is open and not merged: https://github.com/cikwom/govconnectx/pull/9.
+- Frontend CI must run and browser checks remain required before merge.
+- Manual checks: landing page layout at desktop/mobile; theme toggle persists after refresh; login success and error states; registration; System Admin still reaches `/admin`; citizen still reaches `/dashboard`.

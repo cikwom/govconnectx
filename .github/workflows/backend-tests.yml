@@ -10,10 +10,12 @@ on:
       - feature/report-evidence-attachments-phase-4
       - feature/admin-command-centre-phase-9
       - feature/admin-oversight-enforcement-phase-10
+      - feature/public-home-theme-login-phase-11
   pull_request:
     branches:
       - main
       - feature/admin-command-centre-phase-9
+      - feature/admin-oversight-enforcement-phase-10
 
 jobs:
   backend-tests:
