@@ -71,3 +71,40 @@ The initial browser client stores the short-lived bearer token in localStorage b
 Evidence files currently use local filesystem storage. Production needs durable private storage outside the web root, backups, and malware scanning. Other gaps include rate limiting, email verification/account recovery, audit logs, monitoring, HTTPS, production database, and managed migrations.
 
 See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) for phase history and the current development checkpoint.
+
+
+## Current development checkpoint — 4 November 2026
+
+- Existing System Admin Command Centre work remains on `feature/admin-command-centre-phase-9` and PR #7 remains open.
+- Follow-up implementation is on `feature/admin-oversight-enforcement-phase-10`, based on the existing admin branch. Do not commit directly to `main`.
+- Phase 10 currently adds an admin-only reporting oversight API and dashboard panel for high reporting volume, 24-hour submission bursts and repeated report content.
+- These are human-review indicators only, not findings of false reporting and not automatic grounds for penalties.
+- Backend API tests were added. GitHub Actions backend tests and frontend dependency audit/typecheck/build passed on PR head `e399fa6`; manual browser regression is still pending.
+- Next: validate this branch, then continue with user management, report enforcement, notifications and immutable admin audit logs.
+- Resume commands:
+  ```powershell
+  cd C:\\Users\\gentle\\govconnectx
+  git fetch origin
+  git switch feature/admin-oversight-enforcement-phase-10
+  git pull --ff-only origin feature/admin-oversight-enforcement-phase-10
+  ```
+
+See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) and [docs/ADMIN_COMMAND_CENTRE_HANDOFF.md](docs/ADMIN_COMMAND_CENTRE_HANDOFF.md) for detailed handoff notes.
+
+
+## Current development checkpoint — 4 November 2026 (Phase 11)
+
+- Public experience refresh is on `feature/public-home-theme-login-phase-11`, stacked on `feature/admin-oversight-enforcement-phase-10`.
+- Added a public landing page at `/` with clear sign-in and registration calls to action.
+- Added a persistent light/dark theme toggle shared by the landing page, sign-in, registration and authenticated application shell.
+- Updated typography to Nunito Sans and Plus Jakarta Sans and refreshed the sign-in layout.
+- Existing login API, role-based authorization, citizen dashboard and System Admin Command Centre routes remain unchanged.
+- PR #9: https://github.com/cikwom/govconnectx/pull/9 (open; not merged).
+- Next: run frontend CI/build, pull this branch locally, refresh `http://localhost:5173/`, test both themes and sign in. Then review PR #9 before merge.
+- Resume commands:
+  ```powershell
+  cd C:\\Users\\gentle\\govconnectx
+  git fetch origin
+  git switch feature/public-home-theme-login-phase-11
+  git pull --ff-only origin feature/public-home-theme-login-phase-11
+  ```

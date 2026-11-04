@@ -1,31 +1,42 @@
 # System Admin Command Centre — Handoff
 
 ## Purpose
-Provide the GovConnectX System Admin with a protected operational view of platform users, citizen reports and recorded activity.
+Provide the GovConnectX System Admin with a protected operational view of platform users, citizen reports and recorded activity, then extend it with reviewable reporting-pattern indicators and carefully controlled enforcement workflows.
 
-## Implemented endpoints
+## Existing Command Centre endpoints
 - `GET /api/v1/admin/overview` — user counts, role counts, report status counts, open and overdue totals.
 - `GET /api/v1/admin/users` — searchable/paginated directory with account state and number of reports submitted.
 - `GET /api/v1/admin/reports` — searchable report list including reporter name/email and report description.
 - `GET /api/v1/admin/activity` — recent account registrations, report status events and assignments.
 
-All endpoints use `require_roles("system_admin")`. User responses are explicitly shaped and do not include password hashes.
+## Phase 10 — Advanced reporting oversight
+- `GET /api/v1/admin/oversight` — System Admin-only review signals based on report data in a configurable time window.
+- Query parameters: `window_days` (1–365, default 30), `min_reports` (2–50, default 5), `burst_threshold` (2–20, default 4), and `limit` (1–100, default 50).
+- Signals currently include high reporting volume, a short submission burst (rolling 24-hour window), and repeated identical category/title/description content by the same citizen.
+- The dashboard shows review priority, signal explanations and the related reports.
+- No new database table or schema migration is required for this analytics-only phase; signals are calculated from existing report records.
 
-## Frontend
-- Route: `/admin`.
-- Navigation appears only for a System Admin.
-- The page has platform summary cards, role/status breakdowns, user search, report search and an activity feed.
-- Backend remains the authority: hiding the link is not treated as access control.
+### Important interpretation and safety rules
+- A signal is an indicator for human review, not proof of false reporting, fraud, abuse or wrongdoing.
+- The system does not automatically warn, suspend, block, reject or otherwise penalize a citizen based on these signals.
+- A citizen may legitimately submit many reports, and duplicate text may reflect repeated incidents. Admins must inspect context and evidence before making a finding.
+- The current report schema has no verified-false-report outcome. Do not label users as repeat offenders until a human-reviewed finding and its supporting evidence are recorded in a later enforcement phase.
+- Oversight is limited to data users submitted or actions recorded inside GovConnectX; it does not inspect private messages, keystrokes or off-platform activity.
 
-## Current limitations and next iteration
-- Activity is reconstructed from registration timestamps, report status history and assignment records. It is not yet a complete immutable audit log.
-- Add first-class audit events for comments, login events, role changes, account activation/deactivation and admin actions.
-- Add carefully guarded role/account management, department administration, date filters, exports and optional live refresh.
-- Do not implement keystroke tracking, private-message inspection or off-platform surveillance. The goal is accountability for recorded actions inside GovConnectX.
-- Run CI and manual role-based regression before merge; no passing test result is claimed in this handoff.
+## Authorization and privacy
+All admin endpoints use `require_roles("system_admin")`. Backend authorization is authoritative; hiding the navigation link is not a security boundary. User responses are explicitly shaped and do not include password hashes or credentials.
 
-## Local verification
-1. Start backend with `backend\.venv\Scripts\python.exe -m uvicorn app.main:app --reload`.
-2. Start frontend with `npm.cmd run dev` from `frontend`.
-3. Sign in using the System Admin account and visit `http://localhost:5173/admin`.
-4. Confirm citizen credentials cannot access the admin API (403) or admin page.
+## Remaining phases
+1. User Management — warnings, temporary suspension, blocking and reinstatement with reason, duration, actor and appeal/review safeguards.
+2. Report Enforcement — report investigation, evidence review, verified outcomes and reasoned decisions.
+3. Notification Centre — in-app notices for warnings and account/report decisions.
+4. Audit Logs — append-only administrative action history, including actor, target, action, reason, timestamp and reversal metadata.
+
+These phases should build on the existing users, reports, report history and notifications architecture. Do not create a parallel administration subsystem.
+
+## Verification still required
+- GitHub Actions backend unit/API tests passed on the initial implementation commit.
+- GitHub Actions frontend dependency audit, typecheck and production build passed on the initial implementation commit.
+- Still required: manual verification that citizens receive HTTP 403 from `/api/v1/admin/oversight`.
+- Still required: verify the dashboard panel, no-signal state, threshold validation, burst boundaries and repeated-content detection against a running backend.
+- Complete manual browser regression and confirm the latest documentation-only commit checks before merging.

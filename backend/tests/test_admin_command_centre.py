@@ -1,4 +1,5 @@
 import unittest
+from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -87,6 +88,62 @@ class AdminCommandCentreTests(unittest.TestCase):
         item = response.json()["items"][0]
         self.assertEqual(item["title"], "Broken streetlight")
         self.assertEqual(item["reporter"]["email"], "citizen@example.com")
+
+    def test_citizen_cannot_access_reporting_oversight(self):
+        response = self.client.get(
+            "/api/v1/admin/oversight",
+            headers=self.headers("citizen@example.com"),
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_oversight_flags_volume_burst_and_duplicate_content_for_review(self):
+        db = self.TestSession()
+        try:
+            citizen = db.query(User).filter(User.email == "citizen@example.com").one()
+            created_at = datetime.now(timezone.utc)
+            db.add_all([
+                Report(
+                    title="Broken streetlight",
+                    description="Streetlight is out on the main road",
+                    category="Infrastructure",
+                    latitude=6.5,
+                    longitude=3.3,
+                    address="Ikeja, Lagos",
+                    user_id=citizen.id,
+                    status="SUBMITTED",
+                    created_at=created_at,
+                ),
+                Report(
+                    title="Broken streetlight",
+                    description="Streetlight is out on the main road",
+                    category="Infrastructure",
+                    latitude=6.5,
+                    longitude=3.3,
+                    address="Ikeja, Lagos",
+                    user_id=citizen.id,
+                    status="SUBMITTED",
+                    created_at=created_at,
+                ),
+            ])
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.get(
+            "/api/v1/admin/oversight?window_days=30&min_reports=3&burst_threshold=3",
+            headers=self.headers("admin@example.com"),
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["summary"]["flagged_citizens"], 1)
+        item = data["items"][0]
+        self.assertEqual(item["user"]["email"], "citizen@example.com")
+        self.assertEqual(item["review_priority"], "high")
+        signal_codes = {signal["code"] for signal in item["signals"]}
+        self.assertIn("high_reporting_volume", signal_codes)
+        self.assertIn("submission_burst", signal_codes)
+        self.assertIn("repeated_report_content", signal_codes)
+        self.assertIn("not proof of false reporting", data["notice"])
 
     def test_admin_activity_feed_contains_report_submission(self):
         response = self.client.get("/api/v1/admin/activity", headers=self.headers("admin@example.com"))
