@@ -53,7 +53,7 @@ class AdminCommandCentreTests(unittest.TestCase):
             ])
             db.commit()
             citizen = db.query(User).filter(User.email == "citizen@example.com").one()
-            report = Report(title="Broken streetlight", description="Streetlight is out on the main road", category="Infrastructure", latitude=6.5, longitude=3.3, address="Ikeja, Lagos", user_id=citizen.id, status="SUBMITTED")
+            report = Report(title="Broken streetlight", description="Streetlight is out on the main road", category="Infrastructure", latitude=6.5, longitude=3.3, address="Ikeja, Lagos", incident_state_code="NG025", incident_lga_code="NG025011", user_id=citizen.id, status="SUBMITTED")
             db.add(report)
             db.flush()
             db.add(ReportStatusHistory(report_id=report.id, changed_by_user_id=citizen.id, old_status=None, new_status="SUBMITTED", message="Report submitted", is_public=True))
