@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { tokenStore } from "../services/api";
 import { useAuth } from "../state/AuthContext";
+import GeographicOperationsPanel from "../components/GeographicOperationsPanel";
 
 type Overview = {
   users: { total: number; active: number; inactive: number; by_role: Record<string, number>; registered_today: number };
@@ -107,6 +108,8 @@ export default function AdminDashboardPage() {
         <article className="panel"><h2>Reports by status</h2><div className="role-breakdown">{Object.entries(overview.reports.by_status).map(([status, count]) => <div className="role-line" key={status}><span>{status.replaceAll("_", " ")}</span><strong>{count}</strong></div>)}</div></article>
       </section>
     </>}
+
+    <GeographicOperationsPanel />
 
     <section className="panel">
       <div className="panel-heading"><div><h2>Advanced reporting oversight</h2><p className="muted">Explainable patterns that may deserve a closer human review · last 30 days.</p></div><span className="admin-count">{oversight?.summary.flagged_citizens ?? 0} flagged for review</span></div>
