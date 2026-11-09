@@ -33,6 +33,7 @@ export interface Report {
   address: string | null;
   incident_state_code?: string | null;
   incident_lga_code?: string | null;
+  department_id?: number | null;
   status: string;
   sla_due_at: string | null;
   resolved_at: string | null;
