@@ -98,7 +98,7 @@ export default function HomePage() {
       </section>
 
       <section className="home-bottom-cta"><div><p className="eyebrow">THE NEXT CHAPTER STARTS WITH US</p><h2>Let’s build the Nigeria we want to live in.</h2><p>Raise a concern. Follow the response. Be part of the progress.</p></div><Link className="button button-light-cta" to={destination}>{user ? "Go to your dashboard" : "Join GovConnect"} <span aria-hidden="true">→</span></Link></section>
-      <footer className="home-footer"><Link className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></Link><span>Connecting citizens and public institutions.</span><span>© {new Date().getFullYear()} GovConnect Nigeria</span></footer>
+      <footer className="home-footer"><Link className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></Link><span>Connecting citizens and public institutions.</span><nav className="home-legal-links" aria-label="Legal links"><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Notice</Link></nav><span>© {new Date().getFullYear()} GovConnect Nigeria</span></footer>
     </main>
   );
 }

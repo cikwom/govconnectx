@@ -16,7 +16,10 @@ export default function AppShell() {
         </div>
       </header>
       <main className="page-content"><Outlet /></main>
-      <footer className="footer">GovConnect Nigeria · Making public services more accountable</footer>
+      <footer className="footer legal-app-footer">
+        <span>GovConnect Nigeria · Making public services more accountable</span>
+        <nav aria-label="Legal links"><NavLink to="/terms">Terms of Use</NavLink><NavLink to="/privacy">Privacy Notice</NavLink></nav>
+      </footer>
     </div>
   );
 }

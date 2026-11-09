@@ -108,3 +108,18 @@ See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) and [docs/ADMIN_COMMAND_CEN
   git switch feature/public-home-theme-login-phase-11
   git pull --ff-only origin feature/public-home-theme-login-phase-11
   ```
+
+
+## Current development checkpoint — Nigerian legal pages
+
+**Date:** 9 November 2026  
+**Branch:** `feature/nigerian-legal-pages-privacy-terms`
+
+- Added public Terms of Use and Privacy Notice routes at `/terms` and `/privacy`.
+- Added legal links to the public landing page and authenticated application footer.
+- Registration now requires users to acknowledge the Terms of Use and confirm they have read the Privacy Notice before submitting the form.
+- Legal-page wording is grounded in the current app's account, report, attachment, authentication, and storage implementation, and references the Nigeria Data Protection Act 2023.
+- The pages deliberately disclose unresolved launch requirements: operator legal identity and contact, privacy-request channel, retention schedule, actual hosting/service-provider locations, durable database and private attachment storage, backups, and legal review.
+- GovConnect is not described as a government agency or as an endorsed government service without formal authorisation.
+- Database-provider setup remains deferred; this UI/legal work does not require Neon.
+- **Next:** run frontend build and backend tests, review legal wording with a qualified Nigerian privacy lawyer, supply the operator's legal name/address and privacy contact, then merge the PR only after CI passes.
