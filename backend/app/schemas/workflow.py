@@ -58,3 +58,16 @@ class CommentResponse(BaseModel):
     is_internal: bool
     created_at: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class DepartmentGeographicScopeInput(BaseModel):
+    state_code: str = Field(min_length=1, max_length=12)
+    lga_code: str | None = Field(default=None, max_length=16)
+
+
+class DepartmentGeographicScopeResponse(BaseModel):
+    id: int
+    department_id: int
+    state_code: str
+    lga_code: str | None
+    model_config = ConfigDict(from_attributes=True)
