@@ -128,6 +128,17 @@ class ReportAttachmentTests(unittest.TestCase):
         self.assertEqual(download.content, png)
         self.assertEqual(download.headers["x-content-type-options"], "nosniff")
 
+    def test_production_uploads_are_disabled_until_durable_storage_exists(self):
+        png = b"\x89PNG\r\n\x1a\n" + b"production-test"
+        with patch.dict(os.environ, {"ENVIRONMENT": "production"}):
+            response = self.client.post(
+                f"/api/v1/reports/{self.report_id}/attachments",
+                headers=self.owner_headers,
+                files={"file": ("road-evidence.png", png, "image/png")},
+            )
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("durable private storage", response.json()["detail"])
+
     def test_other_citizen_cannot_list_or_download_evidence(self):
         png = b"\x89PNG\r\n\x1a\n" + b"test-image-content"
         uploaded = self.client.post(
@@ -211,6 +222,53 @@ class ReportAttachmentTests(unittest.TestCase):
         )
         self.assertEqual(listing.status_code, 200)
         self.assertEqual(len(listing.json()), 1)
+
+    def test_owner_can_upload_mp4_video_evidence(self):
+        mp4 = bytes.fromhex("000000186674797069736f6d") + b"video-evidence"
+        uploaded = self.client.post(
+            f"/api/v1/reports/{self.report_id}/attachments",
+            headers=self.owner_headers,
+            files={"file": ("road-inspection.mp4", mp4, "video/mp4")},
+        )
+        self.assertEqual(uploaded.status_code, 201)
+        self.assertEqual(uploaded.json()["content_type"], "video/mp4")
+        self.assertEqual(uploaded.json()["size_bytes"], len(mp4))
+
+        download = self.client.get(
+            f"/api/v1/reports/{self.report_id}/attachments/{uploaded.json()['id']}/download",
+            headers=self.owner_headers,
+        )
+        self.assertEqual(download.status_code, 200)
+        self.assertEqual(download.content, mp4)
+
+    def test_owner_can_upload_webm_video_evidence(self):
+        webm = bytes.fromhex("1a45dfa3") + b"webm-evidence"
+        uploaded = self.client.post(
+            f"/api/v1/reports/{self.report_id}/attachments",
+            headers=self.owner_headers,
+            files={"file": ("street-condition.webm", webm, "video/webm")},
+        )
+        self.assertEqual(uploaded.status_code, 201)
+        self.assertEqual(uploaded.json()["content_type"], "video/webm")
+
+    def test_rejects_video_with_mismatched_mime_type(self):
+        fake = b"not-a-real-video-file"
+        response = self.client.post(
+            f"/api/v1/reports/{self.report_id}/attachments",
+            headers=self.owner_headers,
+            files={"file": ("fake.mp4", fake, "video/mp4")},
+        )
+        self.assertEqual(response.status_code, 415)
+
+    def test_video_upload_limit_is_enforced(self):
+        mp4 = b"\\x00\\x00\\x00\\x18ftypisom" + b"X"
+        with patch("app.routers.attachments.MAX_VIDEO_UPLOAD_BYTES", 12):
+            response = self.client.post(
+                f"/api/v1/reports/{self.report_id}/attachments",
+                headers=self.owner_headers,
+                files={"file": ("large.mp4", mp4, "video/mp4")},
+            )
+        self.assertEqual(response.status_code, 413)
 
 
 if __name__ == "__main__":

@@ -20,10 +20,14 @@ from app.schemas.attachments import ReportAttachmentResponse
 router = APIRouter(prefix="/api/v1/reports", tags=["Report evidence"])
 
 MAX_UPLOAD_BYTES = max(1, int(os.getenv("REPORT_ATTACHMENT_MAX_BYTES", str(10 * 1024 * 1024))))
+MAX_VIDEO_UPLOAD_BYTES = max(1, int(os.getenv("REPORT_VIDEO_MAX_BYTES", str(50 * 1024 * 1024))))
 ALLOWED_TYPES = {
     "image/jpeg": (".jpg", ".jpeg"),
     "image/png": (".png",),
     "application/pdf": (".pdf",),
+    "video/mp4": (".mp4", ".m4v"),
+    "video/webm": (".webm",),
+    "video/quicktime": (".mov",),
 }
 
 
@@ -47,6 +51,10 @@ def detect_content_type(data: bytes) -> str | None:
         return "image/png"
     if data.startswith(b"%PDF-"):
         return "application/pdf"
+    if len(data) >= 12 and data[4:8] == b"ftyp":
+        return "video/quicktime" if data[8:12] == b"qt  " else "video/mp4"
+    if data.startswith(b"\x1a\x45\xdf\xa3"):
+        return "video/webm"
     return None
 
 
@@ -68,16 +76,26 @@ def upload_report_attachment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Render's default filesystem is ephemeral. Keep public production uploads
+    # disabled until this endpoint is backed by durable private object storage.
+    if os.getenv("ENVIRONMENT", "development").strip().lower() == "production":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Evidence uploads are temporarily unavailable while durable private storage is being configured.",
+        )
+
     report = get_accessible_report(report_id, db, current_user)
-    data = file.file.read(MAX_UPLOAD_BYTES + 1)
+    declared_type = (file.content_type or "").lower().strip()
+    upload_limit = MAX_VIDEO_UPLOAD_BYTES if declared_type.startswith("video/") else MAX_UPLOAD_BYTES
+    data = file.file.read(upload_limit + 1)
     if not data:
         raise HTTPException(status_code=400, detail="The uploaded file is empty")
-    if len(data) > MAX_UPLOAD_BYTES:
-        raise HTTPException(status_code=413, detail=f"File exceeds the {MAX_UPLOAD_BYTES}-byte upload limit")
+    if len(data) > upload_limit:
+        raise HTTPException(status_code=413, detail=f"File exceeds the {upload_limit}-byte limit for this evidence type")
 
     detected_type = detect_content_type(data)
-    if detected_type is None or detected_type != file.content_type:
-        raise HTTPException(status_code=415, detail="Only valid JPEG, PNG, and PDF evidence files are accepted")
+    if detected_type is None or detected_type != declared_type:
+        raise HTTPException(status_code=415, detail="Evidence must be a valid JPEG, PNG, PDF, MP4, WebM, or QuickTime video with a matching file type")
     if Path(file.filename or "").suffix.lower() not in ALLOWED_TYPES[detected_type]:
         raise HTTPException(status_code=415, detail="File extension does not match its content")
 

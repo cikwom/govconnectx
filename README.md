@@ -170,3 +170,52 @@ git fetch origin
 git switch feature/geographical-zones-phase-1
 git pull --ff-only origin feature/geographical-zones-phase-1
 ```
+
+
+## Current development checkpoint — Photo and video report evidence
+
+**Date:** 9 November 2026  
+**Branch:** `feature/report-photo-video-evidence`  
+**Base:** `feature/geographical-zones-phase-1` at `30d11510f020ae6db22a4686471242a96a36513f`.
+
+- Extended private report evidence uploads to accept JPEG, PNG, PDF, MP4, WebM, and QuickTime MOV files.
+- Added file-signature checks for MP4/QuickTime and WebM rather than trusting the browser-provided MIME type alone.
+- Kept image/PDF uploads at 10 MiB by default and set video uploads to 50 MiB by default; both limits are configurable with `REPORT_ATTACHMENT_MAX_BYTES` and `REPORT_VIDEO_MAX_BYTES`.
+- Added API tests for MP4/WebM uploads, MIME mismatch rejection, and video size limits.
+- Updated report detail UI to allow file selection, mobile camera photo capture, mobile video capture where the browser/device supports it, and clear video attachment labels.
+- Added the mobile camera capture controls in commit `24cf575470f530286852d713537a15f9e19c4ce2`; the browser/device decides whether to open its camera interface or provide another supported capture option.
+- **Important deployment limitation:** evidence is still stored on the backend local filesystem. Render's ephemeral filesystem is not durable storage; this is suitable for local development only until private object storage, backups, malware scanning, and retention controls are configured. Do not treat uploaded evidence as safely retained in production yet.
+- **Not yet implemented:** staff geographic scopes, backend geographic access enforcement, automatic LGA/department routing, and map-based incident pin verification. The current location selectors allow citizens to choose any State/LGA, independently of home area.
+- **Validation:** commit `ef1ad4fdada99012052691a66a96fd20ad24d16d` adds the upload/UI/tests/docs; commit `ebde5761e778481069715b0d44fd84eb6ad91d4f` corrects video signature test fixtures and enables workflow filters for this stacked PR. The push-triggered backend suite and frontend build both passed; PR-triggered checks were still running at checkpoint time. Local Windows/browser tests remain pending.
+
+Resume:
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch feature/report-photo-video-evidence
+git pull --ff-only origin feature/report-photo-video-evidence
+```
+
+
+
+## Current development checkpoint — production-safe report evidence
+
+**Date:** 9 November 2026  
+**Branch:** `feature/report-photo-video-evidence`
+
+- Merged PR #16 (production database safety) into `main` with merge commit `a1e04ed39e3d85b40f2edfd5f8e1bc9f4052988b`.
+- Merged PR #17 (Nigerian state/LGA directory and incident geography) into `main` with merge commit `c47ab7d1d8f9ed02ab05743035fbe726f7b0b9fe`.
+- PR #18 was retargeted to `main`; its original feature work remains on `feature/report-photo-video-evidence`.
+- Added a production safety guard: report evidence uploads return HTTP 503 while `ENVIRONMENT=production`, because the current implementation uses local filesystem storage and Render's default filesystem is ephemeral.
+- Added a regression test proving production uploads stay disabled. Local development and tests continue to exercise image/video upload behaviour.
+- Evidence uploads must remain disabled in production until private durable object storage, malware scanning/quarantine, backup/restore, quotas, retention/deletion and access auditing are implemented and configured.
+- **Validation:** the new production guard and regression test are committed in this checkpoint; GitHub Actions must pass on the updated PR head before PR #18 is merged.
+- **Next:** wait for backend and frontend CI on the updated PR #18 head; then merge only if checks pass and mergeability is confirmed. Pull the merged `main` branch locally and test the application. Do not claim that production media upload is enabled.
+
+Resume commands:
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch feature/report-photo-video-evidence
+git pull --ff-only origin feature/report-photo-video-evidence
+```
