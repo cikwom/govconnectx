@@ -170,3 +170,27 @@ git fetch origin
 git switch feature/geographical-zones-phase-1
 git pull --ff-only origin feature/geographical-zones-phase-1
 ```
+
+
+## Current development checkpoint — Photo and video report evidence
+
+**Date:** 9 November 2026  
+**Branch:** `feature/report-photo-video-evidence`  
+**Base:** `feature/geographical-zones-phase-1` at `30d11510f020ae6db22a4686471242a96a36513f`.
+
+- Extended private report evidence uploads to accept JPEG, PNG, PDF, MP4, WebM, and QuickTime MOV files.
+- Added file-signature checks for MP4/QuickTime and WebM rather than trusting the browser-provided MIME type alone.
+- Kept image/PDF uploads at 10 MiB by default and set video uploads to 50 MiB by default; both limits are configurable with `REPORT_ATTACHMENT_MAX_BYTES` and `REPORT_VIDEO_MAX_BYTES`.
+- Added API tests for MP4/WebM uploads, MIME mismatch rejection, and video size limits.
+- Updated report detail UI to allow video selection and label video attachments.
+- **Important deployment limitation:** evidence is still stored on the backend local filesystem. Render's ephemeral filesystem is not durable storage; this is suitable for local development only until private object storage, backups, malware scanning, and retention controls are configured. Do not treat uploaded evidence as safely retained in production yet.
+- **Not yet implemented:** staff geographic scopes, backend geographic access enforcement, automatic LGA/department routing, and map-based incident pin verification. The current location selectors allow citizens to choose any State/LGA, independently of home area.
+- **Validation:** code and tests committed remotely; CI and local Windows tests are pending.
+
+Resume:
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch feature/report-photo-video-evidence
+git pull --ff-only origin feature/report-photo-video-evidence
+```
