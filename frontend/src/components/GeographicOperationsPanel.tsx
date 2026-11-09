@@ -16,12 +16,12 @@ type UnassignedReport = { id: number; title: string; category: string; status: s
 const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 async function geoRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers = new Headers(options.headers);
-  headers.set("Authorization", \`Bearer \${tokenStore.get() ?? ""}\`);
+  headers.set("Authorization", `Bearer ${tokenStore.get() ?? ""}`);
   if (options.body) headers.set("Content-Type", "application/json");
-  const response = await fetch(\`\${API_URL}/api/v1\${path}\`, { ...options, headers });
+  const response = await fetch(`${API_URL}/api/v1${path}`, { ...options, headers });
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
-    throw new Error(body.detail ?? \`Request failed (\${response.status})\`);
+    throw new Error(body.detail ?? `Request failed (${response.status})`);
   }
   return response.json() as Promise<T>;
 }
@@ -66,8 +66,8 @@ export default function GeographicOperationsPanel() {
       return;
     }
     const [scopeRows, categoryRows] = await Promise.all([
-      geoRequest<Scope[]>(\`/departments/\${selectedDepartment}/geographic-scopes\`),
-      geoRequest<RoutingCategory[]>(\`/departments/\${selectedDepartment}/routing-categories\`),
+      geoRequest<Scope[]>(`/departments/${selectedDepartment}/geographic-scopes`),
+      geoRequest<RoutingCategory[]>(`/departments/${selectedDepartment}/routing-categories`),
     ]);
     setScopes(scopeRows);
     setCategories(categoryRows);
@@ -90,7 +90,7 @@ export default function GeographicOperationsPanel() {
       setSelectedLga("");
       return;
     }
-    geoRequest<LgaItem[]>(\`/locations/states/\${selectedState}/lgas\`)
+    geoRequest<LgaItem[]>(`/locations/states/${selectedState}/lgas`)
       .then(rows => setLgas(rows))
       .catch(e => setError(e instanceof Error ? e.message : "Could not load LGAs"));
   }, [selectedState]);
@@ -99,7 +99,7 @@ export default function GeographicOperationsPanel() {
     if (!selectedDepartment) return;
     setBusy(true); setError(""); setMessage("");
     try {
-      const rows = await geoRequest<Scope[]>(\`/departments/\${selectedDepartment}/geographic-scopes\`, {
+      const rows = await geoRequest<Scope[]>(`/departments/${selectedDepartment}/geographic-scopes`, {
         method: "PUT", body: JSON.stringify(next),
       });
       setScopes(rows);
@@ -122,7 +122,7 @@ export default function GeographicOperationsPanel() {
     setBusy(true); setError(""); setMessage("");
     try {
       const payload = categoryText.split("\n").map(value => value.trim()).filter(Boolean).map(category => ({ category }));
-      const rows = await geoRequest<RoutingCategory[]>(\`/departments/\${selectedDepartment}/routing-categories\`, {
+      const rows = await geoRequest<RoutingCategory[]>(`/departments/${selectedDepartment}/routing-categories`, {
         method: "PUT", body: JSON.stringify(payload),
       });
       setCategories(rows);
@@ -136,11 +136,11 @@ export default function GeographicOperationsPanel() {
     if (!triageDepartment) return;
     setBusy(true); setError(""); setMessage("");
     try {
-      await geoRequest(\`/reports/\${report.id}/assignments\`, {
+      await geoRequest(`/reports/${report.id}/assignments`, {
         method: "POST",
         body: JSON.stringify({ department_id: Number(triageDepartment), note: "Assigned from national geographic triage queue" }),
       });
-      setMessage(\`Report #\${report.id} assigned successfully.\`);
+      setMessage(`Report #${report.id} assigned successfully.`);
       await loadOperationalData();
     } catch (e) { setError(e instanceof Error ? e.message : "Could not assign report"); }
     finally { setBusy(false); }
@@ -165,7 +165,7 @@ export default function GeographicOperationsPanel() {
           {scopes.map(scope => {
             const stateName = states.find(state => state.code === scope.state_code)?.name ?? scope.state_code;
             const lgaName = lgas.find(lga => lga.code === scope.lga_code)?.name;
-            return <div className="geo-scope-chip" key={scope.id}><span><strong>{stateName}</strong>{scope.lga_code ? \` · \${lgaName ?? scope.lga_code}\` : " · Entire State"}</span><button type="button" aria-label={\`Remove \${stateName} scope\`} onClick={() => void saveScopes(scopes.filter(item => item.id !== scope.id).map(({ state_code, lga_code }) => ({ state_code, lga_code })))}>Remove</button></div>;
+            return <div className="geo-scope-chip" key={scope.id}><span><strong>{stateName}</strong>{scope.lga_code ? ` · ${lgaName ?? scope.lga_code}` : " · Entire State"}</span><button type="button" aria-label={`Remove ${stateName} scope`} onClick={() => void saveScopes(scopes.filter(item => item.id !== scope.id).map(({ state_code, lga_code }) => ({ state_code, lga_code })))}>Remove</button></div>;
           })}
           {scopes.length === 0 && <p className="empty-state">No geographic coverage configured. This department cannot access reports yet.</p>}
         </div>
