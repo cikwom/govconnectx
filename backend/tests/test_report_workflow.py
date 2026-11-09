@@ -180,5 +180,45 @@ class ReportWorkflowTests(unittest.TestCase):
         citizen_comments = self.client.get(f"/api/v1/reports/{report_id}/comments", headers=citizen)
         self.assertEqual(citizen_comments.json(), [])
 
+    def test_staff_cannot_access_report_after_department_scope_excludes_its_lga(self):
+        _, admin = self.user("scope-admin@example.com", "system_admin")
+        _, citizen = self.user("scope-citizen@example.com", "citizen")
+        report_id = self.report(citizen)
+        department = self.department(admin, "Lagos Area Services")
+        assigned = self.client.post(
+            f"/api/v1/reports/{report_id}/assignments",
+            headers=admin,
+            json={"department_id": department.json()["id"]},
+        )
+        self.assertEqual(assigned.status_code, 201)
+
+        _, manager = self.user("scope-manager@example.com", "department_admin", department.json()["id"])
+        narrowed = self.client.put(
+            f"/api/v1/departments/{department.json()['id']}/geographic-scopes",
+            headers=admin,
+            json=[{"state_code": "NG001"}],
+        )
+        self.assertEqual(narrowed.status_code, 200)
+
+        denied = self.client.get(f"/api/v1/reports/{report_id}", headers=manager)
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(self.client.get("/api/v1/reports", headers=manager).json(), [])
+        self.assertEqual(self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).status_code, 200)
+
+    def test_admin_rejects_lga_that_does_not_belong_to_selected_state(self):
+        _, admin = self.user("scope-validation-admin@example.com", "system_admin")
+        department = self.client.post(
+            "/api/v1/departments",
+            headers=admin,
+            json={"name": "Scope Validation Department"},
+        )
+        response = self.client.put(
+            f"/api/v1/departments/{department.json()['id']}/geographic-scopes",
+            headers=admin,
+            json=[{"state_code": "NG025", "lga_code": "NG001001"}],
+        )
+        self.assertEqual(response.status_code, 400)
+
+
 if __name__ == "__main__":
     unittest.main()
