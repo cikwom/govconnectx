@@ -159,7 +159,7 @@ See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) and [docs/ADMIN_COMMAND_CEN
 - Existing users and reports remain compatible because new location fields are nullable.
 - Source data attribution and follow-on requirements are documented in `docs/GEOGRAPHICAL_ZONES_HANDOFF.md`.
 - **Not yet implemented:** registration/report-form selectors, staff geographic scopes, geographic report authorization, automatic department routing, and ward-level boundaries. Do not describe this phase as complete zoning-based access control.
-- **Validation status:** code and tests have been authored on the remote feature branch, but CI has not yet been run; local tests/browser checks have not been performed from the user's Windows checkout.
+- **Validation status:** four additional API tests cover home-area capture, cross-state incident reporting, and invalid State/LGA combinations. The test commit is `423a5b66bbfba8ddd6d16df33f6ce56a2a66a8c4`. CI has not yet been run; local tests/browser checks have not been performed from the user's Windows checkout.
 - **Next:** run backend unit tests and frontend build; add frontend dependent selectors; then implement staff geographic scopes and enforce them server-side before any zone-specific dashboard is exposed.
 
 Resume commands:
