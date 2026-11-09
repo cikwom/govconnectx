@@ -91,7 +91,7 @@ class ReportWorkflowTests(unittest.TestCase):
         _, admin = self.user("admin@example.com", "system_admin")
         citizen_id, citizen = self.user("citizen@example.com", "citizen")
         report_id = self.report(citizen)
-        department = self.client.post("/api/v1/departments", headers=admin, json={"name":"Environment"})
+        department = self.department(admin, "Environment")
         response = self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":department.json()["id"],"note":"Please inspect"})
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["department_id"], department.json()["id"])
