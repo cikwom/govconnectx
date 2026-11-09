@@ -5,12 +5,29 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app import config  # noqa: F401 - load .env before reading DATABASE_URL
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./govconnect.db")
+
+def resolve_database_url(environment=None, database_url=None):
+    """Resolve the database URL and reject ephemeral SQLite in production."""
+    current_environment = (environment or os.getenv("ENVIRONMENT", "development")).strip().lower()
+    configured_url = database_url or os.getenv("DATABASE_URL") or "sqlite:///./govconnect.db"
+    configured_url = configured_url.strip()
+
+    if current_environment == "production" and configured_url.lower().startswith("sqlite"):
+        raise RuntimeError(
+            "DATABASE_URL must point to a managed production database; "
+            "SQLite is only supported for local development and tests."
+        )
+
+    return configured_url
+
+
+DATABASE_URL = resolve_database_url()
 connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 
 engine = create_engine(DATABASE_URL, connect_args=connect_args)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 def get_db():
     db = SessionLocal()
@@ -18,6 +35,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 def migrate_existing_schema(database_engine=None):
     """Add nullable ownership and workflow columns to pre-workflow databases."""
