@@ -7,6 +7,7 @@ from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models.department import Department
 from app.models.report import Report
+from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.notification import Notification
@@ -41,8 +42,15 @@ def get_accessible_report(report_id: int, db: Session, user: User) -> Report:
 
 @router.post("", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
 def create_report(report: ReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if bool(report.incident_state_code) != bool(report.incident_lga_code):
+        raise HTTPException(status_code=400, detail="Select both the incident state and local government area")
+    if report.incident_state_code:
+        state = db.get(State, report.incident_state_code)
+        lga = db.get(LocalGovernmentArea, report.incident_lga_code)
+        if state is None or lga is None or lga.state_code != state.code:
+            raise HTTPException(status_code=400, detail="The incident LGA does not belong to the selected state")
     sla_hours = max(1, int(os.getenv("REPORT_SLA_HOURS", "72")))
-    new_report = Report(title=report.title, description=report.description, category=report.category, latitude=report.latitude, longitude=report.longitude, address=report.address, user_id=current_user.id, status="SUBMITTED", sla_due_at=datetime.now(timezone.utc) + timedelta(hours=sla_hours))
+    new_report = Report(title=report.title, description=report.description, category=report.category, latitude=report.latitude, longitude=report.longitude, address=report.address, incident_state_code=report.incident_state_code, incident_lga_code=report.incident_lga_code, user_id=current_user.id, status="SUBMITTED", sla_due_at=datetime.now(timezone.utc) + timedelta(hours=sla_hours))
     db.add(new_report)
     db.flush()
     db.add(ReportStatusHistory(report_id=new_report.id, changed_by_user_id=current_user.id, old_status=None, new_status="SUBMITTED", message="Report submitted", is_public=True))
