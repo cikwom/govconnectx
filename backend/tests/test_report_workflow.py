@@ -7,6 +7,7 @@ from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
 from app.models.department import Department
+from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.report import Report
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
@@ -40,6 +41,7 @@ class ReportWorkflowTests(unittest.TestCase):
         seed_location_directory(db)
         # Delete dependent workflow rows first so the suite also works with
         # SQLite foreign-key enforcement enabled.
+        db.query(DepartmentGeographicScope).delete()
         for model in (Notification, ReportComment, ReportStatusHistory, ReportAssignment):
             db.query(model).delete()
         db.query(Report).delete()
