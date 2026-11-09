@@ -30,3 +30,15 @@ Copy this section for each manual test session:
 - NOT RUN:
 - Failure reproduction / logs:
 - Follow-up issue or PR:
+
+## 2026-11-09 — Geographical Zones Phase 2
+
+- **Repository:** `cikwom/govconnectx`
+- **Branch:** `feature/geographical-zones-phase-2`
+- **Code commit tested:** `bb41ece401d2e99be26ac94964f9ef12798c96dc`
+- **PR:** [#19](https://github.com/cikwom/govconnectx/pull/19) — draft, not merged.
+- **Backend tests:** PASS — push workflow run [42714191059](https://github.com/cikwom/govconnectx/actions/runs/42714191059). The suite reported 55 tests; the later run at this revision included the geographic scope, routing and admin drill-down tests.
+- **Frontend build:** PASS — push workflow run [42714191083](https://github.com/cikwom/govconnectx/actions/runs/42714191083), including TypeScript check, dependency audit and production build.
+- **Earlier failure and correction:** the first frontend attempt exposed invalid escaped template literals in the new geographic panel; corrected before the passing `bb41ece4` run. Earlier backend failures exposed missing scope fixtures and a missing `department_id` in `ReportResponse`; corrected before the passing `bb41ece4` backend run.
+- **PR-triggered checks:** subsequent PR checks were still running at the time this evidence entry was written; confirm the latest PR checks before merge.
+- **Manual browser validation:** NOT RUN. Test department State/LGA scope changes, category routing, unassigned queue assignment, zone → State → LGA drill-down, citizen report creation from a different home State, and mobile/responsive layout.
