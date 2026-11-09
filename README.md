@@ -287,12 +287,12 @@ Next: implement the Phase 2 backend scope model and administrator controls first
 - An earlier backend run exposed a missing geographic fixture in the official-access test and missing \`department_id\` in the report response. Both were corrected.
 - Latest backend and frontend checks are running against the latest branch revision. Record the final result in \`docs/testing/TEST_EVIDENCE.md\`; do not treat an in-progress run as a pass.
 - Browser/manual validation on the Windows development machine has not yet been completed.
+- Added the Admin Geographic Operations panel for department State/LGA scopes, routing categories, national unassigned triage and zone → State → LGA report drill-down. CORS now permits the required authenticated PUT requests.
 
 ### Still pending before merge
 
 1. Confirm latest backend CI passes; fix any remaining failures.
-2. Build the Admin UI for managing department geographic scopes and routing categories.
-3. Connect the national geographic drill-down and unassigned triage queue to the Admin UI.
+2. Validate the new Admin UI for department scopes, category routing, national drill-down and triage queue.
 4. Add incident GPS-vs-selected-State/LGA mismatch review. Do not silently overwrite a citizen-selected location from GPS.
 5. Complete manual browser/API regression and update \`docs/testing/TEST_EVIDENCE.md\`.
 6. Review the PR diff and CI, then merge only after all required checks pass.
