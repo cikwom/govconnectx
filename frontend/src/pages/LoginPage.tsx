@@ -19,9 +19,9 @@ export default function LoginPage() {
     setError("");
     setBusy(true);
     try {
-      await signIn(email, password);
+      const signedInUser = await signIn(email, password);
       const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-      navigate(destination || "/dashboard", { replace: true });
+      navigate(destination || (signedInUser.role === "system_admin" ? "/admin" : "/dashboard"), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in");
     } finally {
