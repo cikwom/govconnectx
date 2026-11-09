@@ -339,3 +339,33 @@ def get_reporting_oversight(
         "items": selected,
         "notice": "These are review signals, not proof of false reporting. An administrator must examine the reports and evidence before taking action.",
     }
+
+
+@router.get("/reports/unassigned")
+def list_unassigned_reports(
+    limit: int = Query(default=100, ge=1, le=250),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """National triage queue for reports without one unambiguous department route."""
+    query = db.query(Report).filter(Report.department_id.is_(None))
+    total = query.count()
+    rows = query.order_by(Report.created_at.asc()).offset(offset).limit(limit).all()
+    return {
+        "total": total,
+        "items": [
+            {
+                "id": report.id,
+                "title": report.title,
+                "description": report.description,
+                "category": report.category,
+                "status": report.status,
+                "address": report.address,
+                "incident_state_code": report.incident_state_code,
+                "incident_lga_code": report.incident_lga_code,
+                "created_at": report.created_at.isoformat() if report.created_at else None,
+            }
+            for report in rows
+        ],
+    }
