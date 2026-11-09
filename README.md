@@ -136,3 +136,11 @@ See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) and [docs/ADMIN_COMMAND_CEN
 - Commit: `533a9fb3084239b2655d051890624ff4567a6a37` — `fix(security): reject SQLite database in production`.
 - Tests for the configuration guard are the next step; this commit has not yet been validated by CI.
 - Next: add unit coverage for production rejection and local/test SQLite behaviour, then continue with authentication abuse protection and audit logging.
+
+
+### Phase 1 checkpoint update — database configuration tests
+
+- Added `backend/tests/test_database_config.py` with five cases: production rejects a missing URL, production rejects SQLite, production accepts a managed database URL, development retains its SQLite fallback, and tests may explicitly use SQLite.
+- Test commit: `cdcce8c7aaf0ed62fffd128a6625034f659620bd` — `test(security): cover production database configuration`.
+- README checkpoint commit: `7ad3c915a3c1a002ed452200109df230848b8b57`.
+- The implementation and tests are pushed to the feature branch through GitHub. CI has not yet been observed for this branch; do not merge until checks pass.
