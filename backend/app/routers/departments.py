@@ -4,9 +4,10 @@ from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models.department import Department
 from app.models.department_geographic_scope import DepartmentGeographicScope
+from app.models.department_routing_category import DepartmentRoutingCategory
 from app.models.location import LocalGovernmentArea, State
 from app.models.user import User
-from app.schemas.workflow import DepartmentCreate, DepartmentGeographicScopeInput, DepartmentGeographicScopeResponse, DepartmentMemberUpdate, DepartmentResponse
+from app.schemas.workflow import DepartmentCreate, DepartmentGeographicScopeInput, DepartmentGeographicScopeResponse, DepartmentMemberUpdate, DepartmentResponse, DepartmentRoutingCategoryInput, DepartmentRoutingCategoryResponse
 
 router = APIRouter(prefix="/api/v1/departments", tags=["Departments"])
 
@@ -100,6 +101,58 @@ def replace_department_geographic_scopes(
         rows = [
             DepartmentGeographicScope(department_id=department_id, state_code=state_code, lga_code=lga_code)
             for state_code, lga_code in validated
+        ]
+        db.add_all(rows)
+        db.commit()
+        for row in rows:
+            db.refresh(row)
+        return rows
+    except Exception:
+        db.rollback()
+        raise
+
+
+@router.get("/{department_id}/routing-categories", response_model=list[DepartmentRoutingCategoryResponse])
+def list_department_routing_categories(
+    department_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    department = db.query(Department).filter(Department.id == department_id).first()
+    if department is None:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return db.query(DepartmentRoutingCategory).filter(
+        DepartmentRoutingCategory.department_id == department_id
+    ).order_by(DepartmentRoutingCategory.category).all()
+
+
+@router.put("/{department_id}/routing-categories", response_model=list[DepartmentRoutingCategoryResponse])
+def replace_department_routing_categories(
+    department_id: int,
+    categories: list[DepartmentRoutingCategoryInput],
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """Replace the categories this department is eligible to receive."""
+    department = db.query(Department).filter(Department.id == department_id).first()
+    if department is None:
+        raise HTTPException(status_code=404, detail="Department not found")
+
+    normalized = {}
+    for item in categories:
+        category = " ".join(item.category.split())
+        key = category.casefold()
+        if key in normalized:
+            raise HTTPException(status_code=400, detail="Duplicate routing category")
+        normalized[key] = category
+
+    try:
+        db.query(DepartmentRoutingCategory).filter(
+            DepartmentRoutingCategory.department_id == department_id
+        ).delete(synchronize_session=False)
+        rows = [
+            DepartmentRoutingCategory(department_id=department_id, category=category)
+            for category in normalized.values()
         ]
         db.add_all(rows)
         db.commit()
