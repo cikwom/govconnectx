@@ -29,6 +29,7 @@ class ReportResponse(BaseModel):
     address: str | None
     incident_state_code: str | None = None
     incident_lga_code: str | None = None
+    department_id: int | None = None
     status: str
     sla_due_at: datetime | None
     resolved_at: datetime | None
