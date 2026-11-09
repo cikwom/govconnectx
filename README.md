@@ -219,3 +219,31 @@ git fetch origin
 git switch feature/report-photo-video-evidence
 git pull --ff-only origin feature/report-photo-video-evidence
 ```
+
+
+## Current development checkpoint — Geographical Zones Phase 2
+
+**Date:** 9 November 2026  
+**Branch:** `feature/geographical-zones-phase-2`  
+**Base:** `main`, including merge commit `9b19e412298c6804fa1e262d0010ac72f88784ff` (PR #18).
+
+- PR #16 (production database safety), PR #17 (Nigeria's 37 state-level units and 774 LGAs), and PR #18 (private photo/video evidence support) are merged into `main`.
+- PR #18 adds JPEG/PNG/PDF and MP4/WebM/MOV evidence support, mobile capture controls, signature/MIME/extension checks, and private report-authorized downloads.
+- Production evidence uploads deliberately return HTTP 503 until durable private storage and the required scanning, backup, retention, quota, and audit controls are configured. Do not enable public production uploads against Render's ephemeral filesystem.
+- GitHub Actions on the production-upload safety commit `9c6a792220bac3fb5e70286c9e5c17d50f0ab4b7`: backend tests passed; frontend build passed.
+- Phase 1 geographic foundation is complete: citizens can select a home State/LGA and independently report an incident in any State/LGA. The API validates State/LGA parent-child relationships.
+- **Phase 2 scope:** administrator-managed geographic scopes for staff; server-side geographic authorization across report lists/details, assignments, status updates, attachments, history, and comments; automatic LGA/state-to-department routing with an unassigned triage queue; and a national admin drill-down from geopolitical zone to State to LGA.
+- **Security rule:** frontend filters are not authorization. Staff must not access reports or evidence outside their assigned geographic scope. Citizens' home locations remain private and must never determine incident routing.
+- **Not yet implemented in this branch:** staff geographic scopes, geographic authorization, automatic department routing, map-pin/boundary verification, and the national geographic admin drill-down.
+- **Evidence storage remains a launch blocker:** choose and configure private durable object storage, malware scanning/quarantine, backup/restore, quotas, retention/deletion, and access auditing before enabling uploads in production.
+- Local Windows/browser validation has not been performed from the user's workstation.
+
+Resume commands (Windows PowerShell):
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch feature/geographical-zones-phase-2
+git pull --ff-only origin feature/geographical-zones-phase-2
+```
+
+Next: implement the Phase 2 backend scope model and administrator controls first, then enforce scopes in every staff report/evidence endpoint, add automatic routing and regression tests, and build the admin geographic drill-down. Run backend tests and frontend type-check/build before opening a PR. Never merge until CI passes.
