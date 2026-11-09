@@ -1,9 +1,9 @@
 name: Frontend build
 on:
   push:
-    branches: [main, feature/frontend-foundation-phase-5, feature/admin-command-centre-phase-9, feature/admin-oversight-enforcement-phase-10, feature/public-home-theme-login-phase-11, feature/civic-identity-theme-phase-12]
+    branches: [main, feature/frontend-foundation-phase-5, feature/admin-command-centre-phase-9, feature/admin-oversight-enforcement-phase-10, feature/public-home-theme-login-phase-11, feature/civic-identity-theme-phase-12, feature/geographical-zones-phase-1]
   pull_request:
-    branches: [main, feature/admin-command-centre-phase-9, feature/admin-oversight-enforcement-phase-10, feature/public-home-theme-login-phase-11]
+    branches: [main, feature/production-database-safety-phase-1, feature/admin-command-centre-phase-9, feature/admin-oversight-enforcement-phase-10, feature/public-home-theme-login-phase-11]
 jobs:
   frontend-build:
     runs-on: ubuntu-latest
