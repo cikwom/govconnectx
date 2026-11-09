@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import require_roles
 from app.database import get_db
 from app.models.report import Report
+from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportStatusHistory
 from app.models.user import User
@@ -369,3 +370,64 @@ def list_unassigned_reports(
             for report in rows
         ],
     }
+
+
+@router.get("/geography/overview")
+def get_geographic_overview(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """Return national -> geopolitical zone -> State -> LGA report totals."""
+    report_rows = db.query(
+        Report.incident_state_code,
+        Report.incident_lga_code,
+        Report.status,
+        Report.department_id,
+    ).all()
+    state_counts = {}
+    lga_counts = {}
+    for state_code, lga_code, report_status, department_id in report_rows:
+        if not state_code:
+            continue
+        state_bucket = state_counts.setdefault(state_code, {"total": 0, "open": 0, "unassigned": 0})
+        state_bucket["total"] += 1
+        if report_status not in ("RESOLVED", "REJECTED"):
+            state_bucket["open"] += 1
+        if department_id is None:
+            state_bucket["unassigned"] += 1
+        if lga_code:
+            lga_bucket = lga_counts.setdefault(lga_code, {"total": 0, "open": 0, "unassigned": 0})
+            lga_bucket["total"] += 1
+            if report_status not in ("RESOLVED", "REJECTED"):
+                lga_bucket["open"] += 1
+            if department_id is None:
+                lga_bucket["unassigned"] += 1
+
+    zones = {}
+    states = db.query(State).order_by(State.geopolitical_zone, State.name).all()
+    lgas = db.query(LocalGovernmentArea).order_by(LocalGovernmentArea.name).all()
+    lgas_by_state = {}
+    for lga in lgas:
+        lgas_by_state.setdefault(lga.state_code, []).append(lga)
+
+    for state in states:
+        zone = zones.setdefault(state.geopolitical_zone, {"name": state.geopolitical_zone, "total": 0, "open": 0, "unassigned": 0, "states": []})
+        counts = state_counts.get(state.code, {"total": 0, "open": 0, "unassigned": 0})
+        zone["total"] += counts["total"]
+        zone["open"] += counts["open"]
+        zone["unassigned"] += counts["unassigned"]
+        zone["states"].append({
+            "code": state.code,
+            "name": state.name,
+            **counts,
+            "lgas": [
+                {
+                    "code": lga.code,
+                    "name": lga.name,
+                    **lga_counts.get(lga.code, {"total": 0, "open": 0, "unassigned": 0}),
+                }
+                for lga in lgas_by_state.get(state.code, [])
+            ],
+        })
+
+    return {"country": "Nigeria", "total_states": len(states), "total_lgas": len(lgas), "geopolitical_zones": list(zones.values())}
