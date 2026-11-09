@@ -43,3 +43,24 @@ This is a reference directory, not an official government partnership or an asse
 - Citizens may report incidents outside their home LGA.
 - Location fields are nullable during rollout to preserve existing accounts and historical data.
 - Geographic scope must be enforced server-side before staff access is narrowed by area.
+
+## Phase 2 implementation checkpoint — 9 November 2026
+
+Implemented on `feature/geographical-zones-phase-2` (draft PR #19):
+
+- Departments can be assigned whole-State or LGA-level geographic scopes by a system administrator.
+- Departments can be configured for incident categories.
+- Staff report lists/details and all detail operations that call the shared report authorization helper are restricted to the department's geographic scope.
+- Assignment requires the destination department to cover the incident State/LGA.
+- New reports auto-route only when exactly one active department matches both category and incident geography. Zero or multiple matches remain in the national unassigned triage queue.
+- Admin APIs expose unassigned reports and aggregate counts from geopolitical zone → State → LGA.
+
+API additions:
+- `GET/PUT /api/v1/departments/{department_id}/geographic-scopes`
+- `GET/PUT /api/v1/departments/{department_id}/routing-categories`
+- `GET /api/v1/admin/reports/unassigned`
+- `GET /api/v1/admin/geography/overview`
+
+Important: the Admin UI for scope/category management, triage and geographic drill-down is not yet connected. GPS-vs-selected-location review is also pending. Keep PR #19 as draft and do not merge until CI passes and the UI/manual checks are complete.
+
+Resume using the Phase 2 commands in the root README. Citizen home location remains private and is never used for routing.
