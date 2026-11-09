@@ -3,8 +3,10 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models.department import Department
+from app.models.department_geographic_scope import DepartmentGeographicScope
+from app.models.location import LocalGovernmentArea, State
 from app.models.user import User
-from app.schemas.workflow import DepartmentCreate, DepartmentMemberUpdate, DepartmentResponse
+from app.schemas.workflow import DepartmentCreate, DepartmentGeographicScopeInput, DepartmentGeographicScopeResponse, DepartmentMemberUpdate, DepartmentResponse
 
 router = APIRouter(prefix="/api/v1/departments", tags=["Departments"])
 
@@ -37,3 +39,73 @@ def set_user_department(user_id: int, payload: DepartmentMemberUpdate, db: Sessi
     user.department_id = payload.department_id
     db.commit()
     return {"user_id": user.id, "department_id": user.department_id}
+
+
+@router.get("/{department_id}/geographic-scopes", response_model=list[DepartmentGeographicScopeResponse])
+def list_department_geographic_scopes(
+    department_id: int,
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    department = db.query(Department).filter(Department.id == department_id).first()
+    if department is None:
+        raise HTTPException(status_code=404, detail="Department not found")
+    return (
+        db.query(DepartmentGeographicScope)
+        .filter(DepartmentGeographicScope.department_id == department_id)
+        .order_by(DepartmentGeographicScope.state_code, DepartmentGeographicScope.lga_code)
+        .all()
+    )
+
+
+@router.put("/{department_id}/geographic-scopes", response_model=list[DepartmentGeographicScopeResponse])
+def replace_department_geographic_scopes(
+    department_id: int,
+    scopes: list[DepartmentGeographicScopeInput],
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """Replace a department's complete geographic jurisdiction.
+
+    An empty list deliberately removes all jurisdiction and leaves the
+    department unable to access geographically scoped reports.
+    """
+    department = db.query(Department).filter(Department.id == department_id).first()
+    if department is None:
+        raise HTTPException(status_code=404, detail="Department not found")
+
+    normalized = set()
+    validated = []
+    for item in scopes:
+        state_code = item.state_code.strip().upper()
+        lga_code = item.lga_code.strip().upper() if item.lga_code else None
+        key = (state_code, lga_code)
+        if key in normalized:
+            raise HTTPException(status_code=400, detail="Duplicate geographic scope")
+        normalized.add(key)
+
+        state = db.get(State, state_code)
+        if state is None:
+            raise HTTPException(status_code=400, detail=f"Unknown state code: {state_code}")
+        if lga_code:
+            lga = db.get(LocalGovernmentArea, lga_code)
+            if lga is None or lga.state_code != state_code:
+                raise HTTPException(status_code=400, detail="The selected LGA does not belong to the selected state")
+        validated.append((state_code, lga_code))
+
+    try:
+        db.query(DepartmentGeographicScope).filter(
+            DepartmentGeographicScope.department_id == department_id
+        ).delete(synchronize_session=False)
+        rows = [
+            DepartmentGeographicScope(department_id=department_id, state_code=state_code, lga_code=lga_code)
+            for state_code, lga_code in validated
+        ]
+        db.add_all(rows)
+        db.commit()
+        for row in rows:
+            db.refresh(row)
+        return rows
+    except Exception:
+        db.rollback()
+        raise
