@@ -12,6 +12,7 @@ from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.notification import Notification
 from app.models.user import User
+from app.routers.locations import seed_location_directory
 
 class ReportWorkflowTests(unittest.TestCase):
     @classmethod
@@ -36,6 +37,7 @@ class ReportWorkflowTests(unittest.TestCase):
 
     def setUp(self):
         db = self.Session()
+        seed_location_directory(db)
         # Delete dependent workflow rows first so the suite also works with
         # SQLite foreign-key enforcement enabled.
         for model in (Notification, ReportComment, ReportStatusHistory, ReportAssignment):
@@ -57,12 +59,29 @@ class ReportWorkflowTests(unittest.TestCase):
         response = self.client.post("/api/v1/auth/login", json={"email": email, "password": "Strong-Test-Password-42"})
         return user_id, {"Authorization": "Bearer " + response.json()["access_token"]}
 
+    def department(self, headers, name):
+        created = self.client.post("/api/v1/departments", headers=headers, json={"name": name})
+        self.assertEqual(created.status_code, 201)
+        scoped = self.client.put(
+            f"/api/v1/departments/{created.json()['id']}/geographic-scopes",
+            headers=headers,
+            json=[{"state_code": "NG025"}],
+        )
+        self.assertEqual(scoped.status_code, 200)
+        return created
+
     def report(self, headers):
-        return self.client.post("/api/v1/reports", headers=headers, json={"title":"Blocked drain","description":"Drain is blocked","category":"Environment","latitude":6.5,"longitude":3.3}).json()["id"]
+        response = self.client.post("/api/v1/reports", headers=headers, json={
+            "title": "Blocked drain", "description": "Drain is blocked",
+            "category": "Environment", "latitude": 6.5, "longitude": 3.3,
+            "incident_state_code": "NG025", "incident_lga_code": "NG025011",
+        })
+        self.assertEqual(response.status_code, 201)
+        return response.json()["id"]
 
     def test_department_creation_and_listing(self):
         _, admin = self.user("admin@example.com", "system_admin")
-        created = self.client.post("/api/v1/departments", headers=admin, json={"name":"Ministry of Works"})
+        created = self.department(admin, "Ministry of Works")
         self.assertEqual(created.status_code, 201)
         self.assertEqual(self.client.get("/api/v1/departments", headers=admin).status_code, 200)
 
@@ -80,8 +99,8 @@ class ReportWorkflowTests(unittest.TestCase):
         _, admin = self.user("root@example.com", "system_admin")
         citizen_id, citizen = self.user("reporter@example.com", "citizen")
         report_id = self.report(citizen)
-        dep1 = self.client.post("/api/v1/departments", headers=admin, json={"name":"Water"})
-        dep2 = self.client.post("/api/v1/departments", headers=admin, json={"name":"Roads"})
+        dep1 = self.department(admin, "Water")
+        dep2 = self.department(admin, "Roads")
         _, manager = self.user("manager@example.com", "department_admin", dep2.json()["id"])
         self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":dep1.json()["id"]})
         denied = self.client.get(f"/api/v1/reports/{report_id}", headers=manager)
@@ -91,8 +110,8 @@ class ReportWorkflowTests(unittest.TestCase):
         _, root = self.user("root2@example.com", "system_admin")
         _, citizen = self.user("citizen2@example.com", "citizen")
         report_id = self.report(citizen)
-        first = self.client.post("/api/v1/departments", headers=root, json={"name":"First Department"})
-        second = self.client.post("/api/v1/departments", headers=root, json={"name":"Second Department"})
+        first = self.department(root, "First Department")
+        second = self.department(root, "Second Department")
         _, manager = self.user("manager2@example.com", "department_admin", second.json()["id"])
         assigned = self.client.post(
             f"/api/v1/reports/{report_id}/assignments",
@@ -111,7 +130,7 @@ class ReportWorkflowTests(unittest.TestCase):
         _, root = self.user("notification-root@example.com", "system_admin")
         _, citizen = self.user("notification-citizen@example.com", "citizen")
         report_id = self.report(citizen)
-        department = self.client.post("/api/v1/departments", headers=root, json={"name":"Notification Test Department"})
+        department = self.department(root, "Notification Test Department")
         assigned = self.client.post(
             f"/api/v1/reports/{report_id}/assignments",
             headers=root,
@@ -140,7 +159,7 @@ class ReportWorkflowTests(unittest.TestCase):
         _, admin = self.user("root@example.com", "system_admin")
         _, citizen = self.user("reporter@example.com", "citizen")
         report_id = self.report(citizen)
-        assigned_dep = self.client.post("/api/v1/departments", headers=admin, json={"name":"Transport"})
+        assigned_dep = self.department(admin, "Transport")
         self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":assigned_dep.json()["id"]})
         updated = self.client.patch(f"/api/v1/reports/{report_id}/status", headers=admin, json={"status":"IN_PROGRESS","message":"Work started"})
         self.assertEqual(updated.status_code, 200)
@@ -154,7 +173,7 @@ class ReportWorkflowTests(unittest.TestCase):
         _, admin = self.user("root@example.com", "system_admin")
         _, citizen = self.user("reporter@example.com", "citizen")
         report_id = self.report(citizen)
-        department = self.client.post("/api/v1/departments", headers=admin, json={"name":"Public Health"})
+        department = self.department(admin, "Public Health")
         self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":department.json()["id"]})
         staff_comment = self.client.post(f"/api/v1/reports/{report_id}/comments", headers=admin, json={"body":"Internal investigation note","is_internal":True})
         self.assertEqual(staff_comment.status_code, 201)
