@@ -71,3 +71,14 @@ class DepartmentGeographicScopeResponse(BaseModel):
     state_code: str
     lga_code: str | None
     model_config = ConfigDict(from_attributes=True)
+
+
+class DepartmentRoutingCategoryInput(BaseModel):
+    category: str = Field(min_length=2, max_length=100)
+
+
+class DepartmentRoutingCategoryResponse(BaseModel):
+    id: int
+    department_id: int
+    category: str
+    model_config = ConfigDict(from_attributes=True)
