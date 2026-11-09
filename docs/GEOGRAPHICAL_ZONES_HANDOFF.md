@@ -61,6 +61,6 @@ API additions:
 - `GET /api/v1/admin/reports/unassigned`
 - `GET /api/v1/admin/geography/overview`
 
-Important: the Admin UI for scope/category management, triage and geographic drill-down is not yet connected. GPS-vs-selected-location review is also pending. Keep PR #19 as draft and do not merge until CI passes and the UI/manual checks are complete.
+The Admin Geographic Operations panel is now connected to the scope/category APIs, national triage queue and geographic drill-down. GPS-vs-selected-location review and Windows browser validation are still pending. Keep PR #19 as draft and do not merge until the latest PR checks pass and manual checks are complete.
 
 Resume using the Phase 2 commands in the root README. Citizen home location remains private and is never used for routing.
