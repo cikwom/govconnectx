@@ -222,5 +222,47 @@ class ReportWorkflowTests(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
 
 
+    def test_report_auto_routes_when_one_department_matches_category_and_area(self):
+        _, admin = self.user("auto-route-admin@example.com", "system_admin")
+        _, citizen = self.user("auto-route-citizen@example.com", "citizen")
+        department = self.department(admin, "Environmental Services")
+        configured = self.client.put(
+            f"/api/v1/departments/{department.json()['id']}/routing-categories",
+            headers=admin,
+            json=[{"category": "Environment"}],
+        )
+        self.assertEqual(configured.status_code, 200)
+
+        _, manager = self.user("auto-route-manager@example.com", "department_admin", department.json()["id"])
+        report_id = self.report(citizen)
+        report = self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).json()
+        self.assertEqual(report["department_id"], department.json()["id"])
+        self.assertEqual(report["status"], "ASSIGNED")
+        inbox = self.client.get("/api/v1/notifications", headers=manager)
+        self.assertTrue(any(item["report_id"] == report_id for item in inbox.json()))
+
+    def test_ambiguous_category_route_stays_in_national_triage_queue(self):
+        _, admin = self.user("ambiguous-route-admin@example.com", "system_admin")
+        _, citizen = self.user("ambiguous-route-citizen@example.com", "citizen")
+        first = self.department(admin, "Environment Department One")
+        second = self.department(admin, "Environment Department Two")
+        for department in (first, second):
+            response = self.client.put(
+                f"/api/v1/departments/{department.json()['id']}/routing-categories",
+                headers=admin,
+                json=[{"category": "Environment"}],
+            )
+            self.assertEqual(response.status_code, 200)
+
+        report_id = self.report(citizen)
+        report = self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).json()
+        self.assertIsNone(report["department_id"])
+        self.assertEqual(report["status"], "SUBMITTED")
+
+        queue = self.client.get("/api/v1/admin/reports/unassigned", headers=admin)
+        self.assertEqual(queue.status_code, 200)
+        self.assertTrue(any(item["id"] == report_id for item in queue.json()["items"]))
+
+
 if __name__ == "__main__":
     unittest.main()
