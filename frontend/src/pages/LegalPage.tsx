@@ -1,3 +1,4 @@
+import "./LegalPages.css";
 import { Link, useLocation } from "react-router-dom";
 
 type LegalSection = { id: string; title: string; paragraphs?: string[]; bullets?: string[] };
