@@ -247,3 +247,61 @@ git pull --ff-only origin feature/geographical-zones-phase-2
 ```
 
 Next: implement the Phase 2 backend scope model and administrator controls first, then enforce scopes in every staff report/evidence endpoint, add automatic routing and regression tests, and build the admin geographic drill-down. Run backend tests and frontend type-check/build before opening a PR. Never merge until CI passes.
+
+
+
+## Current development checkpoint — Geographical Zones Phase 2
+
+**Date:** 9 November 2026  
+**Branch:** \`feature/geographical-zones-phase-2\`  
+**Pull request:** [#19 — WIP: Phase 2 geographic department scopes and access control](https://github.com/cikwom/govconnectx/pull/19) (draft; do not merge yet)
+
+### Implemented on this branch
+
+- Added \`department_geographic_scopes\`: each department can cover a whole State or selected LGAs.
+- Added system-admin endpoints:
+  - \`GET /api/v1/departments/{department_id}/geographic-scopes\`
+  - \`PUT /api/v1/departments/{department_id}/geographic-scopes\`
+  - \`GET /api/v1/departments/{department_id}/routing-categories\`
+  - \`PUT /api/v1/departments/{department_id}/routing-categories\`
+- State/LGA combinations are validated; an LGA from a different State is rejected.
+- Staff report lists and report details are filtered by department jurisdiction. The shared report authorization check also protects status changes, history, assignment records, comments, and evidence upload/list/download.
+- Department assignment is rejected when the department has no matching geographic scope.
+- Added category-based routing configuration. A report is automatically assigned only when exactly one active department matches both its category and incident State/LGA.
+- Reports with no matching department, or with multiple matching departments, remain unassigned for national admin triage.
+- Added \`GET /api/v1/admin/reports/unassigned\`.
+- Added \`GET /api/v1/admin/geography/overview\`, returning report totals from geopolitical zone → State → LGA.
+- \`ReportResponse\` now includes \`department_id\` so a citizen can see which department received the report.
+- Backend regression tests cover geographic access restrictions, invalid State/LGA pairs, auto-routing, ambiguous routing, unassigned triage, and national geographic drill-down.
+
+### Important behavior
+
+- Routing uses the incident State/LGA, never the citizen's home State/LGA.
+- A department with no configured scope cannot access geographically scoped reports.
+- Automatic routing is deliberately conservative: exactly one eligible department is required. No match or multiple matches must be handled in the national triage queue.
+- Production evidence uploads remain disabled until durable private object storage and the required security controls are implemented.
+
+### CI and testing status
+
+- Frontend build checks have passed on earlier PR revisions.
+- An earlier backend run exposed a missing geographic fixture in the official-access test and missing \`department_id\` in the report response. Both were corrected.
+- Latest backend and frontend checks are running against the latest branch revision. Record the final result in \`docs/testing/TEST_EVIDENCE.md\`; do not treat an in-progress run as a pass.
+- Browser/manual validation on the Windows development machine has not yet been completed.
+
+### Still pending before merge
+
+1. Confirm latest backend CI passes; fix any remaining failures.
+2. Build the Admin UI for managing department geographic scopes and routing categories.
+3. Connect the national geographic drill-down and unassigned triage queue to the Admin UI.
+4. Add incident GPS-vs-selected-State/LGA mismatch review. Do not silently overwrite a citizen-selected location from GPS.
+5. Complete manual browser/API regression and update \`docs/testing/TEST_EVIDENCE.md\`.
+6. Review the PR diff and CI, then merge only after all required checks pass.
+
+### Resume commands (Windows PowerShell)
+
+\\\`\\\`\\\`powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch feature/geographical-zones-phase-2
+git pull --ff-only origin feature/geographical-zones-phase-2
+\\\`\\\`\\\`
