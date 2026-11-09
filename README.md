@@ -195,3 +195,27 @@ git fetch origin
 git switch feature/report-photo-video-evidence
 git pull --ff-only origin feature/report-photo-video-evidence
 ```
+
+
+
+## Current development checkpoint — production-safe report evidence
+
+**Date:** 9 November 2026  
+**Branch:** `feature/report-photo-video-evidence`
+
+- Merged PR #16 (production database safety) into `main` with merge commit `a1e04ed39e3d85b40f2edfd5f8e1bc9f4052988b`.
+- Merged PR #17 (Nigerian state/LGA directory and incident geography) into `main` with merge commit `c47ab7d1d8f9ed02ab05743035fbe726f7b0b9fe`.
+- PR #18 was retargeted to `main`; its original feature work remains on `feature/report-photo-video-evidence`.
+- Added a production safety guard: report evidence uploads return HTTP 503 while `ENVIRONMENT=production`, because the current implementation uses local filesystem storage and Render's default filesystem is ephemeral.
+- Added a regression test proving production uploads stay disabled. Local development and tests continue to exercise image/video upload behaviour.
+- Evidence uploads must remain disabled in production until private durable object storage, malware scanning/quarantine, backup/restore, quotas, retention/deletion and access auditing are implemented and configured.
+- **Validation:** the new production guard and regression test are committed in this checkpoint; GitHub Actions must pass on the updated PR head before PR #18 is merged.
+- **Next:** wait for backend and frontend CI on the updated PR #18 head; then merge only if checks pass and mergeability is confirmed. Pull the merged `main` branch locally and test the application. Do not claim that production media upload is enabled.
+
+Resume commands:
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch feature/report-photo-video-evidence
+git pull --ff-only origin feature/report-photo-video-evidence
+```

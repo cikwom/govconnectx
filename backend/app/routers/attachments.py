@@ -76,6 +76,14 @@ def upload_report_attachment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Render's default filesystem is ephemeral. Keep public production uploads
+    # disabled until this endpoint is backed by durable private object storage.
+    if os.getenv("ENVIRONMENT", "development").strip().lower() == "production":
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Evidence uploads are temporarily unavailable while durable private storage is being configured.",
+        )
+
     report = get_accessible_report(report_id, db, current_user)
     declared_type = (file.content_type or "").lower().strip()
     upload_limit = MAX_VIDEO_UPLOAD_BYTES if declared_type.startswith("video/") else MAX_UPLOAD_BYTES

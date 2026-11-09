@@ -128,6 +128,17 @@ class ReportAttachmentTests(unittest.TestCase):
         self.assertEqual(download.content, png)
         self.assertEqual(download.headers["x-content-type-options"], "nosniff")
 
+    def test_production_uploads_are_disabled_until_durable_storage_exists(self):
+        png = b"\x89PNG\r\n\x1a\n" + b"production-test"
+        with patch.dict(os.environ, {"ENVIRONMENT": "production"}):
+            response = self.client.post(
+                f"/api/v1/reports/{self.report_id}/attachments",
+                headers=self.owner_headers,
+                files={"file": ("road-evidence.png", png, "image/png")},
+            )
+        self.assertEqual(response.status_code, 503)
+        self.assertIn("durable private storage", response.json()["detail"])
+
     def test_other_citizen_cannot_list_or_download_evidence(self):
         png = b"\x89PNG\r\n\x1a\n" + b"test-image-content"
         uploaded = self.client.post(
@@ -211,7 +222,6 @@ class ReportAttachmentTests(unittest.TestCase):
         )
         self.assertEqual(listing.status_code, 200)
         self.assertEqual(len(listing.json()), 1)
-
 
     def test_owner_can_upload_mp4_video_evidence(self):
         mp4 = bytes.fromhex("000000186674797069736f6d") + b"video-evidence"
