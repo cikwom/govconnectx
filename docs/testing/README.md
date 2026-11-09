@@ -41,3 +41,7 @@ Run backend and frontend in separate terminals for browser checks. See the root 
 ## Current baseline
 
 See [TEST_EVIDENCE.md](TEST_EVIDENCE.md) for the exact Phase 6 CI run IDs and outstanding manual checks.
+
+## Geographical Zones Phase 2 test coverage
+
+The current Phase 2 branch adds automated regression coverage for department geographic scopes, State/LGA validation, staff access boundaries, category-based auto-routing, ambiguous routing to the national triage queue, and the national zone → State → LGA report summary. See the Phase 2 checkpoint in the root [README](../../README.md) and record only the latest completed CI results in [TEST_EVIDENCE.md](TEST_EVIDENCE.md). The Admin UI and Windows browser regression are still pending; do not mark them passed until tested.
