@@ -2,11 +2,13 @@ from datetime import datetime, timedelta, timezone
 import os
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models.department import Department
 from app.models.department_geographic_scope import DepartmentGeographicScope
+from app.models.department_routing_category import DepartmentRoutingCategory
 from app.models.report import Report
 from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
@@ -60,10 +62,69 @@ def create_report(report: ReportCreate, db: Session = Depends(get_db), current_u
         if state is None or lga is None or lga.state_code != state.code:
             raise HTTPException(status_code=400, detail="The incident LGA does not belong to the selected state")
     sla_hours = max(1, int(os.getenv("REPORT_SLA_HOURS", "72")))
-    new_report = Report(title=report.title, description=report.description, category=report.category, latitude=report.latitude, longitude=report.longitude, address=report.address, incident_state_code=report.incident_state_code, incident_lga_code=report.incident_lga_code, user_id=current_user.id, status="SUBMITTED", sla_due_at=datetime.now(timezone.utc) + timedelta(hours=sla_hours))
+    routed_department = None
+    if report.incident_state_code and report.incident_lga_code:
+        candidates = (
+            db.query(Department)
+            .join(DepartmentRoutingCategory, DepartmentRoutingCategory.department_id == Department.id)
+            .join(DepartmentGeographicScope, DepartmentGeographicScope.department_id == Department.id)
+            .filter(
+                Department.is_active.is_(True),
+                func.lower(DepartmentRoutingCategory.category) == report.category.strip().lower(),
+                DepartmentGeographicScope.state_code == report.incident_state_code,
+                (DepartmentGeographicScope.lga_code.is_(None) | (DepartmentGeographicScope.lga_code == report.incident_lga_code)),
+            )
+            .distinct()
+            .all()
+        )
+        # Only route automatically when exactly one active department matches.
+        # Zero or multiple matches stay in the national administrator's triage queue.
+        if len(candidates) == 1:
+            routed_department = candidates[0]
+
+    initial_status = "ASSIGNED" if routed_department else "SUBMITTED"
+    new_report = Report(
+        title=report.title,
+        description=report.description,
+        category=report.category,
+        latitude=report.latitude,
+        longitude=report.longitude,
+        address=report.address,
+        incident_state_code=report.incident_state_code,
+        incident_lga_code=report.incident_lga_code,
+        user_id=current_user.id,
+        department_id=routed_department.id if routed_department else None,
+        status=initial_status,
+        sla_due_at=datetime.now(timezone.utc) + timedelta(hours=sla_hours),
+    )
     db.add(new_report)
     db.flush()
-    db.add(ReportStatusHistory(report_id=new_report.id, changed_by_user_id=current_user.id, old_status=None, new_status="SUBMITTED", message="Report submitted", is_public=True))
+    history_message = (
+        f"Automatically routed to {routed_department.name} using category and incident location"
+        if routed_department else "Report submitted to the unassigned triage queue"
+    )
+    db.add(ReportStatusHistory(
+        report_id=new_report.id,
+        changed_by_user_id=current_user.id,
+        old_status=None,
+        new_status=initial_status,
+        message=history_message,
+        is_public=True,
+    ))
+    if routed_department:
+        department_staff = db.query(User).filter(
+            User.department_id == routed_department.id,
+            User.is_active.is_(True),
+            User.role.in_(("official", "department_admin", "supervisor")),
+        ).all()
+        for staff_member in department_staff:
+            db.add(Notification(
+                recipient_user_id=staff_member.id,
+                report_id=new_report.id,
+                event_type="report_auto_routed",
+                title="New report routed to your department",
+                message=f'Report "{new_report.title}" matches your department category and geographic coverage.',
+            ))
     db.commit()
     db.refresh(new_report)
     return new_report
