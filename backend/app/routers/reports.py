@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
 from app.models.department import Department
+from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.report import Report
 from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
@@ -36,6 +37,15 @@ def get_accessible_report(report_id: int, db: Session, user: User) -> Report:
     elif user.role != "system_admin":
         if user.department_id is None or report.department_id != user.department_id:
             raise HTTPException(status_code=403, detail="This report is outside your department")
+        if not report.incident_state_code or not report.incident_lga_code:
+            raise HTTPException(status_code=403, detail="This report has no verified geographic assignment")
+        scope = db.query(DepartmentGeographicScope).filter(
+            DepartmentGeographicScope.department_id == user.department_id,
+            DepartmentGeographicScope.state_code == report.incident_state_code,
+            (DepartmentGeographicScope.lga_code.is_(None) | (DepartmentGeographicScope.lga_code == report.incident_lga_code)),
+        ).first()
+        if scope is None:
+            raise HTTPException(status_code=403, detail="This report is outside your department's geographic jurisdiction")
         if user.role == "official" and report.assigned_to_user_id != user.id:
             raise HTTPException(status_code=403, detail="This report is not assigned to you")
     return report
@@ -65,10 +75,17 @@ def get_reports(db: Session = Depends(get_db), current_user: User = Depends(get_
         query = query.filter(Report.user_id == current_user.id)
     elif current_user.role == "system_admin":
         pass
-    elif current_user.role == "official":
-        query = query.filter(Report.department_id == current_user.department_id, Report.assigned_to_user_id == current_user.id)
     else:
-        query = query.filter(Report.department_id == current_user.department_id)
+        query = query.join(
+            DepartmentGeographicScope,
+            (DepartmentGeographicScope.department_id == Report.department_id)
+            & (DepartmentGeographicScope.department_id == current_user.department_id)
+            & (DepartmentGeographicScope.state_code == Report.incident_state_code)
+            & (DepartmentGeographicScope.lga_code.is_(None) | (DepartmentGeographicScope.lga_code == Report.incident_lga_code)),
+        )
+        if current_user.role == "official":
+            query = query.filter(Report.assigned_to_user_id == current_user.id)
+        query = query.distinct()
     return query.order_by(Report.created_at.desc()).all()
 
 @router.get("/{report_id}", response_model=ReportResponse)
@@ -83,6 +100,15 @@ def assign_report(report_id: int, payload: ReportAssignmentCreate, db: Session =
     department = db.query(Department).filter(Department.id == payload.department_id, Department.is_active.is_(True)).first()
     if department is None:
         raise HTTPException(status_code=404, detail="Active department not found")
+    if not report.incident_state_code or not report.incident_lga_code:
+        raise HTTPException(status_code=400, detail="A report needs a verified State and LGA before geographic assignment")
+    destination_scope = db.query(DepartmentGeographicScope).filter(
+        DepartmentGeographicScope.department_id == payload.department_id,
+        DepartmentGeographicScope.state_code == report.incident_state_code,
+        (DepartmentGeographicScope.lga_code.is_(None) | (DepartmentGeographicScope.lga_code == report.incident_lga_code)),
+    ).first()
+    if destination_scope is None:
+        raise HTTPException(status_code=400, detail="The selected department is not authorized for this report's geographic area")
     if current_user.role != "system_admin":
         if current_user.department_id != payload.department_id:
             raise HTTPException(status_code=403, detail="You can only assign reports to your own department")
