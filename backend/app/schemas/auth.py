@@ -1,12 +1,16 @@
 import re
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ALLOWED_ROLES = {"citizen", "official", "department_admin", "supervisor", "system_admin"}
+
 
 class RegisterRequest(BaseModel):
     email: str = Field(min_length=5, max_length=255)
     full_name: str = Field(min_length=2, max_length=150)
     password: str = Field(min_length=8, max_length=128)
+    home_state_code: str | None = Field(default=None, max_length=12)
+    home_lga_code: str | None = Field(default=None, max_length=16)
 
     @field_validator("email")
     @classmethod
@@ -24,9 +28,16 @@ class RegisterRequest(BaseModel):
             raise ValueError("Full name must contain at least 2 characters")
         return value
 
+    @field_validator("home_state_code", "home_lga_code")
+    @classmethod
+    def normalize_location_code(cls, value: str | None) -> str | None:
+        return value.strip().upper() if value else None
+
+
 class LoginRequest(BaseModel):
     email: str
     password: str
+
 
 class UserResponse(BaseModel):
     id: int
@@ -34,12 +45,16 @@ class UserResponse(BaseModel):
     full_name: str
     role: str
     is_active: bool
+    home_state_code: str | None = None
+    home_lga_code: str | None = None
     model_config = ConfigDict(from_attributes=True)
+
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
 
 class RoleUpdateRequest(BaseModel):
     role: str

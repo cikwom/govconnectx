@@ -144,3 +144,28 @@ See [GOVCONNECT_PROGRESS.md](GOVCONNECT_PROGRESS.md) and [docs/ADMIN_COMMAND_CEN
 - Test commit: `cdcce8c7aaf0ed62fffd128a6625034f659620bd` — `test(security): cover production database configuration`.
 - README checkpoint commit: `7ad3c915a3c1a002ed452200109df230848b8b57`.
 - The implementation and tests are pushed to the feature branch through GitHub. CI has not yet been observed for this branch; do not merge until checks pass.
+
+
+## Current development checkpoint — Geographical zones Phase 1
+
+**Date:** 9 November 2026  
+**Branch:** `feature/geographical-zones-phase-1`  
+**Base:** PR #16 head `57de33d8a527b7b689057ac3c551e50b40b0f25e` (security PR remains open; this branch is stacked on it).
+
+- Added a reference directory for 37 state-level units (36 states + FCT) and 774 LGAs, including six geopolitical-zone labels.
+- Added public State and state-scoped LGA lookup endpoints.
+- Added nullable home State/LGA fields to citizen profiles and nullable incident State/LGA fields to reports.
+- Added server-side validation that a selected LGA belongs to its selected State.
+- Existing users and reports remain compatible because new location fields are nullable.
+- Source data attribution and follow-on requirements are documented in `docs/GEOGRAPHICAL_ZONES_HANDOFF.md`.
+- **Not yet implemented:** registration/report-form selectors, staff geographic scopes, geographic report authorization, automatic department routing, and ward-level boundaries. Do not describe this phase as complete zoning-based access control.
+- **Validation status:** code and tests have been authored on the remote feature branch, but CI has not yet been run; local tests/browser checks have not been performed from the user's Windows checkout.
+- **Next:** run backend unit tests and frontend build; add frontend dependent selectors; then implement staff geographic scopes and enforce them server-side before any zone-specific dashboard is exposed.
+
+Resume commands:
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch feature/geographical-zones-phase-1
+git pull --ff-only origin feature/geographical-zones-phase-1
+```
