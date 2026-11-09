@@ -214,7 +214,7 @@ class ReportAttachmentTests(unittest.TestCase):
 
 
     def test_owner_can_upload_mp4_video_evidence(self):
-        mp4 = b"\\x00\\x00\\x00\\x18ftypisom" + b"video-evidence"
+        mp4 = bytes.fromhex("000000186674797069736f6d") + b"video-evidence"
         uploaded = self.client.post(
             f"/api/v1/reports/{self.report_id}/attachments",
             headers=self.owner_headers,
@@ -232,7 +232,7 @@ class ReportAttachmentTests(unittest.TestCase):
         self.assertEqual(download.content, mp4)
 
     def test_owner_can_upload_webm_video_evidence(self):
-        webm = b"\\x1a\\x45\\xdf\\xa3" + b"webm-evidence"
+        webm = bytes.fromhex("1a45dfa3") + b"webm-evidence"
         uploaded = self.client.post(
             f"/api/v1/reports/{self.report_id}/attachments",
             headers=self.owner_headers,

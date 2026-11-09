@@ -185,7 +185,7 @@ git pull --ff-only origin feature/geographical-zones-phase-1
 - Updated report detail UI to allow video selection and label video attachments.
 - **Important deployment limitation:** evidence is still stored on the backend local filesystem. Render's ephemeral filesystem is not durable storage; this is suitable for local development only until private object storage, backups, malware scanning, and retention controls are configured. Do not treat uploaded evidence as safely retained in production yet.
 - **Not yet implemented:** staff geographic scopes, backend geographic access enforcement, automatic LGA/department routing, and map-based incident pin verification. The current location selectors allow citizens to choose any State/LGA, independently of home area.
-- **Validation:** code and tests committed remotely; CI and local Windows tests are pending.
+- **Validation:** code and tests committed remotely; CI and local Windows tests are pending. Workflow filters were extended in this branch so its pull request can run backend and frontend checks.
 
 Resume:
 ```powershell
