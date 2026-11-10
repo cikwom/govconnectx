@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user
 from app.database import get_db
 from app.models.report import Report
+from app.models.audit_event import record_audit_event
 from app.models.report_attachment import ReportAttachment
 from app.models.user import User
 from app.routers.reports import get_accessible_report
@@ -131,6 +132,7 @@ def upload_report_attachment(
             sha256=digest,
         )
         db.add(attachment)
+        record_audit_event(db, actor_user_id=current_user.id, action="report.evidence_uploaded", entity_type="report", entity_id=report.id, summary="Private report evidence was uploaded", details={"content_type": detected_type, "size_bytes": len(data), "storage_backend": backend})
         db.commit()
         db.refresh(attachment)
         return attachment
