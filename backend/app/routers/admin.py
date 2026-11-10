@@ -431,3 +431,60 @@ def get_geographic_overview(
         })
 
     return {"country": "Nigeria", "total_states": len(states), "total_lgas": len(lgas), "geopolitical_zones": list(zones.values())}
+
+
+@router.get("/reports/location-review")
+def list_location_reviews(
+    status_filter: str = Query(default="pending", alias="status", max_length=24),
+    limit: int = Query(default=100, ge=1, le=250),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """List GPS-submitted reports for explicit national administrator review."""
+    query = db.query(Report).filter(Report.gps_latitude.is_not(None), Report.gps_longitude.is_not(None))
+    if status_filter != "all":
+        query = query.filter(Report.location_review_status == status_filter)
+    rows = query.order_by(Report.created_at.desc()).limit(limit).all()
+    return {"items": [{
+        "id": row.id, "title": row.title, "category": row.category,
+        "gps_latitude": row.gps_latitude, "gps_longitude": row.gps_longitude,
+        "incident_state_code": row.incident_state_code, "incident_lga_code": row.incident_lga_code,
+        "address": row.address, "location_review_status": row.location_review_status,
+        "location_reviewed_by_user_id": row.location_reviewed_by_user_id,
+        "location_reviewed_at": row.location_reviewed_at.isoformat() if row.location_reviewed_at else None,
+        "location_review_note": row.location_review_note,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    } for row in rows]}
+
+
+@router.patch("/reports/{report_id}/location-review")
+def review_report_location(
+    report_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    reviewer: User = Depends(require_roles("system_admin")),
+):
+    """Record an auditable human review; never overwrite the citizen's selected area."""
+    from fastapi import HTTPException
+    outcome = str(payload.get("status", "")).strip().lower()
+    note = str(payload.get("note", "")).strip()
+    if outcome not in ("verified", "mismatch", "unable_to_verify"):
+        raise HTTPException(status_code=400, detail="Status must be verified, mismatch, or unable_to_verify")
+    if len(note) > 1000:
+        raise HTTPException(status_code=400, detail="Review note must be 1000 characters or fewer")
+    report = db.query(Report).filter(Report.id == report_id).first()
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if report.gps_latitude is None or report.gps_longitude is None:
+        raise HTTPException(status_code=400, detail="This report has no citizen-shared GPS coordinates")
+    report.location_review_status = outcome
+    report.location_reviewed_by_user_id = reviewer.id
+    report.location_reviewed_at = datetime.now(timezone.utc)
+    report.location_review_note = note or None
+    db.commit()
+    db.refresh(report)
+    return {"report_id": report.id, "location_review_status": report.location_review_status,
+            "location_reviewed_by_user_id": report.location_reviewed_by_user_id,
+            "location_reviewed_at": report.location_reviewed_at.isoformat(),
+            "location_review_note": report.location_review_note,
+            "incident_state_code": report.incident_state_code, "incident_lga_code": report.incident_lga_code}
