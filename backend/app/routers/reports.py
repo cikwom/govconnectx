@@ -131,6 +131,7 @@ def create_report(report: ReportCreate, background_tasks: BackgroundTasks, db: S
                 title="New report routed to your department",
                 message=f'Report "{new_report.title}" matches your department category and geographic coverage.',
             ))
+            queue_notification_email(db, background_tasks, staff_member.id, "New report routed to your department", f'Report "{new_report.title}" matches your department category and geographic coverage.')
     db.commit()
     db.refresh(new_report)
     return new_report
