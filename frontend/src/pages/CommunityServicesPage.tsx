@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { api } from "../services/api";
+import { useLanguage } from "../state/LanguageContext";
 
 type Listing = { id: number; listing_type: "lost" | "found"; title: string; description: string; location_text: string; contact_instructions: string; created_at: string };
 type Service = { id: number; name: string; category: string; description: string; address: string; phone: string | null; website: string | null; is_verified: boolean };
 
 export default function CommunityServicesPage() {
+  const { t } = useLanguage();
   const [listings, setListings] = useState<Listing[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -43,11 +45,11 @@ export default function CommunityServicesPage() {
   }
 
   return <>
-    <section className="welcome-row"><div><p className="eyebrow">COMMUNITY SERVICES</p><h1>Community help centre</h1><p className="muted">Find public services and share Lost and Found notices with your community.</p></div></section>
+    <section className="welcome-row"><div><p className="eyebrow">COMMUNITY SERVICES</p><h1>{t("Community help centre")}</h1><p className="muted">Find public services and share Lost and Found notices with your community.</p></div></section>
     {error && <p className="form-error" role="alert">{error}</p>}
     {notice && <p className="success-message" role="status">{notice}</p>}
     <section className="panel">
-      <div className="panel-heading"><div><h2>Lost and Found</h2><p className="muted">Listings are reviewed before publication. Do not post passwords, bank details, identity numbers or sensitive personal information.</p></div></div>
+      <div className="panel-heading"><div><h2>{t("Lost and Found")}</h2><p className="muted">Listings are reviewed before publication. Do not post passwords, bank details, identity numbers or sensitive personal information.</p></div></div>
       <form className="form-grid" onSubmit={submit}>
         <label>Listing type<select value={kind} onChange={event => setKind(event.target.value as "lost" | "found")}><option value="lost">I lost something</option><option value="found">I found something</option></select></label>
         <label>Item or notice title<input required minLength={4} maxLength={180} value={title} onChange={event => setTitle(event.target.value)} placeholder="e.g. Black backpack"/></label>
@@ -62,7 +64,7 @@ export default function CommunityServicesPage() {
       {loading ? <p className="empty-state">Loading notices…</p> : listings.length === 0 ? <p className="empty-state">No approved Lost and Found notices yet.</p> : <div className="report-list">{listings.map(item => <article className="report-row" key={item.id}><div className="report-symbol">{item.listing_type === "lost" ? "?" : "✓"}</div><div className="report-main"><div className="report-title-line"><h3>{item.title}</h3><span className="status-badge">{item.listing_type.toUpperCase()}</span></div><p>{item.description}</p><small>{item.location_text} · {new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" }).format(new Date(item.created_at))}</small><p><strong>Contact:</strong> {item.contact_instructions}</p></div></article>)}</div>}
     </section>
     <section className="panel">
-      <div className="panel-heading"><div><h2>Government service directory</h2><p className="muted">Public service listings verified by GovConnectX administrators.</p></div></div>
+      <div className="panel-heading"><div><h2>{t("Government service directory")}</h2><p className="muted">Public service listings verified by GovConnectX administrators.</p></div></div>
       {loading ? <p className="empty-state">Loading directory…</p> : services.length === 0 ? <p className="empty-state">The verified service directory is being prepared.</p> : <div className="report-list">{services.map(service => <article className="report-row" key={service.id}><div className="report-symbol">i</div><div className="report-main"><div className="report-title-line"><h3>{service.name}</h3><span className="status-badge">VERIFIED</span></div><p>{service.category} · {service.description}</p><small>{service.address}{service.phone ? ` · ${service.phone}` : ""}</small>{service.website && <p><a href={service.website} target="_blank" rel="noreferrer">Official website ↗</a></p>}</div></article>)}</div>}
     </section>
   </>;
