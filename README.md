@@ -304,3 +304,28 @@ git fetch origin
 git switch feature/geographical-zones-phase-2
 git pull --ff-only origin feature/geographical-zones-phase-2
 ```
+
+
+## Current development checkpoint — GPS incident-location review
+
+**Date:** 10 November 2026  
+**Branch:** `feature/geographical-zones-phase-2`  
+**Pull request:** [#19](https://github.com/cikwom/govconnectx/pull/19) — open draft; not merged.
+
+- Citizens can explicitly choose **Use my current location** during report submission. The browser asks for permission; declining or unsupported geolocation leaves manual coordinate entry available.
+- Device GPS coordinates are stored separately from the incident coordinates and selected State/LGA. Capturing GPS may prefill the incident coordinate fields, but it never changes the selected State or LGA.
+- Reports with shared GPS coordinates enter a `pending` human-review queue. Reports without GPS remain valid and are marked `not_provided`.
+- System administrators can inspect GPS coordinates and the citizen-selected incident State/LGA, then record `verified`, `mismatch`, or `unable_to_verify` with an optional note. Reviewer ID and timestamp are retained.
+- Review outcomes never silently rewrite the citizen's selected incident geography or alter the routing basis.
+- Backend validation rejects incomplete GPS pairs and out-of-range/non-finite coordinates. Regression tests cover the GPS queue, admin-only review, selected-area preservation, and invalid GPS input.
+- Latest code commit: `2e51b9f559f227575ddd8168b1d7658998c0e791` — GPS review tests. GitHub Actions for the latest changes were still running at checkpoint time; verify them before marking this work validated.
+- **Manual checks still required:** test browser permission allow/deny on HTTPS, inspect the admin review queue, verify the three review outcomes, and confirm department routing remains based on selected incident State/LGA.
+- This is an administrative human-review workflow, not automatic geospatial boundary validation. Do not describe GPS as proof that an incident occurred at the reported location.
+
+Resume commands:
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch feature/geographical-zones-phase-2
+git pull --ff-only origin feature/geographical-zones-phase-2
+```
