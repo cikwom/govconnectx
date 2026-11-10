@@ -157,6 +157,22 @@ def list_community_listings(listing_type: str | None = Query(default=None, patte
     return query.order_by(CommunityListing.created_at.desc()).limit(limit).all()
 
 
+@router.get("/admin/community/listings")
+def list_pending_community_listings(
+    moderation_status: str = Query(default="PENDING", pattern="^(PENDING|APPROVED|REJECTED)$"),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    return (
+        db.query(CommunityListing)
+        .filter(CommunityListing.moderation_status == moderation_status)
+        .order_by(CommunityListing.created_at.asc())
+        .limit(limit)
+        .all()
+    )
+
+
 @router.patch("/admin/community/listings/{listing_id}")
 def moderate_community_listing(listing_id: int, payload: ListingModeration, db: Session = Depends(get_db), current_user: User = Depends(require_roles("system_admin"))):
     listing = db.query(CommunityListing).filter(CommunityListing.id == listing_id).first()
