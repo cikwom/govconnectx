@@ -4,6 +4,7 @@ import {Link} from "react-router-dom";
 import {api} from "../services/api";
 import type {CreateReportPayload,GeographicState,LocalGovernmentArea,Report} from "../types/api";
 import {useAuth} from "../state/AuthContext";
+import DepartmentPerformancePanel from "../components/DepartmentPerformancePanel";
 
 const dateFormat=new Intl.DateTimeFormat("en-NG",{dateStyle:"medium"});
 
@@ -20,6 +21,7 @@ export default function DashboardPage(){
   async function submit(p:CreateReportPayload){await api.createReport(p);setShowForm(false);await load()}
   return <>
     <section className="citizen-dashboard-banner"><div><p className="eyebrow">YOUR VOICE. YOUR COMMUNITY.</p><h2>Progress starts with participation.</h2><p>Keep track of the issues you have raised and the action that follows.</p></div><span className="dashboard-fist" aria-hidden="true">✊</span></section>
+    {user?.role !== "citizen" && <DepartmentPerformancePanel/>}
     <section className="welcome-row"><div><p className="eyebrow">CITIZEN DASHBOARD</p><h1>Good day, {user?.full_name.split(" ")[0]}.</h1><p className="muted">Here’s an overview of the reports connected to your account.</p></div><button className="button button-primary" onClick={()=>setShowForm(v=>!v)}>{showForm?"Close form":"+ Submit a report"}</button></section>
     <section className="stat-grid"><Stat label="Total reports" value={reports.length} hint="Reports in your account"/><Stat label="In progress" value={active} hint="Awaiting action or review"/><Stat label="Resolved" value={resolved} hint="Marked as resolved"/></section>
     {showForm&&<ReportForm onSubmit={submit} onCancel={()=>setShowForm(false)}/>}
