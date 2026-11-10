@@ -10,7 +10,7 @@ from app.models.department import Department
 from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.department_routing_category import DepartmentRoutingCategory
 from app.models.report import Report
-from app.models.location import LocalGovernmentArea, State
+from app.models.location import Community, LocalGovernmentArea, State, Ward
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.notification import Notification
@@ -63,6 +63,20 @@ def create_report(report: ReportCreate, background_tasks: BackgroundTasks, db: S
         lga = db.get(LocalGovernmentArea, report.incident_lga_code)
         if state is None or lga is None or lga.state_code != state.code:
             raise HTTPException(status_code=400, detail="The incident LGA does not belong to the selected state")
+    ward = None
+    if report.incident_ward_code:
+        if not report.incident_state_code or not report.incident_lga_code:
+            raise HTTPException(status_code=400, detail="Select a state and LGA before selecting a ward")
+        ward = db.get(Ward, report.incident_ward_code)
+        if ward is None or not ward.is_active or ward.lga_code != report.incident_lga_code:
+            raise HTTPException(status_code=400, detail="The selected ward does not belong to the incident LGA")
+    if report.incident_community_code:
+        if ward is None:
+            raise HTTPException(status_code=400, detail="Select a ward before selecting a community")
+        community = db.get(Community, report.incident_community_code)
+        if community is None or not community.is_active or community.ward_code != ward.code:
+            raise HTTPException(status_code=400, detail="The selected community does not belong to the selected ward")
+
     sla_hours = max(1, int(os.getenv("REPORT_SLA_HOURS", "72")))
     routed_department = None
     if report.incident_state_code and report.incident_lga_code:
@@ -97,6 +111,8 @@ def create_report(report: ReportCreate, background_tasks: BackgroundTasks, db: S
         address=report.address,
         incident_state_code=report.incident_state_code,
         incident_lga_code=report.incident_lga_code,
+        incident_ward_code=report.incident_ward_code,
+        incident_community_code=report.incident_community_code,
         user_id=current_user.id,
         department_id=routed_department.id if routed_department else None,
         status=initial_status,

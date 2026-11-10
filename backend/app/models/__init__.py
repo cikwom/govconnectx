@@ -1,7 +1,7 @@
 from app.models.department import Department
 from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.department_routing_category import DepartmentRoutingCategory
-from app.models.location import LocalGovernmentArea, State
+from app.models.location import Community, LocalGovernmentArea, State, Ward
 from app.models.report import Report
 from app.models.report_assignment import ReportAssignment
 from app.models.report_attachment import ReportAttachment
@@ -9,6 +9,7 @@ from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.user import User
 
 __all__ = [
+    "Community",
     "Department",
     "DepartmentGeographicScope",
     "DepartmentRoutingCategory",
@@ -20,4 +21,5 @@ __all__ = [
     "ReportStatusHistory",
     "State",
     "User",
+    "Ward",
 ]

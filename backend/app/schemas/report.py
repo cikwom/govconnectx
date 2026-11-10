@@ -15,6 +15,8 @@ class ReportCreate(BaseModel):
     address: str | None = None
     incident_state_code: str | None = Field(default=None, max_length=12)
     incident_lga_code: str | None = Field(default=None, max_length=16)
+    incident_ward_code: str | None = Field(default=None, max_length=24)
+    incident_community_code: str | None = Field(default=None, max_length=32)
 
     @field_validator("latitude", "longitude", "gps_latitude", "gps_longitude")
     @classmethod
@@ -34,7 +36,7 @@ class ReportCreate(BaseModel):
             raise ValueError("Share both GPS latitude and longitude, or neither")
         return self
 
-    @field_validator("incident_state_code", "incident_lga_code")
+    @field_validator("incident_state_code", "incident_lga_code", "incident_ward_code", "incident_community_code")
     @classmethod
     def normalize_location_code(cls, value: str | None) -> str | None:
         return value.strip().upper() if value else None
@@ -50,6 +52,8 @@ class ReportResponse(BaseModel):
     address: str | None
     incident_state_code: str | None = None
     incident_lga_code: str | None = None
+    incident_ward_code: str | None = None
+    incident_community_code: str | None = None
     department_id: int | None = None
     gps_latitude: float | None = None
     gps_longitude: float | None = None
