@@ -52,6 +52,12 @@ def migrate_existing_schema(database_engine=None):
                 "resolved_at": "DATETIME",
                 "incident_state_code": "VARCHAR(12)",
                 "incident_lga_code": "VARCHAR(16)",
+                "gps_latitude": "FLOAT",
+                "gps_longitude": "FLOAT",
+                "location_review_status": "VARCHAR(24) NOT NULL DEFAULT 'not_provided'",
+                "location_reviewed_by_user_id": "INTEGER REFERENCES users(id)",
+                "location_reviewed_at": "DATETIME",
+                "location_review_note": "TEXT",
             }
             for name, sql_type in additions.items():
                 if name not in columns:
