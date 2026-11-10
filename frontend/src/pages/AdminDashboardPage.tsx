@@ -11,6 +11,7 @@ type Overview = {
 type AdminUser = { id: number; full_name: string; email: string; role: string; is_active: boolean; created_at: string | null; reports_submitted: number };
 type Activity = { id: string; type: string; actor: string; actor_role: string; description: string; report_id: number | null; created_at: string | null };
 type AdminReport = { id: number; title: string; description: string; category: string; status: string; address: string | null; created_at: string | null; reporter: { id: number; full_name: string; email: string } | null };
+type LocationReview = { id:number; title:string; category:string; gps_latitude:number; gps_longitude:number; incident_state_code:string|null; incident_lga_code:string|null; address:string|null; location_review_status:string; created_at:string|null };
 type OversightSignal = { code: string; label: string; detail: string };
 type OversightItem = {
   user: { id: number; full_name: string; email: string; is_active: boolean };
@@ -42,6 +43,7 @@ export default function AdminDashboardPage() {
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [activity, setActivity] = useState<Activity[]>([]);
   const [oversight, setOversight] = useState<Oversight | null>(null);
+  const [locationReviews, setLocationReviews] = useState<LocationReview[]>([]);
   const [search, setSearch] = useState("");
   const [reportSearch, setReportSearch] = useState("");
   const [busy, setBusy] = useState(true);
@@ -51,18 +53,20 @@ export default function AdminDashboardPage() {
   const load = useCallback(async () => {
     setError("");
     try {
-      const [summary, people, reportList, events, patterns] = await Promise.all([
+      const [summary, people, reportList, events, patterns, gpsReviews] = await Promise.all([
         adminRequest<Overview>("/overview"),
         adminRequest<{ items: AdminUser[] }>("/users?limit=100"),
         adminRequest<{ items: AdminReport[] }>("/reports?limit=100"),
         adminRequest<Activity[]>("/activity?limit=35"),
         adminRequest<Oversight>("/oversight?window_days=30"),
+        adminRequest<{items:LocationReview[]}>("/reports/location-review?status=pending"),
       ]);
       setOverview(summary);
       setUsers(people.items);
       setReports(reportList.items);
       setActivity(events);
       setOversight(patterns);
+      setLocationReviews(gpsReviews.items);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load admin data");
     } finally {
@@ -74,6 +78,14 @@ export default function AdminDashboardPage() {
   useEffect(() => { void load(); }, [load]);
   if (user && user.role !== "system_admin") return <Navigate to="/dashboard" replace />;
 
+  async function submitLocationReview(reportId:number,status:"verified"|"mismatch"|"unable_to_verify") {
+    const note=window.prompt("Add a short review note (optional):") ?? "";
+    try {
+      const response=await fetch(`${API_URL}/api/v1/admin/reports/${reportId}/location-review`,{method:"PATCH",headers:{"Authorization":`Bearer ${tokenStore.get()??""}`,"Content-Type":"application/json"},body:JSON.stringify({status,note})});
+      if(!response.ok){const body=await response.json().catch(()=>({}));throw new Error(body.detail??`Review failed (${response.status})`)}
+      setLocationReviews(items=>items.filter(item=>item.id!==reportId));
+    } catch(e){setError(e instanceof Error?e.message:"Could not save location review")}
+  }
   async function searchUsers(e: React.FormEvent) {
     e.preventDefault(); setFilterBusy(true);
     try { const data = await adminRequest<{ items: AdminUser[] }>(`/users?limit=100&search=${encodeURIComponent(search)}`); setUsers(data.items); }
@@ -110,6 +122,11 @@ export default function AdminDashboardPage() {
     </>}
 
     <GeographicOperationsPanel />
+
+    <section className="panel"><div className="panel-heading"><div><h2>Incident GPS verification</h2><p className="muted">Review citizen-shared device coordinates against the incident State/LGA selected in the report. This is a human review queue, not an automatic location verdict.</p></div><span className="admin-count">{locationReviews.length} pending</span></div>
+      {locationReviews.map(item=><article className="oversight-item" key={item.id}><div className="oversight-item-heading"><div><strong>#{item.id} · {item.title}</strong><small>{item.category} · {item.address||"No address supplied"}</small></div><span className="oversight-priority priority-medium">Pending review</span></div><p>Device GPS: {item.gps_latitude.toFixed(6)}, {item.gps_longitude.toFixed(6)}</p><p>Citizen-selected incident area: {item.incident_state_code||"No State"} / {item.incident_lga_code||"No LGA"}</p><div className="form-actions"><button className="button button-primary button-small" onClick={()=>void submitLocationReview(item.id,"verified")}>Mark consistent</button><button className="button button-quiet button-small" onClick={()=>void submitLocationReview(item.id,"mismatch")}>Flag mismatch</button><button className="button button-quiet button-small" onClick={()=>void submitLocationReview(item.id,"unable_to_verify")}>Unable to verify</button></div></article>)}
+      {locationReviews.length===0&&<p className="empty-state">No GPS reports are awaiting review.</p>}
+    </section>
 
     <section className="panel">
       <div className="panel-heading"><div><h2>Advanced reporting oversight</h2><p className="muted">Explainable patterns that may deserve a closer human review · last 30 days.</p></div><span className="admin-count">{oversight?.summary.flagged_citizens ?? 0} flagged for review</span></div>
