@@ -265,6 +265,40 @@ class ReportWorkflowTests(unittest.TestCase):
         self.assertEqual(queue.status_code, 200)
         self.assertTrue(any(item["id"] == report_id for item in queue.json()["items"]))
 
+    def test_citizen_gps_is_optional_and_review_does_not_change_selected_area(self):
+        _, admin = self.user("gps-admin@example.com", "system_admin")
+        _, citizen = self.user("gps-citizen@example.com", "citizen")
+        response = self.client.post("/api/v1/reports", headers=citizen, json={
+            "title": "GPS review test", "description": "Check incident coordinates",
+            "category": "Infrastructure", "latitude": 6.5244, "longitude": 3.3792,
+            "gps_latitude": 6.5245, "gps_longitude": 3.3793,
+            "incident_state_code": "NG025", "incident_lga_code": "NG025011",
+        })
+        self.assertEqual(response.status_code, 201)
+        report_id = response.json()["id"]
+        self.assertEqual(response.json()["location_review_status"], "pending")
+        queue = self.client.get("/api/v1/admin/reports/location-review", headers=admin)
+        self.assertEqual(queue.status_code, 200)
+        self.assertTrue(any(item["id"] == report_id for item in queue.json()["items"]))
+        denied = self.client.patch(f"/api/v1/admin/reports/{report_id}/location-review", headers=citizen, json={"status":"verified"})
+        self.assertEqual(denied.status_code, 403)
+        reviewed = self.client.patch(f"/api/v1/admin/reports/{report_id}/location-review", headers=admin, json={"status":"mismatch","note":"Coordinates require confirmation"})
+        self.assertEqual(reviewed.status_code, 200)
+        self.assertEqual(reviewed.json()["location_review_status"], "mismatch")
+        self.assertEqual(reviewed.json()["incident_state_code"], "NG025")
+        self.assertEqual(reviewed.json()["incident_lga_code"], "NG025011")
+        detail = self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).json()
+        self.assertEqual(detail["location_review_status"], "mismatch")
+        self.assertEqual(detail["incident_state_code"], "NG025")
+
+    def test_report_rejects_partial_or_out_of_range_gps_coordinates(self):
+        _, citizen = self.user("gps-validation@example.com", "citizen")
+        payload = {"title":"Invalid GPS","description":"Coordinates","category":"Other","latitude":6.5,"longitude":3.3,"incident_state_code":"NG025","incident_lga_code":"NG025011"}
+        partial = self.client.post("/api/v1/reports", headers=citizen, json={**payload,"gps_latitude":6.5})
+        self.assertEqual(partial.status_code, 422)
+        invalid = self.client.post("/api/v1/reports", headers=citizen, json={**payload,"gps_latitude":91,"gps_longitude":3.3})
+        self.assertEqual(invalid.status_code, 422)
+
 
 if __name__ == "__main__":
     unittest.main()
