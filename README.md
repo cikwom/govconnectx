@@ -388,8 +388,8 @@ cd backend
 .\.venv\Scripts\python.exe -m compileall -q app
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 
-# Frontend
+# Frontend (this repository currently has no committed package-lock.json)
 cd ..\frontend
-npm.cmd ci
+npm.cmd install
 npm.cmd run build
 ```
