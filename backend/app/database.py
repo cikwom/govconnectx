@@ -42,6 +42,11 @@ def migrate_existing_schema(database_engine=None):
     inspector = inspect(target_engine)
     tables = set(inspector.get_table_names())
     with target_engine.begin() as connection:
+        if "department_geographic_scopes" in tables:
+            scope_columns = {column["name"] for column in inspector.get_columns("department_geographic_scopes")}
+            if "ward_code" not in scope_columns:
+                connection.execute(text("ALTER TABLE department_geographic_scopes ADD COLUMN ward_code VARCHAR(24) REFERENCES wards(code)"))
+            connection.execute(text("CREATE INDEX IF NOT EXISTS ix_department_geographic_scopes_ward_code ON department_geographic_scopes (ward_code)"))
         if "reports" in tables:
             columns = {column["name"] for column in inspector.get_columns("reports")}
             additions = {
