@@ -10,6 +10,8 @@ type CommunityListing = { id: number; listing_type: "lost" | "found"; title: str
 type ServiceDirectoryEntry = { id: number; name: string; category: string; description: string; address: string; phone: string | null; website: string | null; is_verified: boolean };
 type AdminCommunityListing = CommunityListing & { moderation_status: string };
 type Preferences = { email_notifications: boolean; in_app_notifications: boolean; preferred_language: "en" | "ha" | "yo" | "ig"; updated_at: string };
+type Department = { id: number; name: string; description: string | null; is_active: boolean; created_at: string };
+type DepartmentMember = { id: number; full_name: string; role: string };
 type DepartmentPerformance = { department_id: number; scope: string; total_reports: number; open_reports: number; resolved_reports: number; overdue_reports: number; resolution_rate_percent: number; average_resolution_hours: number | null; status_counts: Record<string, number>; measurement_note: string };
 
 export const tokenStore = {
@@ -83,4 +85,8 @@ export const api = {
   preferences: () => request<Preferences>("/preferences"),
   updatePreferences: (payload: Omit<Preferences, "updated_at">) => request<Preferences>("/preferences", { method: "PUT", body: JSON.stringify(payload) }),
   departmentPerformance: () => request<DepartmentPerformance>("/departments/me/performance"),
+  departments: () => request<Department[]>("/departments"),
+  departmentMembers: (departmentId: number) => request<DepartmentMember[]>(`/departments/${departmentId}/members`),
+  assignReport: (reportId: number, departmentId: number, assignedToUserId: number | null, note?: string) => request(`/reports/${reportId}/assignments`, { method: "POST", body: JSON.stringify({ department_id: departmentId, assigned_to_user_id: assignedToUserId, note }) }),
+  updateReportStatus: (reportId: number, nextStatus: string, message?: string) => request<Report>(`/reports/${reportId}/status`, { method: "PATCH", body: JSON.stringify({ status: nextStatus, message }) }),
 };
