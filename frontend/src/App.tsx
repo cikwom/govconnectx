@@ -8,11 +8,13 @@ import LegalPage from "./pages/LegalPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ReportDetailPage from "./pages/ReportDetailPage";
+import TransparencyPage from "./pages/TransparencyPage";
 
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/transparency" element={<TransparencyPage />} />
       <Route path="/terms" element={<LegalPage />} />
       <Route path="/privacy" element={<LegalPage />} />
       <Route path="/login" element={<LoginPage />} />
