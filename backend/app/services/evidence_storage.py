@@ -10,6 +10,10 @@ class StorageNotConfigured(RuntimeError):
     pass
 
 
+def is_production_environment() -> bool:
+    return os.getenv("ENVIRONMENT", "development").strip().lower() == "production" or os.getenv("RENDER", "").strip().lower() in ("1", "true", "yes")
+
+
 def s3_is_configured() -> bool:
     return bool(
         os.getenv("OBJECT_STORAGE_BUCKET")
@@ -38,7 +42,7 @@ def scan_bytes(data: bytes) -> None:
     """Require a clean ClamAV INSTREAM response when a scanner is configured."""
     host = os.getenv("CLAMAV_HOST")
     if not host:
-        if os.getenv("ENVIRONMENT", "development").strip().lower() == "production":
+        if is_production_environment():
             raise StorageNotConfigured("Malware scanning is required before production evidence uploads")
         return
     port = int(os.getenv("CLAMAV_PORT", "3310"))
