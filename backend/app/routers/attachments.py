@@ -16,7 +16,7 @@ from app.models.report_attachment import ReportAttachment
 from app.models.user import User
 from app.routers.reports import get_accessible_report
 from app.schemas.attachments import ReportAttachmentResponse
-from app.services.evidence_storage import StorageNotConfigured, delete_object, read_object, s3_is_configured, scan_bytes, storage_is_production_ready, store_object
+from app.services.evidence_storage import StorageNotConfigured, delete_object, is_production_environment, read_object, s3_is_configured, scan_bytes, storage_is_production_ready, store_object
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Report evidence"])
 
@@ -78,7 +78,7 @@ def upload_report_attachment(
     current_user: User = Depends(get_current_user),
 ):
     # Production uploads require durable private object storage and a reachable malware scanner.
-    is_production = os.getenv("ENVIRONMENT", "development").strip().lower() == "production"
+    is_production = is_production_environment()
     if is_production and not storage_is_production_ready():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
