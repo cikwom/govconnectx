@@ -9,6 +9,7 @@ import LegalPage from "./pages/LegalPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import ReportDetailPage from "./pages/ReportDetailPage";
+import PreferencesPage from "./pages/PreferencesPage";
 import TransparencyPage from "./pages/TransparencyPage";
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/community-services" element={<CommunityServicesPage />} />
+          <Route path="/preferences" element={<PreferencesPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/reports/:reportId" element={<ReportDetailPage />} />
         </Route>

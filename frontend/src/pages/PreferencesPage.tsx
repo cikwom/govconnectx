@@ -1,0 +1,57 @@
+import { useEffect, useState } from "react";
+import { api } from "../services/api";
+import { useLanguage, type Language } from "../state/LanguageContext";
+
+export default function PreferencesPage() {
+  const { language, setLanguage } = useLanguage();
+  const [email, setEmail] = useState(true);
+  const [inApp, setInApp] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    api.preferences().then(value => {
+      if (!active) return;
+      setEmail(value.email_notifications);
+      setInApp(value.in_app_notifications);
+      setLanguage(value.preferred_language);
+    }).catch(reason => {
+      if (active) setError(reason instanceof Error ? reason.message : "Could not load preferences.");
+    }).finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [setLanguage]);
+
+  async function save() {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const saved = await api.updatePreferences({ email_notifications: email, in_app_notifications: inApp, preferred_language: language });
+      setLanguage(saved.preferred_language);
+      setNotice("Your preferences have been saved.");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save preferences."); }
+    finally { setBusy(false); }
+  }
+
+  return <section className="panel">
+    <p className="eyebrow">ACCOUNT SETTINGS</p>
+    <h1>Preferences</h1>
+    <p className="muted">Choose your interface language and notification preferences.</p>
+    {loading ? <p className="empty-state">Loading preferences…</p> : <>
+      <div className="form-grid" style={{ marginTop: "1.5rem" }}>
+        <label className="field-wide">Preferred language
+          <select value={language} onChange={event => setLanguage(event.target.value as Language)}>
+            <option value="en">English</option><option value="ha">Hausa</option><option value="yo">Yorùbá</option><option value="ig">Igbo</option>
+          </select>
+        </label>
+        <label className="field-wide"><span><input type="checkbox" checked={inApp} onChange={event => setInApp(event.target.checked)}/> In-app notifications</span></label>
+        <label className="field-wide"><span><input type="checkbox" checked={email} onChange={event => setEmail(event.target.checked)}/> Email notification preference</span><small className="muted">Email delivery will take effect when an SMTP/email provider is configured for this deployment.</small></label>
+        <div className="field-wide"><button className="button button-primary" disabled={busy} onClick={() => void save()}>{busy ? "Saving…" : "Save preferences"}</button></div>
+      </div>
+    </>}
+    {error && <p className="form-error" role="alert">{error}</p>}
+    {notice && <p className="muted" role="status">{notice}</p>}
+    <p className="muted" style={{ marginTop: "1rem" }}>Language support is being expanded. Some legacy screens and official content may remain in English until reviewed translations are completed.</p>
+  </section>;
+}

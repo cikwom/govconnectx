@@ -371,3 +371,10 @@ h1,h2,h3,.brand,.stat-card strong,.role-line strong,.oversight-stat-grid strong{
 .geo-lga-list strong{font-size:.7rem}
 .geo-lga-list span{font-size:.66rem;color:#718096;text-align:right}
 @media(max-width:760px){.geo-config-grid{grid-template-columns:1fr}.geo-lga-list{grid-template-columns:1fr}.geo-zone>summary,.geo-state>summary{align-items:flex-start;flex-direction:column;gap:4px}.geo-zone>summary span,.geo-state>summary span{text-align:left}.geo-queue-row{align-items:flex-start}}
+
+
+/* Accessibility: visible keyboard focus and skip navigation */
+:focus-visible{outline:3px solid #0b8f80;outline-offset:3px}
+.skip-link{position:fixed;top:-5rem;left:1rem;z-index:1000;padding:.8rem 1rem;background:#ffffff;color:#102a43;border:2px solid #087f70;border-radius:8px;font-weight:800;box-shadow:0 4px 18px rgba(0,0,0,.16)}
+.skip-link:focus{top:1rem}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}

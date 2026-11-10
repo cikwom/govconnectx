@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { api } from "../services/api";
 import { useAuth } from "../state/AuthContext";
 
@@ -21,7 +22,7 @@ export default function ReportActionPanel({ reportId, status }: { reportId: numb
     return () => { active = false; };
   }, [reportId]);
 
-  async function escalate(event: React.FormEvent<HTMLFormElement>) {
+  async function escalate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
       const result = await api.requestEscalation(reportId, urgency, reason.trim());
@@ -30,7 +31,7 @@ export default function ReportActionPanel({ reportId, status }: { reportId: numb
     finally { setBusy(false); }
   }
 
-  async function submitFeedback(event: React.FormEvent<HTMLFormElement>) {
+  async function submitFeedback(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
       await api.submitReportFeedback(reportId, rating, feedback.trim() || undefined);

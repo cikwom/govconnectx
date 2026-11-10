@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { api } from "../services/api";
 
 type Listing = { id: number; listing_type: string; title: string; description: string; location_text: string; contact_instructions: string; moderation_status: string };
@@ -26,7 +27,7 @@ export default function CommunityModerationPanel() {
     finally { setBusy(null); }
   }
 
-  async function publishService(event: React.FormEvent<HTMLFormElement>) {
+  async function publishService(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); setNotice("");
     try {
       await api.createServiceDirectoryEntry({ name: name.trim(), category: category.trim(), description: description.trim(), address: address.trim(), phone: phone.trim() || undefined });
