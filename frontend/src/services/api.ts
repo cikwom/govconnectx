@@ -9,6 +9,8 @@ const TOKEN_KEY = "govconnectx_access_token";
 type CommunityListing = { id: number; listing_type: "lost" | "found"; title: string; description: string; location_text: string; contact_instructions: string; created_at: string };
 type ServiceDirectoryEntry = { id: number; name: string; category: string; description: string; address: string; phone: string | null; website: string | null; is_verified: boolean };
 type AdminCommunityListing = CommunityListing & { moderation_status: string };
+type Preferences = { email_notifications: boolean; in_app_notifications: boolean; preferred_language: "en" | "ha" | "yo" | "ig"; updated_at: string };
+type DepartmentPerformance = { department_id: number; scope: string; total_reports: number; open_reports: number; resolved_reports: number; overdue_reports: number; resolution_rate_percent: number; average_resolution_hours: number | null; status_counts: Record<string, number>; measurement_note: string };
 
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),
@@ -78,4 +80,7 @@ export const api = {
   adminCommunityListings: () => request<AdminCommunityListing[]>("/admin/community/listings"),
   moderateCommunityListing: (id: number, moderation_status: "APPROVED" | "REJECTED") => request<{ id: number; moderation_status: string }>(`/admin/community/listings/${id}`, { method: "PATCH", body: JSON.stringify({ moderation_status }) }),
   createServiceDirectoryEntry: (payload: { name: string; category: string; description: string; address: string; phone?: string }) => request<ServiceDirectoryEntry>("/admin/service-directory", { method: "POST", body: JSON.stringify(payload) }),
+  preferences: () => request<Preferences>("/preferences"),
+  updatePreferences: (payload: Omit<Preferences, "updated_at">) => request<Preferences>("/preferences", { method: "PUT", body: JSON.stringify(payload) }),
+  departmentPerformance: () => request<DepartmentPerformance>("/departments/me/performance"),
 };
