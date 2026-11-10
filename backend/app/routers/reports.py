@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 import os
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, require_roles
@@ -16,6 +16,7 @@ from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.notification import Notification
 from app.models.audit_event import record_audit_event
 from app.models.user import User
+from app.services.email_delivery import queue_notification_email
 from app.schemas.report import ReportCreate, ReportResponse
 from app.schemas.workflow import AssignmentResponse, CommentCreate, CommentResponse, HistoryResponse, ReportAssignmentCreate, StatusUpdate
 
@@ -54,7 +55,7 @@ def get_accessible_report(report_id: int, db: Session, user: User) -> Report:
     return report
 
 @router.post("", response_model=ReportResponse, status_code=status.HTTP_201_CREATED)
-def create_report(report: ReportCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_report(report: ReportCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if bool(report.incident_state_code) != bool(report.incident_lga_code):
         raise HTTPException(status_code=400, detail="Select both the incident state and local government area")
     if report.incident_state_code:
@@ -130,6 +131,7 @@ def create_report(report: ReportCreate, db: Session = Depends(get_db), current_u
                 title="New report routed to your department",
                 message=f'Report "{new_report.title}" matches your department category and geographic coverage.',
             ))
+            queue_notification_email(db, background_tasks, staff_member.id, "New report routed to your department", f'Report "{new_report.title}" matches your department category and geographic coverage.')
     db.commit()
     db.refresh(new_report)
     return new_report
@@ -159,7 +161,7 @@ def get_report(report_id: int, db: Session = Depends(get_db), current_user: User
     return get_accessible_report(report_id, db, current_user)
 
 @router.post("/{report_id}/assignments", response_model=AssignmentResponse, status_code=status.HTTP_201_CREATED)
-def assign_report(report_id: int, payload: ReportAssignmentCreate, db: Session = Depends(get_db), current_user: User = Depends(require_roles("system_admin", "department_admin", "supervisor"))):
+def assign_report(report_id: int, payload: ReportAssignmentCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(require_roles("system_admin", "department_admin", "supervisor"))):
     report = db.query(Report).filter(Report.id == report_id).first()
     if report is None:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -196,13 +198,14 @@ def assign_report(report_id: int, payload: ReportAssignmentCreate, db: Session =
     recipients.discard(None)
     for recipient_id in recipients:
         db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_assigned", title="Report assignment updated", message=f'Report "{report.title}" has been routed to {department.name}.'))
+        queue_notification_email(db, background_tasks, recipient_id, "Report assignment updated", f'Report "{report.title}" has been routed to {department.name}.')
     record_audit_event(db, actor_user_id=current_user.id, action="report.assigned", entity_type="report", entity_id=report.id, summary="Report assigned to a department", details={"department_id": department.id, "assignee_user_id": payload.assigned_to_user_id})
     db.commit()
     db.refresh(assignment)
     return assignment
 
 @router.patch("/{report_id}/status", response_model=ReportResponse)
-def update_report_status(report_id: int, payload: StatusUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_roles(*STAFF_ROLES))):
+def update_report_status(report_id: int, payload: StatusUpdate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(require_roles(*STAFF_ROLES))):
     report = get_accessible_report(report_id, db, current_user)
     new_status = payload.status.strip().upper()
     if new_status not in ALLOWED_TRANSITIONS.get(report.status, set()):
@@ -221,6 +224,7 @@ def update_report_status(report_id: int, payload: StatusUpdate, db: Session = De
     for recipient_id in recipients:
         if recipient_id != current_user.id:
             db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_status_changed", title="Report status updated", message=f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.'))
+            queue_notification_email(db, background_tasks, recipient_id, "Report status updated", f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.')
     record_audit_event(db, actor_user_id=current_user.id, action="report.status_changed", entity_type="report", entity_id=report.id, summary="Report workflow status changed", details={"from": old_status, "to": new_status})
     db.commit()
     db.refresh(report)

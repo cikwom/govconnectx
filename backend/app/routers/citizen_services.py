@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -18,6 +18,7 @@ from app.schemas.citizen_services import (
     ServiceDirectoryCreate, ServiceDirectoryResponse,
 )
 from app.routers.reports import get_accessible_report
+from app.services.email_delivery import queue_notification_email
 
 router = APIRouter(prefix="/api/v1", tags=["Citizen services"])
 
@@ -61,7 +62,7 @@ def duplicate_report_hint(report_id: int, db: Session = Depends(get_db), current
 
 
 @router.post("/reports/{report_id}/escalations", status_code=status.HTTP_201_CREATED)
-def request_report_escalation(report_id: int, payload: EscalationCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def request_report_escalation(report_id: int, payload: EscalationCreate, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     report = get_accessible_report(report_id, db, current_user)
     existing = db.query(ReportEscalation).filter(
         ReportEscalation.report_id == report.id,
@@ -88,6 +89,7 @@ def request_report_escalation(report_id: int, payload: EscalationCreate, db: Ses
             title="Report requires escalation review",
             message=f"Report #{report.id} was flagged for {payload.urgency} attention. Review the report and escalation request.",
         ))
+        queue_notification_email(db, background_tasks, admin.id, "Report requires escalation review", f"Report #{report.id} was flagged for {payload.urgency} attention. Review the report and escalation request.")
     db.commit()
     db.refresh(escalation)
     return {"id": escalation.id, "report_id": report.id, "urgency": escalation.urgency, "status": escalation.status, "created_at": escalation.created_at.isoformat(), "notice": "This request alerts platform administrators; it is not an emergency dispatch service. If anyone is in immediate danger, contact the appropriate official emergency service directly."}

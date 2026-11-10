@@ -6,16 +6,18 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user
 from app.database import get_db
 from app.models.report import Report
+from app.models.audit_event import record_audit_event
 from app.models.report_attachment import ReportAttachment
 from app.models.user import User
 from app.routers.reports import get_accessible_report
 from app.schemas.attachments import ReportAttachmentResponse
+from app.services.evidence_storage import StorageNotConfigured, delete_object, is_production_environment, read_object, s3_is_configured, scan_bytes, storage_is_production_ready, store_object
 
 router = APIRouter(prefix="/api/v1/reports", tags=["Report evidence"])
 
@@ -76,12 +78,12 @@ def upload_report_attachment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Render's default filesystem is ephemeral. Keep public production uploads
-    # disabled until this endpoint is backed by durable private object storage.
-    if os.getenv("ENVIRONMENT", "development").strip().lower() == "production":
+    # Production uploads require durable private object storage and a reachable malware scanner.
+    is_production = is_production_environment()
+    if is_production and not storage_is_production_ready():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Evidence uploads are temporarily unavailable while durable private storage is being configured.",
+            detail="Evidence uploads require configured private object storage and malware scanning.",
         )
 
     report = get_accessible_report(report_id, db, current_user)
@@ -100,25 +102,46 @@ def upload_report_attachment(
         raise HTTPException(status_code=415, detail="File extension does not match its content")
 
     storage_key = uuid.uuid4().hex
-    destination = attachment_path(storage_key)
+    digest = hashlib.sha256(data).hexdigest()
+    backend = "s3" if s3_is_configured() else "local"
+    destination = attachment_path(storage_key) if backend == "local" else None
+    stored = False
     try:
-        destination.write_bytes(data)
+        try:
+            scan_bytes(data)
+        except StorageNotConfigured as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=415, detail=str(exc)) from exc
+        if backend == "s3":
+            try:
+                store_object(storage_key, data, detected_type, digest)
+            except StorageNotConfigured as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+        else:
+            destination.write_bytes(data)
+        stored = True
         attachment = ReportAttachment(
             report_id=report.id,
             uploaded_by_user_id=current_user.id,
             original_filename=safe_original_filename(file.filename),
             storage_key=storage_key,
+            storage_backend=backend,
             content_type=detected_type,
             size_bytes=len(data),
-            sha256=hashlib.sha256(data).hexdigest(),
+            sha256=digest,
         )
         db.add(attachment)
+        record_audit_event(db, actor_user_id=current_user.id, action="report.evidence_uploaded", entity_type="report", entity_id=report.id, summary="Private report evidence was uploaded", details={"content_type": detected_type, "size_bytes": len(data), "storage_backend": backend})
         db.commit()
         db.refresh(attachment)
         return attachment
     except Exception:
         db.rollback()
-        destination.unlink(missing_ok=True)
+        if stored and backend == "s3":
+            delete_object(storage_key)
+        elif destination is not None:
+            destination.unlink(missing_ok=True)
         raise
     finally:
         file.file.close()
@@ -155,10 +178,24 @@ def download_report_attachment(
     if attachment is None:
         raise HTTPException(status_code=404, detail="Attachment not found")
 
+    if attachment.storage_backend == "s3":
+        try:
+            stored_object = read_object(attachment.storage_key)
+        except (StorageNotConfigured, FileNotFoundError) as exc:
+            raise HTTPException(status_code=404, detail="Attachment file is unavailable") from exc
+        return StreamingResponse(
+            stored_object["Body"].iter_chunks(chunk_size=64 * 1024),
+            media_type="application/octet-stream",
+            headers={
+                "Content-Disposition": f'attachment; filename="{attachment.original_filename}"',
+                "X-Content-Type-Options": "nosniff",
+                "Cache-Control": "private, no-store",
+            },
+        )
+
     path = attachment_path(attachment.storage_key)
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Attachment file is unavailable")
-
     return FileResponse(
         path,
         media_type="application/octet-stream",
