@@ -329,3 +329,67 @@ git fetch origin
 git switch feature/geographical-zones-phase-2
 git pull --ff-only origin feature/geographical-zones-phase-2
 ```
+
+
+---
+
+## Current development checkpoint — Accountability Engine expansion
+
+**Date:** 10 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Current branch:** `main`  
+**Latest merged feature PR:** [#26 — Ward and community incident zoning](https://github.com/cikwom/govconnectx/pull/26)  
+**Latest merged commit:** `149518091a5f282486df0cf67f2612b0b6360ec7`
+
+The earlier geographic-zones and GPS checkpoint sections above describe historical work. The PR #19 status in the older checkpoint is superseded: the newer work has been merged through PRs #20–#26.
+
+### Merged feature batches
+
+- **PR #20:** Accountability audit events, protected audit log API, public aggregate transparency API/dashboard and roadmap.
+- **PR #21:** Advisory duplicate hints, report escalation, post-resolution feedback, moderated Lost and Found, verified public service directory.
+- **PR #22:** Department-scoped workload/SLA analytics, user preferences, starter English/Hausa/Yoruba/Igbo translations, keyboard skip navigation and reduced-motion support.
+- **PR #23:** S3-compatible private evidence storage, ClamAV fail-closed scanning, SMTP background email notifications, notification preference enforcement and production storage/backup guidance.
+- **PR #24:** Protected department staff directory, report assignment and status controls for authorized department staff and field officers.
+- **PR #25:** GitHub Actions workflow for backend compile/tests and frontend production build.
+- **PR #26:** Ward/community reference models and optional incident ward/community selection. Directory data must be entered from authoritative records; no codes or boundaries are fabricated.
+
+### Production configuration still required
+
+- Configure a private S3-compatible bucket and least-privilege credentials in Render.
+- Configure a reachable ClamAV scanner before production evidence uploads; production/Render uploads fail closed until storage and scanner are ready.
+- Configure SMTP variables and verify sender/domain before relying on email delivery.
+- Configure Neon database backup/PITR and object storage versioning/backup, then perform a restore drill.
+- Do not claim production backups or media storage are operational until provider settings and restore tests have been verified.
+
+### Outstanding work
+
+1. Add ward-level department jurisdiction rules and bulk import/validation for authoritative ward/community datasets.
+2. Add SMS/push notification delivery only after phone verification and explicit consent.
+3. Expand reviewed Hausa/Yoruba/Igbo translations across all screens and legal content.
+4. Complete formal WCAG 2.2 AA, security, privacy, API authorization and load testing.
+5. Add integration tests for S3, ClamAV, SMTP, escalation, feedback, moderation and role-based agency workflows.
+6. Complete manual browser testing for citizen, official, department administrator, supervisor and system administrator accounts.
+7. Implement retention/deletion, orphaned-object cleanup, delivery retries and monitoring.
+
+### Validation status
+
+The latest GitHub workflow was added in PR #25, but the GitHub integration did not return workflow-run results for the subsequent merged commits in this session. Do not assume the latest code has passed CI solely because PRs merged. Run the checks locally and verify Actions in GitHub.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\.venv\Scripts\python.exe -m compileall -q app
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\frontend
+npm.cmd ci
+npm.cmd run build
+```
