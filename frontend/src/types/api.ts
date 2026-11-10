@@ -22,6 +22,8 @@ export interface LocalGovernmentArea {
   name: string;
   state_code: string;
 }
+export interface GeographicWard { code: string; name: string; lga_code: string }
+export interface Community { code: string; name: string; ward_code: string }
 
 export interface AuthResponse { access_token: string; token_type: string; user: User }
 export interface Report {
@@ -40,6 +42,8 @@ export interface Report {
   address: string | null;
   incident_state_code?: string | null;
   incident_lga_code?: string | null;
+  incident_ward_code?: string | null;
+  incident_community_code?: string | null;
   department_id?: number | null;
   status: string;
   sla_due_at: string | null;
@@ -65,6 +69,8 @@ export interface CreateReportPayload {
   address?: string;
   incident_state_code: string;
   incident_lga_code: string;
+  incident_ward_code?: string;
+  incident_community_code?: string;
 }
 export interface HistoryItem { id: number; report_id: number; changed_by_user_id: number; old_status: string | null; new_status: string; message: string | null; is_public: boolean; created_at: string }
 export interface CommentItem { id: number; report_id: number; author_user_id: number; body: string; is_internal: boolean; created_at: string }
