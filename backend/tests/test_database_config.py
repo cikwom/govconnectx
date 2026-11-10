@@ -1,4 +1,6 @@
+import os
 import unittest
+from unittest.mock import patch
 
 from app.database import resolve_database_url
 
@@ -23,10 +25,13 @@ class DatabaseConfigurationTests(unittest.TestCase):
         )
 
     def test_development_keeps_sqlite_fallback(self):
-        self.assertEqual(
-            resolve_database_url(environment="development", database_url=None),
-            "sqlite:///./govconnect.db",
-        )
+        # CI may set DATABASE_URL for the application test database. This
+        # unit test intentionally checks the resolver's no-config fallback.
+        with patch.dict(os.environ, {"DATABASE_URL": ""}):
+            self.assertEqual(
+                resolve_database_url(environment="development", database_url=None),
+                "sqlite:///./govconnect.db",
+            )
 
     def test_test_environment_allows_explicit_sqlite(self):
         self.assertEqual(

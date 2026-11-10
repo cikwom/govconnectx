@@ -63,6 +63,7 @@ class CommentResponse(BaseModel):
 class DepartmentGeographicScopeInput(BaseModel):
     state_code: str = Field(min_length=1, max_length=12)
     lga_code: str | None = Field(default=None, max_length=16)
+    ward_code: str | None = Field(default=None, max_length=24)
 
 
 class DepartmentGeographicScopeResponse(BaseModel):
@@ -70,6 +71,7 @@ class DepartmentGeographicScopeResponse(BaseModel):
     department_id: int
     state_code: str
     lga_code: str | None
+    ward_code: str | None
     model_config = ConfigDict(from_attributes=True)
 
 

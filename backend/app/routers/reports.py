@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 import os
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
@@ -31,6 +31,20 @@ ALLOWED_TRANSITIONS = {
     "REJECTED": {"UNDER_REVIEW"},
 }
 
+def geographic_scope_filter(scope_model, state_code, lga_code, ward_code):
+    """Match a location against state-wide, LGA-wide, or exact-ward coverage."""
+    return and_(
+        scope_model.state_code == state_code,
+        or_(
+            scope_model.lga_code.is_(None),
+            and_(
+                scope_model.lga_code == lga_code,
+                or_(scope_model.ward_code.is_(None), scope_model.ward_code == ward_code),
+            ),
+        ),
+    )
+
+
 def get_accessible_report(report_id: int, db: Session, user: User) -> Report:
     report = db.query(Report).filter(Report.id == report_id).first()
     if report is None:
@@ -45,8 +59,7 @@ def get_accessible_report(report_id: int, db: Session, user: User) -> Report:
             raise HTTPException(status_code=403, detail="This report has no verified geographic assignment")
         scope = db.query(DepartmentGeographicScope).filter(
             DepartmentGeographicScope.department_id == user.department_id,
-            DepartmentGeographicScope.state_code == report.incident_state_code,
-            (DepartmentGeographicScope.lga_code.is_(None) | (DepartmentGeographicScope.lga_code == report.incident_lga_code)),
+            geographic_scope_filter(DepartmentGeographicScope, report.incident_state_code, report.incident_lga_code, report.incident_ward_code),
         ).first()
         if scope is None:
             raise HTTPException(status_code=403, detail="This report is outside your department's geographic jurisdiction")
@@ -87,8 +100,7 @@ def create_report(report: ReportCreate, background_tasks: BackgroundTasks, db: S
             .filter(
                 Department.is_active.is_(True),
                 func.lower(DepartmentRoutingCategory.category) == report.category.strip().lower(),
-                DepartmentGeographicScope.state_code == report.incident_state_code,
-                (DepartmentGeographicScope.lga_code.is_(None) | (DepartmentGeographicScope.lga_code == report.incident_lga_code)),
+                geographic_scope_filter(DepartmentGeographicScope, report.incident_state_code, report.incident_lga_code, report.incident_ward_code),
             )
             .distinct()
             .all()
@@ -164,8 +176,7 @@ def get_reports(db: Session = Depends(get_db), current_user: User = Depends(get_
             DepartmentGeographicScope,
             (DepartmentGeographicScope.department_id == Report.department_id)
             & (DepartmentGeographicScope.department_id == current_user.department_id)
-            & (DepartmentGeographicScope.state_code == Report.incident_state_code)
-            & (DepartmentGeographicScope.lga_code.is_(None) | (DepartmentGeographicScope.lga_code == Report.incident_lga_code)),
+            & geographic_scope_filter(DepartmentGeographicScope, Report.incident_state_code, Report.incident_lga_code, Report.incident_ward_code),
         )
         if current_user.role == "official":
             query = query.filter(Report.assigned_to_user_id == current_user.id)
@@ -188,8 +199,7 @@ def assign_report(report_id: int, payload: ReportAssignmentCreate, background_ta
         raise HTTPException(status_code=400, detail="A report needs a verified State and LGA before geographic assignment")
     destination_scope = db.query(DepartmentGeographicScope).filter(
         DepartmentGeographicScope.department_id == payload.department_id,
-        DepartmentGeographicScope.state_code == report.incident_state_code,
-        (DepartmentGeographicScope.lga_code.is_(None) | (DepartmentGeographicScope.lga_code == report.incident_lga_code)),
+        geographic_scope_filter(DepartmentGeographicScope, report.incident_state_code, report.incident_lga_code, report.incident_ward_code),
     ).first()
     if destination_scope is None:
         raise HTTPException(status_code=400, detail="The selected department is not authorized for this report's geographic area")
