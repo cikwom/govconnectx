@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, require_roles
@@ -7,6 +8,7 @@ from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.department_routing_category import DepartmentRoutingCategory
 from app.models.location import LocalGovernmentArea, State
 from app.models.user import User
+from app.models.report import Report
 from app.schemas.workflow import DepartmentCreate, DepartmentGeographicScopeInput, DepartmentGeographicScopeResponse, DepartmentMemberUpdate, DepartmentResponse, DepartmentRoutingCategoryInput, DepartmentRoutingCategoryResponse
 
 router = APIRouter(prefix="/api/v1/departments", tags=["Departments"])
@@ -162,3 +164,56 @@ def replace_department_routing_categories(
     except Exception:
         db.rollback()
         raise
+
+
+
+@router.get("/me/performance")
+def department_performance(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Department-scoped operational metrics; field officers see only their own assignments."""
+    if current_user.role not in ("official", "department_admin", "supervisor"):
+        raise HTTPException(status_code=403, detail="This dashboard is available to department staff")
+    if current_user.department_id is None:
+        raise HTTPException(status_code=403, detail="Your account is not assigned to a department")
+    query = db.query(Report).filter(Report.department_id == current_user.department_id)
+    if current_user.role == "official":
+        query = query.filter(Report.assigned_to_user_id == current_user.id)
+    reports = query.all()
+    statuses = {}
+    resolution_hours = []
+    overdue = 0
+    now = datetime.now(timezone.utc)
+    for report in reports:
+        statuses[report.status] = statuses.get(report.status, 0) + 1
+        if report.status not in ("RESOLVED", "REJECTED") and report.sla_due_at:
+            due = report.sla_due_at
+            if due.tzinfo is None:
+                due = due.replace(tzinfo=timezone.utc)
+            if due < now:
+                overdue += 1
+        if report.status == "RESOLVED" and report.created_at and report.resolved_at:
+            created = report.created_at
+            resolved = report.resolved_at
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            if resolved.tzinfo is None:
+                resolved = resolved.replace(tzinfo=timezone.utc)
+            duration = (resolved - created).total_seconds() / 3600
+            if duration >= 0:
+                resolution_hours.append(duration)
+    total = len(reports)
+    resolved_count = statuses.get("RESOLVED", 0)
+    return {
+        "department_id": current_user.department_id,
+        "scope": "individual_assignments" if current_user.role == "official" else "department",
+        "total_reports": total,
+        "open_reports": sum(count for key, count in statuses.items() if key not in ("RESOLVED", "REJECTED")),
+        "resolved_reports": resolved_count,
+        "overdue_reports": overdue,
+        "resolution_rate_percent": round(resolved_count * 100 / total, 1) if total else 0,
+        "average_resolution_hours": round(sum(resolution_hours) / len(resolution_hours), 1) if resolution_hours else None,
+        "status_counts": statuses,
+        "measurement_note": "Metrics describe reports currently visible to this account. They are operational indicators, not a standalone performance ranking.",
+    }
