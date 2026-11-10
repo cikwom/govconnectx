@@ -14,6 +14,7 @@ from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.notification import Notification
 from app.models.user import User
+from app.models.location import Ward
 from app.routers.locations import seed_location_directory
 
 class ReportWorkflowTests(unittest.TestCase):
@@ -47,6 +48,7 @@ class ReportWorkflowTests(unittest.TestCase):
         for model in (Notification, ReportComment, ReportStatusHistory, ReportAssignment):
             db.query(model).delete()
         db.query(Report).delete()
+        db.query(Ward).filter(Ward.code.like("TEST-WARD-%")).delete(synchronize_session=False)
         db.query(User).delete()
         db.query(Department).delete()
         db.commit()
@@ -74,14 +76,23 @@ class ReportWorkflowTests(unittest.TestCase):
         self.assertEqual(scoped.status_code, 200)
         return created
 
-    def report(self, headers):
-        response = self.client.post("/api/v1/reports", headers=headers, json={
-            "title": "Blocked drain", "description": "Drain is blocked",
-            "category": "Environment", "latitude": 6.5, "longitude": 3.3,
-            "incident_state_code": "NG025", "incident_lga_code": "NG025011",
-        })
+    def report(self, headers, ward_code=None):
+        payload = {"title": "Blocked drain", "description": "Drain is blocked", "category": "Environment",
+                   "latitude": 6.5, "longitude": 3.3, "incident_state_code": "NG025", "incident_lga_code": "NG025011"}
+        if ward_code:
+            payload["incident_ward_code"] = ward_code
+        response = self.client.post("/api/v1/reports", headers=headers, json=payload)
         self.assertEqual(response.status_code, 201)
         return response.json()["id"]
+
+    def create_test_wards(self):
+        db = self.Session()
+        db.add_all([
+            Ward(code="TEST-WARD-A", name="Test Ward A", lga_code="NG025011", is_active=True),
+            Ward(code="TEST-WARD-B", name="Test Ward B", lga_code="NG025011", is_active=True),
+        ])
+        db.commit()
+        db.close()
 
     def test_department_creation_and_listing(self):
         _, admin = self.user("admin@example.com", "system_admin")
@@ -290,6 +301,54 @@ class ReportWorkflowTests(unittest.TestCase):
         detail = self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).json()
         self.assertEqual(detail["location_review_status"], "mismatch")
         self.assertEqual(detail["incident_state_code"], "NG025")
+
+    def test_ward_scope_restricts_staff_detail_and_list(self):
+        self.create_test_wards()
+        _, admin = self.user("ward-admin@example.com", "system_admin")
+        _, citizen = self.user("ward-citizen@example.com", "citizen")
+        department = self.department(admin, "Ward Scoped Department")
+        first = self.report(citizen, "TEST-WARD-A")
+        second = self.report(citizen, "TEST-WARD-B")
+        for report_id in (first, second):
+            assigned = self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin,
+                                        json={"department_id": department.json()["id"]})
+            self.assertEqual(assigned.status_code, 201)
+        narrowed = self.client.put(f"/api/v1/departments/{department.json()['id']}/geographic-scopes",
+            headers=admin, json=[{"state_code":"NG025","lga_code":"NG025011","ward_code":"TEST-WARD-A"}])
+        self.assertEqual(narrowed.status_code, 200)
+        _, manager = self.user("ward-manager@example.com", "department_admin", department.json()["id"])
+        self.assertEqual(self.client.get(f"/api/v1/reports/{first}", headers=manager).status_code, 200)
+        self.assertEqual(self.client.get(f"/api/v1/reports/{second}", headers=manager).status_code, 403)
+        visible = {row["id"] for row in self.client.get("/api/v1/reports", headers=manager).json()}
+        self.assertIn(first, visible)
+        self.assertNotIn(second, visible)
+
+    def test_ward_scope_validates_parent_lga(self):
+        self.create_test_wards()
+        _, admin = self.user("ward-validation@example.com", "system_admin")
+        department = self.client.post("/api/v1/departments", headers=admin, json={"name":"Ward Validation Department"})
+        endpoint = f"/api/v1/departments/{department.json()['id']}/geographic-scopes"
+        missing_lga = self.client.put(endpoint, headers=admin, json=[{"state_code":"NG025","ward_code":"TEST-WARD-A"}])
+        wrong_parent = self.client.put(endpoint, headers=admin, json=[{"state_code":"NG001","lga_code":"NG001001","ward_code":"TEST-WARD-A"}])
+        self.assertEqual(missing_lga.status_code, 400)
+        self.assertEqual(wrong_parent.status_code, 400)
+
+    def test_ward_scoped_auto_routing_matches_only_that_ward(self):
+        self.create_test_wards()
+        _, admin = self.user("ward-route-admin@example.com", "system_admin")
+        _, citizen = self.user("ward-route-citizen@example.com", "citizen")
+        department = self.client.post("/api/v1/departments", headers=admin, json={"name":"Ward Routing Department"})
+        department_id = department.json()["id"]
+        scope = self.client.put(f"/api/v1/departments/{department_id}/geographic-scopes", headers=admin,
+            json=[{"state_code":"NG025","lga_code":"NG025011","ward_code":"TEST-WARD-A"}])
+        self.assertEqual(scope.status_code, 200)
+        categories = self.client.put(f"/api/v1/departments/{department_id}/routing-categories", headers=admin,
+            json=[{"category":"Environment"}])
+        self.assertEqual(categories.status_code, 200)
+        in_scope = self.report(citizen, "TEST-WARD-A")
+        out_of_scope = self.report(citizen, "TEST-WARD-B")
+        self.assertEqual(self.client.get(f"/api/v1/reports/{in_scope}", headers=citizen).json()["department_id"], department_id)
+        self.assertIsNone(self.client.get(f"/api/v1/reports/{out_of_scope}", headers=citizen).json()["department_id"])
 
     def test_report_rejects_partial_or_out_of_range_gps_coordinates(self):
         _, citizen = self.user("gps-validation@example.com", "citizen")
