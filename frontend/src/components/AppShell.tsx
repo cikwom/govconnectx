@@ -9,6 +9,7 @@ export default function AppShell() {
       <header className="topbar">
         <NavLink className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></NavLink>
         <div className="topbar-user">
+          <NavLink className="admin-nav-link" to="/community-services">Community services</NavLink>
           {user?.role === "system_admin" && <NavLink className="admin-nav-link" to="/admin">Command Centre</NavLink>}
           <ThemeToggle />
           <div className="user-copy"><strong>{user?.full_name}</strong><span>{user?.role.replaceAll("_", " ")}</span></div>
