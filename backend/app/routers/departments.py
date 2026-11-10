@@ -44,6 +44,34 @@ def set_user_department(user_id: int, payload: DepartmentMemberUpdate, db: Sessi
     return {"user_id": user.id, "department_id": user.department_id}
 
 
+@router.get("/{department_id}/members")
+def list_department_members(
+    department_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.role == "system_admin":
+        pass
+    elif current_user.role in ("department_admin", "supervisor") and current_user.department_id == department_id:
+        pass
+    else:
+        raise HTTPException(status_code=403, detail="You cannot view staff outside your department")
+    department = db.query(Department).filter(Department.id == department_id, Department.is_active.is_(True)).first()
+    if department is None:
+        raise HTTPException(status_code=404, detail="Active department not found")
+    members = (
+        db.query(User)
+        .filter(
+            User.department_id == department_id,
+            User.is_active.is_(True),
+            User.role.in_(("official", "department_admin", "supervisor")),
+        )
+        .order_by(User.full_name)
+        .all()
+    )
+    return [{"id": member.id, "full_name": member.full_name, "role": member.role} for member in members]
+
+
 @router.get("/{department_id}/geographic-scopes", response_model=list[DepartmentGeographicScopeResponse])
 def list_department_geographic_scopes(
     department_id: int,

@@ -44,6 +44,7 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     role: str
+    department_id: int | None = None
     is_active: bool
     home_state_code: str | None = None
     home_lga_code: str | None = None

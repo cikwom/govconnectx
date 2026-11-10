@@ -5,6 +5,7 @@ export interface User {
   email: string;
   full_name: string;
   role: UserRole;
+  department_id?: number | null;
   is_active: boolean;
   home_state_code?: string | null;
   home_lga_code?: string | null;
