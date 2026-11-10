@@ -1,6 +1,10 @@
 import logging
 import os
 import smtplib
+from sqlalchemy.orm import Session
+
+from app.models.user import User
+from app.models.user_preference import UserPreference
 from email.message import EmailMessage
 
 logger = logging.getLogger(__name__)
@@ -47,3 +51,15 @@ def send_notification_email(to_email: str, subject: str, body: str) -> bool:
     except (OSError, smtplib.SMTPException):
         logger.exception("Could not deliver GovConnectX notification email")
         return False
+
+
+
+def queue_notification_email(db: Session, background_tasks, recipient_user_id: int, subject: str, body: str) -> None:
+    """Queue delivery only when the account has not opted out of email updates."""
+    user = db.query(User).filter(User.id == recipient_user_id, User.is_active.is_(True)).first()
+    if user is None or not user.email:
+        return
+    preference = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
+    if preference is not None and not preference.email_notifications:
+        return
+    background_tasks.add_task(send_notification_email, user.email, subject, body)
