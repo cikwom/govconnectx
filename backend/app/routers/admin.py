@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import require_roles
 from app.database import get_db
 from app.models.report import Report
+from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportStatusHistory
 from app.models.user import User
@@ -339,3 +340,151 @@ def get_reporting_oversight(
         "items": selected,
         "notice": "These are review signals, not proof of false reporting. An administrator must examine the reports and evidence before taking action.",
     }
+
+
+@router.get("/reports/unassigned")
+def list_unassigned_reports(
+    limit: int = Query(default=100, ge=1, le=250),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """National triage queue for reports without one unambiguous department route."""
+    query = db.query(Report).filter(Report.department_id.is_(None))
+    total = query.count()
+    rows = query.order_by(Report.created_at.asc()).offset(offset).limit(limit).all()
+    return {
+        "total": total,
+        "items": [
+            {
+                "id": report.id,
+                "title": report.title,
+                "description": report.description,
+                "category": report.category,
+                "status": report.status,
+                "address": report.address,
+                "incident_state_code": report.incident_state_code,
+                "incident_lga_code": report.incident_lga_code,
+                "created_at": report.created_at.isoformat() if report.created_at else None,
+            }
+            for report in rows
+        ],
+    }
+
+
+@router.get("/geography/overview")
+def get_geographic_overview(
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """Return national -> geopolitical zone -> State -> LGA report totals."""
+    report_rows = db.query(
+        Report.incident_state_code,
+        Report.incident_lga_code,
+        Report.status,
+        Report.department_id,
+    ).all()
+    state_counts = {}
+    lga_counts = {}
+    for state_code, lga_code, report_status, department_id in report_rows:
+        if not state_code:
+            continue
+        state_bucket = state_counts.setdefault(state_code, {"total": 0, "open": 0, "unassigned": 0})
+        state_bucket["total"] += 1
+        if report_status not in ("RESOLVED", "REJECTED"):
+            state_bucket["open"] += 1
+        if department_id is None:
+            state_bucket["unassigned"] += 1
+        if lga_code:
+            lga_bucket = lga_counts.setdefault(lga_code, {"total": 0, "open": 0, "unassigned": 0})
+            lga_bucket["total"] += 1
+            if report_status not in ("RESOLVED", "REJECTED"):
+                lga_bucket["open"] += 1
+            if department_id is None:
+                lga_bucket["unassigned"] += 1
+
+    zones = {}
+    states = db.query(State).order_by(State.geopolitical_zone, State.name).all()
+    lgas = db.query(LocalGovernmentArea).order_by(LocalGovernmentArea.name).all()
+    lgas_by_state = {}
+    for lga in lgas:
+        lgas_by_state.setdefault(lga.state_code, []).append(lga)
+
+    for state in states:
+        zone = zones.setdefault(state.geopolitical_zone, {"name": state.geopolitical_zone, "total": 0, "open": 0, "unassigned": 0, "states": []})
+        counts = state_counts.get(state.code, {"total": 0, "open": 0, "unassigned": 0})
+        zone["total"] += counts["total"]
+        zone["open"] += counts["open"]
+        zone["unassigned"] += counts["unassigned"]
+        zone["states"].append({
+            "code": state.code,
+            "name": state.name,
+            **counts,
+            "lgas": [
+                {
+                    "code": lga.code,
+                    "name": lga.name,
+                    **lga_counts.get(lga.code, {"total": 0, "open": 0, "unassigned": 0}),
+                }
+                for lga in lgas_by_state.get(state.code, [])
+            ],
+        })
+
+    return {"country": "Nigeria", "total_states": len(states), "total_lgas": len(lgas), "geopolitical_zones": list(zones.values())}
+
+
+@router.get("/reports/location-review")
+def list_location_reviews(
+    status_filter: str = Query(default="pending", alias="status", max_length=24),
+    limit: int = Query(default=100, ge=1, le=250),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """List GPS-submitted reports for explicit national administrator review."""
+    query = db.query(Report).filter(Report.gps_latitude.is_not(None), Report.gps_longitude.is_not(None))
+    if status_filter != "all":
+        query = query.filter(Report.location_review_status == status_filter)
+    rows = query.order_by(Report.created_at.desc()).limit(limit).all()
+    return {"items": [{
+        "id": row.id, "title": row.title, "category": row.category,
+        "gps_latitude": row.gps_latitude, "gps_longitude": row.gps_longitude,
+        "incident_state_code": row.incident_state_code, "incident_lga_code": row.incident_lga_code,
+        "address": row.address, "location_review_status": row.location_review_status,
+        "location_reviewed_by_user_id": row.location_reviewed_by_user_id,
+        "location_reviewed_at": row.location_reviewed_at.isoformat() if row.location_reviewed_at else None,
+        "location_review_note": row.location_review_note,
+        "created_at": row.created_at.isoformat() if row.created_at else None,
+    } for row in rows]}
+
+
+@router.patch("/reports/{report_id}/location-review")
+def review_report_location(
+    report_id: int,
+    payload: dict,
+    db: Session = Depends(get_db),
+    reviewer: User = Depends(require_roles("system_admin")),
+):
+    """Record an auditable human review; never overwrite the citizen's selected area."""
+    from fastapi import HTTPException
+    outcome = str(payload.get("status", "")).strip().lower()
+    note = str(payload.get("note", "")).strip()
+    if outcome not in ("verified", "mismatch", "unable_to_verify"):
+        raise HTTPException(status_code=400, detail="Status must be verified, mismatch, or unable_to_verify")
+    if len(note) > 1000:
+        raise HTTPException(status_code=400, detail="Review note must be 1000 characters or fewer")
+    report = db.query(Report).filter(Report.id == report_id).first()
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if report.gps_latitude is None or report.gps_longitude is None:
+        raise HTTPException(status_code=400, detail="This report has no citizen-shared GPS coordinates")
+    report.location_review_status = outcome
+    report.location_reviewed_by_user_id = reviewer.id
+    report.location_reviewed_at = datetime.now(timezone.utc)
+    report.location_review_note = note or None
+    db.commit()
+    db.refresh(report)
+    return {"report_id": report.id, "location_review_status": report.location_review_status,
+            "location_reviewed_by_user_id": report.location_reviewed_by_user_id,
+            "location_reviewed_at": report.location_reviewed_at.isoformat(),
+            "location_review_note": report.location_review_note,
+            "incident_state_code": report.incident_state_code, "incident_lga_code": report.incident_lga_code}

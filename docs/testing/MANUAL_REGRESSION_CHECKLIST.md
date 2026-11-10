@@ -107,3 +107,15 @@ Use this checklist for local integration testing and repeat it after changes to 
 - [ ] Sections A, F and relevant parts of G/H pass.
 - [ ] Citizen, official, department admin, supervisor and system admin views are tested with separate synthetic accounts.
 - [ ] Every staff action is authorized by the backend, not only hidden in the UI.
+
+
+## GPS incident-location review
+
+- [ ] Submit a report after granting browser location permission over HTTPS; confirm GPS values are captured and both coordinate fields are populated.
+- [ ] Submit a report after denying permission; confirm manual coordinates still work and GPS status is `not_provided`.
+- [ ] Confirm selecting GPS does not alter the incident State or LGA.
+- [ ] As System Admin, open the Incident GPS verification panel and confirm pending reports show coordinates and selected State/LGA.
+- [ ] Confirm citizen and department accounts cannot access the admin review endpoints.
+- [ ] Mark a report consistent, flag a mismatch, and mark another unable to verify; confirm reviewer and timestamp are recorded.
+- [ ] Confirm a mismatch never rewrites the report's selected State/LGA or changes department routing.
+- [ ] Confirm reports with no GPS remain available to the normal workflow.

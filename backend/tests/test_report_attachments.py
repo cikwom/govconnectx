@@ -13,9 +13,11 @@ from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
 from app.models.department import Department
+from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.report import Report
 from app.models.report_attachment import ReportAttachment
 from app.models.user import User
+from app.routers.locations import seed_location_directory
 
 
 class ReportAttachmentTests(unittest.TestCase):
@@ -51,6 +53,7 @@ class ReportAttachmentTests(unittest.TestCase):
         self.env.start()
         db = self.Session()
         try:
+            seed_location_directory(db)
             db.query(ReportAttachment).delete()
             db.query(Report).delete()
             db.query(User).delete()
@@ -79,6 +82,8 @@ class ReportAttachmentTests(unittest.TestCase):
                 longitude=3.3,
                 user_id=self.owner.id,
                 status="SUBMITTED",
+                incident_state_code="NG025",
+                incident_lga_code="NG025011",
             )
             db.add(self.report)
             db.commit()
@@ -201,6 +206,7 @@ class ReportAttachmentTests(unittest.TestCase):
             )
             db.add(official)
             db.flush()
+            db.add(DepartmentGeographicScope(department_id=department.id, state_code="NG025"))
             report = db.query(Report).filter(Report.id == self.report_id).one()
             report.department_id = department.id
             report.assigned_to_user_id = official.id

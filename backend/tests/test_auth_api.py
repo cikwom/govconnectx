@@ -9,8 +9,10 @@ from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
 from app.models.department import Department
+from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.report import Report
 from app.models.user import User
+from app.routers.locations import seed_location_directory
 
 
 class AuthenticationApiTests(unittest.TestCase):
@@ -43,6 +45,8 @@ class AuthenticationApiTests(unittest.TestCase):
     def setUp(self):
         db = self.TestSession()
         try:
+            seed_location_directory(db)
+            db.query(DepartmentGeographicScope).delete()
             db.query(Report).delete()
             db.query(User).delete()
             db.commit()
@@ -125,6 +129,8 @@ class AuthenticationApiTests(unittest.TestCase):
                 "category": "Environment",
                 "latitude": 6.5244,
                 "longitude": 3.3792,
+                "incident_state_code": "NG025",
+                "incident_lga_code": "NG025011",
             },
         )
         self.assertEqual(created.status_code, 201)
@@ -134,6 +140,7 @@ class AuthenticationApiTests(unittest.TestCase):
             department = Department(name="Road Maintenance")
             db.add(department)
             db.flush()
+            db.add(DepartmentGeographicScope(department_id=department.id, state_code="NG025"))
             official = User(
                 email="official@example.com",
                 full_name="Test Official",

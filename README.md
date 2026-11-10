@@ -219,3 +219,113 @@ git fetch origin
 git switch feature/report-photo-video-evidence
 git pull --ff-only origin feature/report-photo-video-evidence
 ```
+
+
+## Current development checkpoint — Geographical Zones Phase 2
+
+**Date:** 9 November 2026  
+**Branch:** `feature/geographical-zones-phase-2`  
+**Base:** `main`, including merge commit `9b19e412298c6804fa1e262d0010ac72f88784ff` (PR #18).
+
+- PR #16 (production database safety), PR #17 (Nigeria's 37 state-level units and 774 LGAs), and PR #18 (private photo/video evidence support) are merged into `main`.
+- PR #18 adds JPEG/PNG/PDF and MP4/WebM/MOV evidence support, mobile capture controls, signature/MIME/extension checks, and private report-authorized downloads.
+- Production evidence uploads deliberately return HTTP 503 until durable private storage and the required scanning, backup, retention, quota, and audit controls are configured. Do not enable public production uploads against Render's ephemeral filesystem.
+- GitHub Actions on the production-upload safety commit `9c6a792220bac3fb5e70286c9e5c17d50f0ab4b7`: backend tests passed; frontend build passed.
+- Phase 1 geographic foundation is complete: citizens can select a home State/LGA and independently report an incident in any State/LGA. The API validates State/LGA parent-child relationships.
+- **Phase 2 scope:** administrator-managed geographic scopes for staff; server-side geographic authorization across report lists/details, assignments, status updates, attachments, history, and comments; automatic LGA/state-to-department routing with an unassigned triage queue; and a national admin drill-down from geopolitical zone to State to LGA.
+- **Security rule:** frontend filters are not authorization. Staff must not access reports or evidence outside their assigned geographic scope. Citizens' home locations remain private and must never determine incident routing.
+- **Not yet implemented in this branch:** staff geographic scopes, geographic authorization, automatic department routing, map-pin/boundary verification, and the national geographic admin drill-down.
+- **Evidence storage remains a launch blocker:** choose and configure private durable object storage, malware scanning/quarantine, backup/restore, quotas, retention/deletion, and access auditing before enabling uploads in production.
+- Local Windows/browser validation has not been performed from the user's workstation.
+
+Resume commands (Windows PowerShell):
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch feature/geographical-zones-phase-2
+git pull --ff-only origin feature/geographical-zones-phase-2
+```
+
+Next: implement the Phase 2 backend scope model and administrator controls first, then enforce scopes in every staff report/evidence endpoint, add automatic routing and regression tests, and build the admin geographic drill-down. Run backend tests and frontend type-check/build before opening a PR. Never merge until CI passes.
+
+
+
+## Current development checkpoint — Geographical Zones Phase 2
+
+**Date:** 9 November 2026  
+**Branch:** `feature/geographical-zones-phase-2`  
+**Pull request:** [#19 — WIP: Phase 2 geographic department scopes and access control](https://github.com/cikwom/govconnectx/pull/19) (draft; do not merge yet)
+
+### Implemented on this branch
+
+- Added `department_geographic_scopes`: each department can cover a whole State or selected LGAs.
+- Added system-admin endpoints:
+  - `GET /api/v1/departments/{department_id}/geographic-scopes`
+  - `PUT /api/v1/departments/{department_id}/geographic-scopes`
+  - `GET /api/v1/departments/{department_id}/routing-categories`
+  - `PUT /api/v1/departments/{department_id}/routing-categories`
+- State/LGA combinations are validated; an LGA from a different State is rejected.
+- Staff report lists and report details are filtered by department jurisdiction. The shared report authorization check also protects status changes, history, assignment records, comments, and evidence upload/list/download.
+- Department assignment is rejected when the department has no matching geographic scope.
+- Added category-based routing configuration. A report is automatically assigned only when exactly one active department matches both its category and incident State/LGA.
+- Reports with no matching department, or with multiple matching departments, remain unassigned for national admin triage.
+- Added `GET /api/v1/admin/reports/unassigned`.
+- Added `GET /api/v1/admin/geography/overview`, returning report totals from geopolitical zone → State → LGA.
+- `ReportResponse` now includes `department_id` so a citizen can see which department received the report.
+- Added the Admin Geographic Operations panel for department scopes, routing categories, national triage and geographic drill-down. CORS permits the required authenticated PUT requests.
+- Backend regression tests cover geographic access restrictions, invalid State/LGA pairs, auto-routing, ambiguous routing, unassigned triage, and national geographic drill-down.
+
+### Important behavior
+
+- Routing uses the incident State/LGA, never the citizen's home State/LGA.
+- A department with no configured scope cannot access geographically scoped reports.
+- Automatic routing is deliberately conservative: exactly one eligible department is required. No match or multiple matches must be handled in the national triage queue.
+- Production evidence uploads remain disabled until durable private object storage and the required security controls are implemented.
+
+### CI and testing status
+
+- Backend tests passed on push run [42714191059](https://github.com/cikwom/govconnectx/actions/runs/42714191059) and frontend build passed on push run [42714191083](https://github.com/cikwom/govconnectx/actions/runs/42714191083), for code commit `bb41ece401d2e99be26ac94964f9ef12798c96dc`.
+- Latest PR-triggered checks are still being confirmed. See `docs/testing/TEST_EVIDENCE.md`; do not treat an in-progress run as a pass.
+- Browser/manual validation on the Windows development machine has not yet been completed.
+
+### Still pending before merge
+
+1. Confirm latest PR backend and frontend checks pass; fix any remaining failures.
+2. Validate the Admin UI for department scopes, category routing, national drill-down and triage queue.
+3. Add incident GPS-vs-selected-State/LGA mismatch review. Do not silently overwrite a citizen-selected location from GPS.
+4. Complete manual browser/API regression and update `docs/testing/TEST_EVIDENCE.md`.
+5. Review the PR diff and CI, then merge only after all required checks pass.
+
+### Resume commands (Windows PowerShell)
+
+```powershell
+cd C:\Users\gentle\govconnectx
+git fetch origin
+git switch feature/geographical-zones-phase-2
+git pull --ff-only origin feature/geographical-zones-phase-2
+```
+
+
+## Current development checkpoint — GPS incident-location review
+
+**Date:** 10 November 2026  
+**Branch:** `feature/geographical-zones-phase-2`  
+**Pull request:** [#19](https://github.com/cikwom/govconnectx/pull/19) — open draft; not merged.
+
+- Citizens can explicitly choose **Use my current location** during report submission. The browser asks for permission; declining or unsupported geolocation leaves manual coordinate entry available.
+- Device GPS coordinates are stored separately from the incident coordinates and selected State/LGA. Capturing GPS may prefill the incident coordinate fields, but it never changes the selected State or LGA.
+- Reports with shared GPS coordinates enter a `pending` human-review queue. Reports without GPS remain valid and are marked `not_provided`.
+- System administrators can inspect GPS coordinates and the citizen-selected incident State/LGA, then record `verified`, `mismatch`, or `unable_to_verify` with an optional note. Reviewer ID and timestamp are retained.
+- Review outcomes never silently rewrite the citizen's selected incident geography or alter the routing basis.
+- Backend validation rejects incomplete GPS pairs and out-of-range/non-finite coordinates. Regression tests cover the GPS queue, admin-only review, selected-area preservation, and invalid GPS input.
+- Latest code commit: `2e51b9f559f227575ddd8168b1d7658998c0e791` — GPS review tests. GitHub Actions for the latest changes were still running at checkpoint time; verify them before marking this work validated.
+- **Manual checks still required:** test browser permission allow/deny on HTTPS, inspect the admin review queue, verify the three review outcomes, and confirm department routing remains based on selected incident State/LGA.
+- This is an administrative human-review workflow, not automatic geospatial boundary validation. Do not describe GPS as proof that an incident occurred at the reported location.
+
+Resume commands:
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch feature/geographical-zones-phase-2
+git pull --ff-only origin feature/geographical-zones-phase-2
+```

@@ -30,9 +30,16 @@ export interface Report {
   category: string;
   latitude: number;
   longitude: number;
+  gps_latitude?: number | null;
+  gps_longitude?: number | null;
+  location_review_status?: "not_provided" | "pending" | "verified" | "mismatch" | "unable_to_verify";
+  location_reviewed_by_user_id?: number | null;
+  location_reviewed_at?: string | null;
+  location_review_note?: string | null;
   address: string | null;
   incident_state_code?: string | null;
   incident_lga_code?: string | null;
+  department_id?: number | null;
   status: string;
   sla_due_at: string | null;
   resolved_at: string | null;
@@ -52,6 +59,8 @@ export interface CreateReportPayload {
   category: string;
   latitude: number;
   longitude: number;
+  gps_latitude?: number;
+  gps_longitude?: number;
   address?: string;
   incident_state_code: string;
   incident_lga_code: string;

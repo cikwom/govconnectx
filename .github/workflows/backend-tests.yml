@@ -13,6 +13,7 @@ on:
       - feature/public-home-theme-login-phase-11
       - feature/civic-identity-theme-phase-12
       - feature/geographical-zones-phase-1
+      - feature/geographical-zones-phase-2
       - feature/report-photo-video-evidence
   pull_request:
     branches:

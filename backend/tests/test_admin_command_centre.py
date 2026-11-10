@@ -13,6 +13,7 @@ from app.models.report import Report
 from app.models.report_history import ReportStatusHistory
 from app.models.report_assignment import ReportAssignment
 from app.models.user import User
+from app.routers.locations import seed_location_directory
 
 
 class AdminCommandCentreTests(unittest.TestCase):
@@ -41,6 +42,7 @@ class AdminCommandCentreTests(unittest.TestCase):
     def setUp(self):
         db = self.TestSession()
         try:
+            seed_location_directory(db)
             db.query(ReportStatusHistory).delete()
             db.query(ReportAssignment).delete()
             db.query(Report).delete()
@@ -51,7 +53,7 @@ class AdminCommandCentreTests(unittest.TestCase):
             ])
             db.commit()
             citizen = db.query(User).filter(User.email == "citizen@example.com").one()
-            report = Report(title="Broken streetlight", description="Streetlight is out on the main road", category="Infrastructure", latitude=6.5, longitude=3.3, address="Ikeja, Lagos", user_id=citizen.id, status="SUBMITTED")
+            report = Report(title="Broken streetlight", description="Streetlight is out on the main road", category="Infrastructure", latitude=6.5, longitude=3.3, address="Ikeja, Lagos", incident_state_code="NG025", incident_lga_code="NG025011", user_id=citizen.id, status="SUBMITTED")
             db.add(report)
             db.flush()
             db.add(ReportStatusHistory(report_id=report.id, changed_by_user_id=citizen.id, old_status=None, new_status="SUBMITTED", message="Report submitted", is_public=True))
@@ -109,6 +111,8 @@ class AdminCommandCentreTests(unittest.TestCase):
                     latitude=6.5,
                     longitude=3.3,
                     address="Ikeja, Lagos",
+                    incident_state_code="NG025",
+                    incident_lga_code="NG025011",
                     user_id=citizen.id,
                     status="SUBMITTED",
                     created_at=created_at,
@@ -149,6 +153,23 @@ class AdminCommandCentreTests(unittest.TestCase):
         response = self.client.get("/api/v1/admin/activity", headers=self.headers("admin@example.com"))
         self.assertEqual(response.status_code, 200)
         self.assertTrue(any("changed report #1 from NEW to SUBMITTED" in item["description"] for item in response.json()))
+
+
+    def test_admin_can_drill_down_from_geopolitical_zone_to_lga(self):
+        response = self.client.get(
+            "/api/v1/admin/geography/overview",
+            headers=self.headers("admin@example.com"),
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["country"], "Nigeria")
+        self.assertEqual(data["total_states"], 37)
+        self.assertEqual(data["total_lgas"], 774)
+        south_west = next(zone for zone in data["geopolitical_zones"] if zone["name"] == "South West")
+        lagos = next(state for state in south_west["states"] if state["name"] == "Lagos")
+        ikeja = next(lga for lga in lagos["lgas"] if lga["name"] == "Ikeja")
+        self.assertEqual(lagos["total"], 1)
+        self.assertEqual(ikeja["total"], 1)
 
 
 if __name__ == "__main__":

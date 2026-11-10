@@ -7,11 +7,14 @@ from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
 from app.models.department import Department
+from app.models.department_geographic_scope import DepartmentGeographicScope
+from app.models.department_routing_category import DepartmentRoutingCategory
 from app.models.report import Report
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.notification import Notification
 from app.models.user import User
+from app.routers.locations import seed_location_directory
 
 class ReportWorkflowTests(unittest.TestCase):
     @classmethod
@@ -36,8 +39,11 @@ class ReportWorkflowTests(unittest.TestCase):
 
     def setUp(self):
         db = self.Session()
+        seed_location_directory(db)
         # Delete dependent workflow rows first so the suite also works with
         # SQLite foreign-key enforcement enabled.
+        db.query(DepartmentRoutingCategory).delete()
+        db.query(DepartmentGeographicScope).delete()
         for model in (Notification, ReportComment, ReportStatusHistory, ReportAssignment):
             db.query(model).delete()
         db.query(Report).delete()
@@ -57,12 +63,29 @@ class ReportWorkflowTests(unittest.TestCase):
         response = self.client.post("/api/v1/auth/login", json={"email": email, "password": "Strong-Test-Password-42"})
         return user_id, {"Authorization": "Bearer " + response.json()["access_token"]}
 
+    def department(self, headers, name):
+        created = self.client.post("/api/v1/departments", headers=headers, json={"name": name})
+        self.assertEqual(created.status_code, 201)
+        scoped = self.client.put(
+            f"/api/v1/departments/{created.json()['id']}/geographic-scopes",
+            headers=headers,
+            json=[{"state_code": "NG025"}],
+        )
+        self.assertEqual(scoped.status_code, 200)
+        return created
+
     def report(self, headers):
-        return self.client.post("/api/v1/reports", headers=headers, json={"title":"Blocked drain","description":"Drain is blocked","category":"Environment","latitude":6.5,"longitude":3.3}).json()["id"]
+        response = self.client.post("/api/v1/reports", headers=headers, json={
+            "title": "Blocked drain", "description": "Drain is blocked",
+            "category": "Environment", "latitude": 6.5, "longitude": 3.3,
+            "incident_state_code": "NG025", "incident_lga_code": "NG025011",
+        })
+        self.assertEqual(response.status_code, 201)
+        return response.json()["id"]
 
     def test_department_creation_and_listing(self):
         _, admin = self.user("admin@example.com", "system_admin")
-        created = self.client.post("/api/v1/departments", headers=admin, json={"name":"Ministry of Works"})
+        created = self.department(admin, "Ministry of Works")
         self.assertEqual(created.status_code, 201)
         self.assertEqual(self.client.get("/api/v1/departments", headers=admin).status_code, 200)
 
@@ -70,7 +93,7 @@ class ReportWorkflowTests(unittest.TestCase):
         _, admin = self.user("admin@example.com", "system_admin")
         citizen_id, citizen = self.user("citizen@example.com", "citizen")
         report_id = self.report(citizen)
-        department = self.client.post("/api/v1/departments", headers=admin, json={"name":"Environment"})
+        department = self.department(admin, "Environment")
         response = self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":department.json()["id"],"note":"Please inspect"})
         self.assertEqual(response.status_code, 201)
         self.assertEqual(response.json()["department_id"], department.json()["id"])
@@ -80,8 +103,8 @@ class ReportWorkflowTests(unittest.TestCase):
         _, admin = self.user("root@example.com", "system_admin")
         citizen_id, citizen = self.user("reporter@example.com", "citizen")
         report_id = self.report(citizen)
-        dep1 = self.client.post("/api/v1/departments", headers=admin, json={"name":"Water"})
-        dep2 = self.client.post("/api/v1/departments", headers=admin, json={"name":"Roads"})
+        dep1 = self.department(admin, "Water")
+        dep2 = self.department(admin, "Roads")
         _, manager = self.user("manager@example.com", "department_admin", dep2.json()["id"])
         self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":dep1.json()["id"]})
         denied = self.client.get(f"/api/v1/reports/{report_id}", headers=manager)
@@ -91,8 +114,8 @@ class ReportWorkflowTests(unittest.TestCase):
         _, root = self.user("root2@example.com", "system_admin")
         _, citizen = self.user("citizen2@example.com", "citizen")
         report_id = self.report(citizen)
-        first = self.client.post("/api/v1/departments", headers=root, json={"name":"First Department"})
-        second = self.client.post("/api/v1/departments", headers=root, json={"name":"Second Department"})
+        first = self.department(root, "First Department")
+        second = self.department(root, "Second Department")
         _, manager = self.user("manager2@example.com", "department_admin", second.json()["id"])
         assigned = self.client.post(
             f"/api/v1/reports/{report_id}/assignments",
@@ -111,7 +134,7 @@ class ReportWorkflowTests(unittest.TestCase):
         _, root = self.user("notification-root@example.com", "system_admin")
         _, citizen = self.user("notification-citizen@example.com", "citizen")
         report_id = self.report(citizen)
-        department = self.client.post("/api/v1/departments", headers=root, json={"name":"Notification Test Department"})
+        department = self.department(root, "Notification Test Department")
         assigned = self.client.post(
             f"/api/v1/reports/{report_id}/assignments",
             headers=root,
@@ -140,7 +163,7 @@ class ReportWorkflowTests(unittest.TestCase):
         _, admin = self.user("root@example.com", "system_admin")
         _, citizen = self.user("reporter@example.com", "citizen")
         report_id = self.report(citizen)
-        assigned_dep = self.client.post("/api/v1/departments", headers=admin, json={"name":"Transport"})
+        assigned_dep = self.department(admin, "Transport")
         self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":assigned_dep.json()["id"]})
         updated = self.client.patch(f"/api/v1/reports/{report_id}/status", headers=admin, json={"status":"IN_PROGRESS","message":"Work started"})
         self.assertEqual(updated.status_code, 200)
@@ -154,12 +177,128 @@ class ReportWorkflowTests(unittest.TestCase):
         _, admin = self.user("root@example.com", "system_admin")
         _, citizen = self.user("reporter@example.com", "citizen")
         report_id = self.report(citizen)
-        department = self.client.post("/api/v1/departments", headers=admin, json={"name":"Public Health"})
+        department = self.department(admin, "Public Health")
         self.client.post(f"/api/v1/reports/{report_id}/assignments", headers=admin, json={"department_id":department.json()["id"]})
         staff_comment = self.client.post(f"/api/v1/reports/{report_id}/comments", headers=admin, json={"body":"Internal investigation note","is_internal":True})
         self.assertEqual(staff_comment.status_code, 201)
         citizen_comments = self.client.get(f"/api/v1/reports/{report_id}/comments", headers=citizen)
         self.assertEqual(citizen_comments.json(), [])
+
+    def test_staff_cannot_access_report_after_department_scope_excludes_its_lga(self):
+        _, admin = self.user("scope-admin@example.com", "system_admin")
+        _, citizen = self.user("scope-citizen@example.com", "citizen")
+        report_id = self.report(citizen)
+        department = self.department(admin, "Lagos Area Services")
+        assigned = self.client.post(
+            f"/api/v1/reports/{report_id}/assignments",
+            headers=admin,
+            json={"department_id": department.json()["id"]},
+        )
+        self.assertEqual(assigned.status_code, 201)
+
+        _, manager = self.user("scope-manager@example.com", "department_admin", department.json()["id"])
+        narrowed = self.client.put(
+            f"/api/v1/departments/{department.json()['id']}/geographic-scopes",
+            headers=admin,
+            json=[{"state_code": "NG001"}],
+        )
+        self.assertEqual(narrowed.status_code, 200)
+
+        denied = self.client.get(f"/api/v1/reports/{report_id}", headers=manager)
+        self.assertEqual(denied.status_code, 403)
+        self.assertEqual(self.client.get("/api/v1/reports", headers=manager).json(), [])
+        self.assertEqual(self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).status_code, 200)
+
+    def test_admin_rejects_lga_that_does_not_belong_to_selected_state(self):
+        _, admin = self.user("scope-validation-admin@example.com", "system_admin")
+        department = self.client.post(
+            "/api/v1/departments",
+            headers=admin,
+            json={"name": "Scope Validation Department"},
+        )
+        response = self.client.put(
+            f"/api/v1/departments/{department.json()['id']}/geographic-scopes",
+            headers=admin,
+            json=[{"state_code": "NG025", "lga_code": "NG001001"}],
+        )
+        self.assertEqual(response.status_code, 400)
+
+
+    def test_report_auto_routes_when_one_department_matches_category_and_area(self):
+        _, admin = self.user("auto-route-admin@example.com", "system_admin")
+        _, citizen = self.user("auto-route-citizen@example.com", "citizen")
+        department = self.department(admin, "Environmental Services")
+        configured = self.client.put(
+            f"/api/v1/departments/{department.json()['id']}/routing-categories",
+            headers=admin,
+            json=[{"category": "Environment"}],
+        )
+        self.assertEqual(configured.status_code, 200)
+
+        _, manager = self.user("auto-route-manager@example.com", "department_admin", department.json()["id"])
+        report_id = self.report(citizen)
+        report = self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).json()
+        self.assertEqual(report["department_id"], department.json()["id"])
+        self.assertEqual(report["status"], "ASSIGNED")
+        inbox = self.client.get("/api/v1/notifications", headers=manager)
+        self.assertTrue(any(item["report_id"] == report_id for item in inbox.json()))
+
+    def test_ambiguous_category_route_stays_in_national_triage_queue(self):
+        _, admin = self.user("ambiguous-route-admin@example.com", "system_admin")
+        _, citizen = self.user("ambiguous-route-citizen@example.com", "citizen")
+        first = self.department(admin, "Environment Department One")
+        second = self.department(admin, "Environment Department Two")
+        for department in (first, second):
+            response = self.client.put(
+                f"/api/v1/departments/{department.json()['id']}/routing-categories",
+                headers=admin,
+                json=[{"category": "Environment"}],
+            )
+            self.assertEqual(response.status_code, 200)
+
+        report_id = self.report(citizen)
+        report = self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).json()
+        self.assertIsNone(report["department_id"])
+        self.assertEqual(report["status"], "SUBMITTED")
+
+        queue = self.client.get("/api/v1/admin/reports/unassigned", headers=admin)
+        self.assertEqual(queue.status_code, 200)
+        self.assertTrue(any(item["id"] == report_id for item in queue.json()["items"]))
+
+    def test_citizen_gps_is_optional_and_review_does_not_change_selected_area(self):
+        _, admin = self.user("gps-admin@example.com", "system_admin")
+        _, citizen = self.user("gps-citizen@example.com", "citizen")
+        response = self.client.post("/api/v1/reports", headers=citizen, json={
+            "title": "GPS review test", "description": "Check incident coordinates",
+            "category": "Infrastructure", "latitude": 6.5244, "longitude": 3.3792,
+            "gps_latitude": 6.5245, "gps_longitude": 3.3793,
+            "incident_state_code": "NG025", "incident_lga_code": "NG025011",
+        })
+        self.assertEqual(response.status_code, 201)
+        report_id = response.json()["id"]
+        self.assertEqual(response.json()["location_review_status"], "pending")
+        queue = self.client.get("/api/v1/admin/reports/location-review", headers=admin)
+        self.assertEqual(queue.status_code, 200)
+        self.assertTrue(any(item["id"] == report_id for item in queue.json()["items"]))
+        denied = self.client.patch(f"/api/v1/admin/reports/{report_id}/location-review", headers=citizen, json={"status":"verified"})
+        self.assertEqual(denied.status_code, 403)
+        reviewed = self.client.patch(f"/api/v1/admin/reports/{report_id}/location-review", headers=admin, json={"status":"mismatch","note":"Coordinates require confirmation"})
+        self.assertEqual(reviewed.status_code, 200)
+        self.assertEqual(reviewed.json()["location_review_status"], "mismatch")
+        self.assertEqual(reviewed.json()["incident_state_code"], "NG025")
+        self.assertEqual(reviewed.json()["incident_lga_code"], "NG025011")
+        detail = self.client.get(f"/api/v1/reports/{report_id}", headers=citizen).json()
+        self.assertEqual(detail["location_review_status"], "mismatch")
+        self.assertEqual(detail["incident_state_code"], "NG025")
+
+    def test_report_rejects_partial_or_out_of_range_gps_coordinates(self):
+        _, citizen = self.user("gps-validation@example.com", "citizen")
+        payload = {"title":"Invalid GPS","description":"Coordinates","category":"Other","latitude":6.5,"longitude":3.3,"incident_state_code":"NG025","incident_lga_code":"NG025011"}
+        partial = self.client.post("/api/v1/reports", headers=citizen, json={**payload,"gps_latitude":6.5})
+        self.assertEqual(partial.status_code, 422)
+        invalid = self.client.post("/api/v1/reports", headers=citizen, json={**payload,"gps_latitude":91,"gps_longitude":3.3})
+        self.assertEqual(invalid.status_code, 422)
+
 
 if __name__ == "__main__":
     unittest.main()
