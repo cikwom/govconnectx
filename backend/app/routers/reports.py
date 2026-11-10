@@ -224,6 +224,7 @@ def update_report_status(report_id: int, payload: StatusUpdate, background_tasks
     for recipient_id in recipients:
         if recipient_id != current_user.id:
             db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_status_changed", title="Report status updated", message=f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.'))
+            queue_notification_email(db, background_tasks, recipient_id, "Report status updated", f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.')
     record_audit_event(db, actor_user_id=current_user.id, action="report.status_changed", entity_type="report", entity_id=report.id, summary="Report workflow status changed", details={"from": old_status, "to": new_status})
     db.commit()
     db.refresh(report)
