@@ -59,6 +59,7 @@ export default function HomePage() {
         <nav className="home-nav-actions" aria-label="Main navigation">
           <a href="#how-it-works">How it works</a>
           <a href="#our-purpose">Our purpose</a>
+          <Link to="/transparency">Transparency</Link>
           <ThemeToggle />
           {user
             ? <Link className="button button-primary" to={destination}>Open dashboard <span aria-hidden="true">→</span></Link>

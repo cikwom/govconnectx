@@ -14,6 +14,7 @@ from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.notification import Notification
+from app.models.audit_event import record_audit_event
 from app.models.user import User
 from app.schemas.report import ReportCreate, ReportResponse
 from app.schemas.workflow import AssignmentResponse, CommentCreate, CommentResponse, HistoryResponse, ReportAssignmentCreate, StatusUpdate
@@ -102,6 +103,7 @@ def create_report(report: ReportCreate, db: Session = Depends(get_db), current_u
     )
     db.add(new_report)
     db.flush()
+    record_audit_event(db, actor_user_id=current_user.id, action="report.created", entity_type="report", entity_id=new_report.id, summary="Citizen submitted a community report", details={"category": new_report.category, "state_code": new_report.incident_state_code, "lga_code": new_report.incident_lga_code, "routed_department_id": new_report.department_id})
     history_message = (
         f"Automatically routed to {routed_department.name} using category and incident location"
         if routed_department else "Report submitted to the unassigned triage queue"
@@ -194,6 +196,7 @@ def assign_report(report_id: int, payload: ReportAssignmentCreate, db: Session =
     recipients.discard(None)
     for recipient_id in recipients:
         db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_assigned", title="Report assignment updated", message=f'Report "{report.title}" has been routed to {department.name}.'))
+    record_audit_event(db, actor_user_id=current_user.id, action="report.assigned", entity_type="report", entity_id=report.id, summary="Report assigned to a department", details={"department_id": department.id, "assignee_user_id": payload.assigned_to_user_id})
     db.commit()
     db.refresh(assignment)
     return assignment
@@ -218,6 +221,7 @@ def update_report_status(report_id: int, payload: StatusUpdate, db: Session = De
     for recipient_id in recipients:
         if recipient_id != current_user.id:
             db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_status_changed", title="Report status updated", message=f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.'))
+    record_audit_event(db, actor_user_id=current_user.id, action="report.status_changed", entity_type="report", entity_id=report.id, summary="Report workflow status changed", details={"from": old_status, "to": new_status})
     db.commit()
     db.refresh(report)
     return report
@@ -244,6 +248,7 @@ def add_report_comment(report_id: int, payload: CommentCreate, db: Session = Dep
         raise HTTPException(status_code=403, detail="Internal notes are staff-only")
     comment = ReportComment(report_id=report_id, author_user_id=current_user.id, body=payload.body.strip(), is_internal=payload.is_internal)
     db.add(comment)
+    record_audit_event(db, actor_user_id=current_user.id, action="report.comment_added", entity_type="report", entity_id=report_id, summary="A report comment was added", details={"internal": payload.is_internal})
     db.commit()
     db.refresh(comment)
     return comment

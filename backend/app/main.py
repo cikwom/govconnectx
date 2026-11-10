@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine, migrate_existing_schema, SessionLocal
 from app.models import Department, LocalGovernmentArea, Report, ReportAssignment, ReportAttachment, ReportComment, ReportStatusHistory, State, User
+from app.models.audit_event import AuditEvent  # noqa: F401 - register audit table before create_all
 from app.models.notification import Notification  # noqa: F401
 from app.routers.admin import router as admin_router
 from app.routers.attachments import router as attachments_router
@@ -12,6 +13,7 @@ from app.routers.auth import router as auth_router
 from app.routers.departments import router as departments_router
 from app.routers.locations import router as locations_router, seed_location_directory
 from app.routers.notifications import router as notifications_router
+from app.routers.public import router as public_router
 from app.routers.reports import router as reports_router
 from app.routers.sla import router as sla_router
 
@@ -20,7 +22,7 @@ migrate_existing_schema()
 with SessionLocal() as location_session:
     seed_location_directory(location_session)
 
-app = FastAPI(title="GovConnect Nigeria", version="1.6.0")
+app = FastAPI(title="GovConnect Nigeria", version="1.7.0")
 cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if origin.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=cors_origins, allow_credentials=False, allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"], allow_headers=["Authorization", "Content-Type"])
 
@@ -38,3 +40,4 @@ app.include_router(reports_router)
 app.include_router(attachments_router)
 app.include_router(notifications_router)
 app.include_router(sla_router)
+app.include_router(public_router)

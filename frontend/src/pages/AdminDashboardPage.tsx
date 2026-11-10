@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { tokenStore } from "../services/api";
 import { useAuth } from "../state/AuthContext";
 import GeographicOperationsPanel from "../components/GeographicOperationsPanel";
+import AuditLogPanel from "../components/AuditLogPanel";
 
 type Overview = {
   users: { total: number; active: number; inactive: number; by_role: Record<string, number>; registered_today: number };
@@ -171,6 +172,8 @@ export default function AdminDashboardPage() {
         <p className="admin-description">{report.description}</p>
       </article>)}{reports.length === 0 && <p className="empty-state">No reports match this search.</p>}</div>
     </section>
+
+    <AuditLogPanel />
 
     <section className="panel">
       <div className="panel-heading"><div><h2>Recent platform activity</h2><p className="muted">Registrations, report status changes and assignments recorded by the platform.</p></div></div>
