@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import { api } from "../services/api";
 import { useAuth } from "../state/AuthContext";
 
@@ -33,6 +34,7 @@ export default function StaffReportWorkflowPanel({ reportId, reportStatus, repor
   const allowedTransitions = useMemo(() => transitions[reportStatus] ?? [], [reportStatus]);
 
   useEffect(() => {
+    if (reportDepartmentId) setDepartmentId(String(reportDepartmentId));
     if (user?.role === "system_admin") {
       api.departments().then(setDepartments).catch(() => setDepartments([]));
     } else if (user?.department_id) {
@@ -48,7 +50,7 @@ export default function StaffReportWorkflowPanel({ reportId, reportStatus, repor
     });
   }, [canAssign, departmentId]);
 
-  async function updateStatus(event: React.FormEvent<HTMLFormElement>) {
+  async function updateStatus(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
       await api.updateReportStatus(reportId, nextStatus, statusNote.trim() || undefined);
