@@ -83,7 +83,7 @@ def upload_report_attachment(
     if is_production and not storage_is_production_ready():
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Evidence uploads require configured private object storage and malware scanning.",
+            detail="Evidence uploads require configured durable private object storage and malware scanning.",
         )
 
     report = get_accessible_report(report_id, db, current_user)
