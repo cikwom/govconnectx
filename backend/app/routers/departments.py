@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 from app.core.dependencies import get_current_user, require_roles
 from app.database import get_db
@@ -216,7 +217,17 @@ def department_performance(
         and_(
             DepartmentGeographicScope.department_id == Report.department_id,
             DepartmentGeographicScope.department_id == current_user.department_id,
-            geographic_scope_filter(DepartmentGeographicScope, Report.incident_state_code, Report.incident_lga_code, Report.incident_ward_code),
+            DepartmentGeographicScope.state_code == Report.incident_state_code,
+            or_(
+                DepartmentGeographicScope.lga_code.is_(None),
+                and_(
+                    DepartmentGeographicScope.lga_code == Report.incident_lga_code,
+                    or_(
+                        DepartmentGeographicScope.ward_code.is_(None),
+                        DepartmentGeographicScope.ward_code == Report.incident_ward_code,
+                    ),
+                ),
+            ),
         ),
     ).filter(Report.department_id == current_user.department_id)
     if current_user.role == "official":
