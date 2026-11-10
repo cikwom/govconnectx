@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import json
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_
@@ -7,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import require_roles
 from app.database import get_db
 from app.models.report import Report
+from app.models.audit_event import AuditEvent, record_audit_event
 from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
 from app.models.report_history import ReportStatusHistory
@@ -481,6 +483,7 @@ def review_report_location(
     report.location_reviewed_by_user_id = reviewer.id
     report.location_reviewed_at = datetime.now(timezone.utc)
     report.location_review_note = note or None
+    record_audit_event(db, actor_user_id=reviewer.id, action="report.location_reviewed", entity_type="report", entity_id=report.id, summary="Administrator reviewed citizen-shared GPS location", details={"outcome": outcome})
     db.commit()
     db.refresh(report)
     return {"report_id": report.id, "location_review_status": report.location_review_status,
@@ -488,3 +491,40 @@ def review_report_location(
             "location_reviewed_at": report.location_reviewed_at.isoformat(),
             "location_review_note": report.location_review_note,
             "incident_state_code": report.incident_state_code, "incident_lga_code": report.incident_lga_code}
+
+
+
+@router.get("/audit-logs")
+def list_audit_logs(
+    action: str | None = Query(default=None, max_length=80),
+    entity_type: str | None = Query(default=None, max_length=50),
+    limit: int = Query(default=100, ge=1, le=250),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """Read-only administrator view of recorded platform actions."""
+    query = db.query(AuditEvent, User).outerjoin(User, User.id == AuditEvent.actor_user_id)
+    if action:
+        query = query.filter(AuditEvent.action == action.strip())
+    if entity_type:
+        query = query.filter(AuditEvent.entity_type == entity_type.strip())
+    total = query.count()
+    rows = query.order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc()).offset(offset).limit(limit).all()
+    items = []
+    for event, actor in rows:
+        try:
+            details = json.loads(event.details_json) if event.details_json else {}
+        except (TypeError, ValueError):
+            details = {}
+        items.append({
+            "id": event.id,
+            "actor": {"id": actor.id, "name": actor.full_name, "role": actor.role} if actor else None,
+            "action": event.action,
+            "entity_type": event.entity_type,
+            "entity_id": event.entity_id,
+            "summary": event.summary,
+            "details": details,
+            "created_at": event.created_at.isoformat() if event.created_at else None,
+        })
+    return {"total": total, "items": items}
