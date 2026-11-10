@@ -1,6 +1,6 @@
 import type {
   AuthResponse, CommentItem, CreateReportPayload, GeographicState, HistoryItem,
-  LocalGovernmentArea, RegisterPayload, Report, ReportAttachment, User,
+  Community, GeographicWard, LocalGovernmentArea, RegisterPayload, Report, ReportAttachment, User,
 } from "../types/api";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
@@ -56,6 +56,8 @@ async function requestBlob(path: string): Promise<Blob> {
 export const api = {
   states: () => request<GeographicState[]>("/locations/states"),
   lgas: (stateCode: string) => request<LocalGovernmentArea[]>(`/locations/states/${encodeURIComponent(stateCode)}/lgas`),
+  wards: (lgaCode: string) => request<GeographicWard[]>(`/locations/lgas/${encodeURIComponent(lgaCode)}/wards`),
+  communities: (wardCode: string) => request<Community[]>(`/locations/wards/${encodeURIComponent(wardCode)}/communities`),
   register: (p: RegisterPayload) => request<User>("/auth/register", { method: "POST", body: JSON.stringify(p) }),
   login: (email: string, password: string) => request<AuthResponse>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   me: () => request<User>("/auth/me"),
