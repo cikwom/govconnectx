@@ -5,7 +5,8 @@ import "../styles.css";
 type Department = { id: number; name: string };
 type StateItem = { code: string; name: string; geopolitical_zone: string };
 type LgaItem = { code: string; name: string; state_code: string };
-type Scope = { id: number; department_id: number; state_code: string; lga_code: string | null };
+type WardItem = { code: string; name: string; lga_code: string };
+type Scope = { id: number; department_id: number; state_code: string; lga_code: string | null; ward_code: string | null };
 type RoutingCategory = { id: number; department_id: number; category: string };
 type LgaSummary = { code: string; name: string; total: number; open: number; unassigned: number };
 type StateSummary = { code: string; name: string; total: number; open: number; unassigned: number; lgas: LgaSummary[] };
@@ -31,8 +32,10 @@ export default function GeographicOperationsPanel() {
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [states, setStates] = useState<StateItem[]>([]);
   const [lgas, setLgas] = useState<LgaItem[]>([]);
+  const [wards, setWards] = useState<WardItem[]>([]);
   const [selectedState, setSelectedState] = useState("");
   const [selectedLga, setSelectedLga] = useState("");
+  const [selectedWard, setSelectedWard] = useState("");
   const [scopes, setScopes] = useState<Scope[]>([]);
   const [categories, setCategories] = useState<RoutingCategory[]>([]);
   const [categoryText, setCategoryText] = useState("");
@@ -85,17 +88,20 @@ export default function GeographicOperationsPanel() {
   }, [loadDepartmentSettings]);
 
   useEffect(() => {
-    if (!selectedState) {
-      setLgas([]);
-      setSelectedLga("");
-      return;
-    }
+    if (!selectedState) { setLgas([]); setSelectedLga(""); setSelectedWard(""); return; }
     geoRequest<LgaItem[]>(`/locations/states/${selectedState}/lgas`)
       .then(rows => setLgas(rows))
       .catch(e => setError(e instanceof Error ? e.message : "Could not load LGAs"));
   }, [selectedState]);
 
-  async function saveScopes(next: Array<{ state_code: string; lga_code: string | null }>) {
+  useEffect(() => {
+    if (!selectedLga) { setWards([]); setSelectedWard(""); return; }
+    geoRequest<WardItem[]>(`/locations/lgas/${selectedLga}/wards`)
+      .then(rows => setWards(rows))
+      .catch(e => setError(e instanceof Error ? e.message : "Could not load wards"));
+  }, [selectedLga]);
+
+  async function saveScopes(next: Array<{ state_code: string; lga_code: string | null; ward_code: string | null }>) {
     if (!selectedDepartment) return;
     setBusy(true); setError(""); setMessage("");
     try {
@@ -111,8 +117,8 @@ export default function GeographicOperationsPanel() {
   async function addScope(e: React.FormEvent) {
     e.preventDefault();
     if (!selectedState) return;
-    await saveScopes([...scopes.map(({ state_code, lga_code }) => ({ state_code, lga_code })), {
-      state_code: selectedState, lga_code: selectedLga || null,
+    await saveScopes([...scopes.map(({ state_code, lga_code, ward_code }) => ({ state_code, lga_code, ward_code })), {
+      state_code: selectedState, lga_code: selectedLga || null, ward_code: selectedWard || null,
     }]);
   }
 
@@ -154,18 +160,21 @@ export default function GeographicOperationsPanel() {
     <div className="geo-config-grid">
       <article className="geo-config-card">
         <h3>Department jurisdiction</h3>
-        <p className="muted">A whole State or selected LGAs can be assigned to a department. Staff access is enforced by the backend.</p>
+        <p className="muted">A whole State, an entire LGA, or selected wards can be assigned. Staff access is enforced by the backend.</p>
         <label>Department<select value={selectedDepartment} onChange={e => setSelectedDepartment(e.target.value)}><option value="">Select department</option>{departments.map(dept => <option key={dept.id} value={dept.id}>{dept.name}</option>)}</select></label>
         <form className="geo-scope-form" onSubmit={addScope}>
-          <label>State<select value={selectedState} onChange={e => { setSelectedState(e.target.value); setSelectedLga(""); }}><option value="">Choose a State</option>{states.map(state => <option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
-          <label>LGA <span className="muted">(optional — blank means entire State)</span><select value={selectedLga} onChange={e => setSelectedLga(e.target.value)} disabled={!selectedState}><option value="">Entire State</option>{lgas.map(lga => <option key={lga.code} value={lga.code}>{lga.name}</option>)}</select></label>
+          <label>State<select value={selectedState} onChange={e => { setSelectedState(e.target.value); setSelectedLga(""); setSelectedWard(""); }}><option value="">Choose a State</option>{states.map(state => <option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
+          <label>LGA <span className="muted">(optional — blank means entire State)</span><select value={selectedLga} onChange={e => { setSelectedLga(e.target.value); setSelectedWard(""); }} disabled={!selectedState}><option value="">Entire State</option>{lgas.map(lga => <option key={lga.code} value={lga.code}>{lga.name}</option>)}</select></label>
+          <label>Ward <span className="muted">(optional — blank means entire LGA)</span><select value={selectedWard} onChange={e => setSelectedWard(e.target.value)} disabled={!selectedLga}><option value="">Entire LGA</option>{wards.map(ward => <option key={ward.code} value={ward.code}>{ward.name}</option>)}</select></label>
           <button className="button button-primary button-small" disabled={busy || !selectedDepartment || !selectedState}>Add geographic scope</button>
         </form>
         <div className="geo-scope-list">
           {scopes.map(scope => {
             const stateName = states.find(state => state.code === scope.state_code)?.name ?? scope.state_code;
             const lgaName = lgas.find(lga => lga.code === scope.lga_code)?.name;
-            return <div className="geo-scope-chip" key={scope.id}><span><strong>{stateName}</strong>{scope.lga_code ? ` · ${lgaName ?? scope.lga_code}` : " · Entire State"}</span><button type="button" aria-label={`Remove ${stateName} scope`} onClick={() => void saveScopes(scopes.filter(item => item.id !== scope.id).map(({ state_code, lga_code }) => ({ state_code, lga_code })))}>Remove</button></div>;
+            const wardName = wards.find(ward => ward.code === scope.ward_code)?.name;
+            const coverage = scope.ward_code ? ` · ${wardName ?? scope.ward_code}` : scope.lga_code ? ` · ${lgaName ?? scope.lga_code}` : " · Entire State";
+            return <div className="geo-scope-chip" key={scope.id}><span><strong>{stateName}</strong>{coverage}</span><button type="button" aria-label={`Remove ${stateName} scope`} onClick={() => void saveScopes(scopes.filter(item => item.id !== scope.id).map(({ state_code, lga_code, ward_code }) => ({ state_code, lga_code, ward_code })))}>Remove</button></div>;
           })}
           {scopes.length === 0 && <p className="empty-state">No geographic coverage configured. This department cannot access reports yet.</p>}
         </div>
