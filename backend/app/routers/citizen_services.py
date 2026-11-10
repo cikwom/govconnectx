@@ -35,7 +35,10 @@ def validate_location_pair(db: Session, state_code: str | None, lga_code: str | 
 @router.get("/reports/{report_id}/duplicate-hint")
 def duplicate_report_hint(report_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     report = get_accessible_report(report_id, db, current_user)
-    since = (report.created_at or datetime.now(timezone.utc)) - timedelta(days=30)
+    report_created_at = report.created_at or datetime.now(timezone.utc)
+    if report_created_at.tzinfo is None:
+        report_created_at = report_created_at.replace(tzinfo=timezone.utc)
+    since = report_created_at - timedelta(days=30)
     query = db.query(func.count(Report.id)).filter(
         Report.id != report.id,
         Report.category.ilike(report.category),
