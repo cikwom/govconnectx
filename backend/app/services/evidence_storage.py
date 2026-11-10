@@ -1,8 +1,6 @@
 import os
 import socket
 import struct
-from pathlib import Path
-from typing import BinaryIO
 
 import boto3
 from botocore.exceptions import BotoCoreError, ClientError
@@ -70,6 +68,10 @@ def scan_bytes(data: bytes) -> None:
 
 def store_object(storage_key: str, data: bytes, content_type: str, sha256: str) -> None:
     try:
+        options = {}
+        encryption = os.getenv("OBJECT_STORAGE_SERVER_SIDE_ENCRYPTION", "").strip()
+        if encryption:
+            options["ServerSideEncryption"] = encryption
         _s3_client().put_object(
             Bucket=os.environ["OBJECT_STORAGE_BUCKET"],
             Key=f"report-evidence/{storage_key}",
@@ -77,7 +79,7 @@ def store_object(storage_key: str, data: bytes, content_type: str, sha256: str) 
             ContentLength=len(data),
             ContentType=content_type,
             Metadata={"sha256": sha256},
-            ServerSideEncryption=os.getenv("OBJECT_STORAGE_SERVER_SIDE_ENCRYPTION", "AES256"),
+            **options,
         )
     except (BotoCoreError, ClientError) as exc:
         raise StorageNotConfigured("Could not store evidence in private object storage") from exc
