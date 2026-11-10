@@ -64,3 +64,13 @@ API additions:
 The Admin Geographic Operations panel is now connected to the scope/category APIs, national triage queue and geographic drill-down. GPS-vs-selected-location review and Windows browser validation are still pending. Keep PR #19 as draft and do not merge until the latest PR checks pass and manual checks are complete.
 
 Resume using the Phase 2 commands in the root README. Citizen home location remains private and is never used for routing.
+
+
+## GPS incident-location review — 10 November 2026
+
+- GPS sharing is optional and browser-permission based. Manual coordinate entry remains available.
+- `gps_latitude` and `gps_longitude` are stored separately from the incident `latitude`/`longitude` and selected State/LGA.
+- A report with GPS starts at `pending`; without GPS it is `not_provided`. System administrators can set `verified`, `mismatch`, or `unable_to_verify` and record a note. Reviewer ID and timestamp provide an audit trail.
+- The review endpoint is `GET /api/v1/admin/reports/location-review?status=pending`; record a decision with `PATCH /api/v1/admin/reports/{report_id}/location-review` and JSON `{ "status": "verified|mismatch|unable_to_verify", "note": "..." }`.
+- GPS mismatch review does not change the citizen-selected incident State/LGA and does not change the geographic routing basis. No automated State/LGA boundary verdict is claimed.
+- Backend tests and frontend build are running in GitHub Actions on the feature branch. Manual browser verification remains outstanding.
