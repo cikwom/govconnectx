@@ -3,6 +3,7 @@ import AppShell from "./components/AppShell";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import DashboardPage from "./pages/DashboardPage";
+import CommunityServicesPage from "./pages/CommunityServicesPage";
 import HomePage from "./pages/HomePage";
 import LegalPage from "./pages/LegalPage";
 import LoginPage from "./pages/LoginPage";
@@ -22,6 +23,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/community-services" element={<CommunityServicesPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/reports/:reportId" element={<ReportDetailPage />} />
         </Route>
