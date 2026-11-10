@@ -1,7 +1,7 @@
 from datetime import datetime
 import math
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 class ReportCreate(BaseModel):
@@ -27,6 +27,12 @@ class ReportCreate(BaseModel):
         if not -limit <= value <= limit:
             raise ValueError(f"{info.field_name} must be between {-limit} and {limit}")
         return value
+
+    @model_validator(mode="after")
+    def gps_coordinates_must_be_paired(self):
+        if (self.gps_latitude is None) != (self.gps_longitude is None):
+            raise ValueError("Share both GPS latitude and longitude, or neither")
+        return self
 
     @field_validator("incident_state_code", "incident_lga_code")
     @classmethod
