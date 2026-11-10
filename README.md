@@ -338,8 +338,8 @@ git pull --ff-only origin feature/geographical-zones-phase-2
 **Date:** 10 November 2026  
 **Repository:** `cikwom/govconnectx`  
 **Current branch:** `main`  
-**Latest merged feature PR:** [#26 — Ward and community incident zoning](https://github.com/cikwom/govconnectx/pull/26)  
-**Latest merged commit:** `149518091a5f282486df0cf67f2612b0b6360ec7`
+**Latest merged feature PR:** [#28 — Ward-level department jurisdiction](https://github.com/cikwom/govconnectx/pull/28)  
+**Latest merged commit:** `e575a61677ff02da471ee749273912e1978582f2`
 
 The earlier geographic-zones and GPS checkpoint sections above describe historical work. The PR #19 status in the older checkpoint is superseded: the newer work has been merged through PRs #20–#26.
 
@@ -390,6 +390,66 @@ cd backend
 
 # Frontend (this repository currently has no committed package-lock.json)
 cd ..\frontend
+npm.cmd install
+npm.cmd run build
+```
+
+
+---
+
+## Current development checkpoint — Ward-level department jurisdiction
+
+**Date:** 10 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Merged PR:** [#28 — Ward-level department jurisdiction](https://github.com/cikwom/govconnectx/pull/28)  
+**Merge commit:** `e575a61677ff02da471ee749273912e1978582f2`
+
+### Completed
+
+- Extended department geographic scopes from State/LGA to State/LGA/ward.
+- Existing State/LGA scope records remain valid after migration; their new `ward_code` is null and does not silently narrow access.
+- System Admin can select State → LGA → Ward in Geographic Operations.
+- The API validates ward-to-LGA and LGA-to-State parent relationships and rejects inactive or incorrectly nested wards.
+- Ward-aware authorization now covers staff report lists/details, manual department assignment, automatic category routing and department performance metrics.
+- Ward-specific routing requires an exact incident ward match. State-wide and LGA-wide scopes continue to include reports with finer-grained ward data.
+- Added regression coverage for ward visibility, invalid parent relationships, automatic routing and legacy database migration.
+- Added `docs/WARD_LEVEL_JURISDICTION.md`.
+- Fixed CI setup to use `npm install` because this repository does not currently commit `frontend/package-lock.json`.
+
+### Validation
+
+- Backend tests: **61 passed** in GitHub Actions.
+- Frontend dependency audit, TypeScript type-check and production build: **passed** in GitHub Actions.
+- CI runs on the merged PR head:
+  - Backend: https://github.com/cikwom/govconnectx/actions/runs/42919811254
+  - Frontend: https://github.com/cikwom/govconnectx/actions/runs/42919811303
+  - Combined CI: https://github.com/cikwom/govconnectx/actions/runs/42919811257
+- Manual browser validation on the Windows development machine is still outstanding.
+
+### Remaining work
+
+1. Build a controlled bulk import/validation process for authoritative ward/community records. Do not invent codes or boundaries; retain source attribution and effective dates.
+2. Manually test two wards in one LGA with a department restricted to only one ward.
+3. Add SMS/push delivery only after phone verification and explicit consent.
+4. Complete full Hausa/Yoruba/Igbo translations, WCAG 2.2 AA review, security/privacy/load testing and integration tests for external services.
+5. Configure and verify production S3-compatible storage, ClamAV, SMTP, database/media backups and restore drills before enabling production evidence uploads.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend (there is no committed package-lock.json yet)
+cd ..\\frontend
 npm.cmd install
 npm.cmd run build
 ```
