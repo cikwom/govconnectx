@@ -6,6 +6,9 @@ import type {
 const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 const TOKEN_KEY = "govconnectx_access_token";
 
+type CommunityListing = { id: number; listing_type: "lost" | "found"; title: string; description: string; location_text: string; contact_instructions: string; created_at: string };
+type ServiceDirectoryEntry = { id: number; name: string; category: string; description: string; address: string; phone: string | null; website: string | null; is_verified: boolean };
+
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),
   set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
@@ -64,4 +67,11 @@ export const api = {
     return request<ReportAttachment>(`/reports/${id}/attachments`, { method: "POST", body: form });
   },
   downloadReportAttachment: (reportId: number, attachmentId: number) => requestBlob(`/reports/${reportId}/attachments/${attachmentId}/download`),
+
+  duplicateHint: (id: number) => request<{ possible_duplicate_count: number; review_recommended: boolean; message: string }>(`/reports/${id}/duplicate-hint`),
+  requestEscalation: (id: number, urgency: "normal" | "high" | "critical", reason: string) => request<{ id: number; status: string; notice: string }>(`/reports/${id}/escalations`, { method: "POST", body: JSON.stringify({ urgency, reason }) }),
+  submitReportFeedback: (id: number, rating: number, comment?: string) => request<{ id: number; report_id: number; rating: number; comment: string | null }>(`/reports/${id}/feedback`, { method: "POST", body: JSON.stringify({ rating, comment }) }),
+  communityListings: () => request<CommunityListing[]>("/community/listings"),
+  createCommunityListing: (payload: { listing_type: "lost" | "found"; title: string; description: string; location_text: string; contact_instructions: string }) => request<CommunityListing>("/community/listings", { method: "POST", body: JSON.stringify(payload) }),
+  publicServiceDirectory: () => request<ServiceDirectoryEntry[]>("/service-directory"),
 };
