@@ -12,6 +12,7 @@ class ReportAttachment(Base):
     uploaded_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     original_filename = Column(String(255), nullable=False)
     storage_key = Column(String(80), nullable=False, unique=True, index=True)
+    storage_backend = Column(String(16), nullable=False, default="local")
     content_type = Column(String(100), nullable=False)
     size_bytes = Column(Integer, nullable=False)
     sha256 = Column(String(64), nullable=False)
