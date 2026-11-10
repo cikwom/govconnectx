@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { api } from "../services/api";
 import { useLanguage } from "../state/LanguageContext";
 
@@ -31,7 +32,7 @@ export default function CommunityServicesPage() {
   }
   useEffect(() => { void load(); }, []);
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true); setError(""); setNotice("");
     try {
