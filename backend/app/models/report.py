@@ -24,6 +24,8 @@ class Report(Base):
     address = Column(String(300), nullable=True)
     incident_state_code = Column(String(12), ForeignKey("states.code"), nullable=True, index=True)
     incident_lga_code = Column(String(16), ForeignKey("local_government_areas.code"), nullable=True, index=True)
+    incident_ward_code = Column(String(24), ForeignKey("wards.code"), nullable=True, index=True)
+    incident_community_code = Column(String(32), ForeignKey("communities.code"), nullable=True, index=True)
     status = Column(String(50), nullable=False, default="SUBMITTED")
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True, index=True)
