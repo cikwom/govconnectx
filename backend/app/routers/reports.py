@@ -198,6 +198,7 @@ def assign_report(report_id: int, payload: ReportAssignmentCreate, background_ta
     recipients.discard(None)
     for recipient_id in recipients:
         db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_assigned", title="Report assignment updated", message=f'Report "{report.title}" has been routed to {department.name}.'))
+        queue_notification_email(db, background_tasks, recipient_id, "Report assignment updated", f'Report "{report.title}" has been routed to {department.name}.')
     record_audit_event(db, actor_user_id=current_user.id, action="report.assigned", entity_type="report", entity_id=report.id, summary="Report assigned to a department", details={"department_id": department.id, "assignee_user_id": payload.assigned_to_user_id})
     db.commit()
     db.refresh(assignment)
