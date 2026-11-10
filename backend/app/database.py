@@ -68,6 +68,10 @@ def migrate_existing_schema(database_engine=None):
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_sla_due_at ON reports (sla_due_at)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_incident_state_code ON reports (incident_state_code)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_incident_lga_code ON reports (incident_lga_code)"))
+        if "report_attachments" in tables:
+            attachment_columns = {column["name"] for column in inspector.get_columns("report_attachments")}
+            if "storage_backend" not in attachment_columns:
+                connection.execute(text("ALTER TABLE report_attachments ADD COLUMN storage_backend VARCHAR(16) NOT NULL DEFAULT 'local'"))
         if "users" in tables:
             columns = {column["name"] for column in inspector.get_columns("users")}
             if "department_id" not in columns:
