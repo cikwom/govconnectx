@@ -6,7 +6,7 @@ from app.database import get_db
 from app.models.department import Department
 from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.department_routing_category import DepartmentRoutingCategory
-from app.models.location import LocalGovernmentArea, State
+from app.models.location import LocalGovernmentArea, State, Ward
 from app.models.user import User
 from app.models.report import Report
 from app.schemas.workflow import DepartmentCreate, DepartmentGeographicScopeInput, DepartmentGeographicScopeResponse, DepartmentMemberUpdate, DepartmentResponse, DepartmentRoutingCategoryInput, DepartmentRoutingCategoryResponse
@@ -84,7 +84,7 @@ def list_department_geographic_scopes(
     return (
         db.query(DepartmentGeographicScope)
         .filter(DepartmentGeographicScope.department_id == department_id)
-        .order_by(DepartmentGeographicScope.state_code, DepartmentGeographicScope.lga_code)
+        .order_by(DepartmentGeographicScope.state_code, DepartmentGeographicScope.lga_code, DepartmentGeographicScope.ward_code)
         .all()
     )
 
@@ -110,11 +110,13 @@ def replace_department_geographic_scopes(
     for item in scopes:
         state_code = item.state_code.strip().upper()
         lga_code = item.lga_code.strip().upper() if item.lga_code else None
-        key = (state_code, lga_code)
+        ward_code = item.ward_code.strip().upper() if item.ward_code else None
+        if ward_code and not lga_code:
+            raise HTTPException(status_code=400, detail="A ward scope must include its parent LGA and State")
+        key = (state_code, lga_code, ward_code)
         if key in normalized:
             raise HTTPException(status_code=400, detail="Duplicate geographic scope")
         normalized.add(key)
-
         state = db.get(State, state_code)
         if state is None:
             raise HTTPException(status_code=400, detail=f"Unknown state code: {state_code}")
@@ -122,15 +124,19 @@ def replace_department_geographic_scopes(
             lga = db.get(LocalGovernmentArea, lga_code)
             if lga is None or lga.state_code != state_code:
                 raise HTTPException(status_code=400, detail="The selected LGA does not belong to the selected state")
-        validated.append((state_code, lga_code))
+        if ward_code:
+            ward = db.get(Ward, ward_code)
+            if ward is None or not ward.is_active or ward.lga_code != lga_code:
+                raise HTTPException(status_code=400, detail="The selected ward does not belong to the selected LGA")
+        validated.append((state_code, lga_code, ward_code))
 
     try:
         db.query(DepartmentGeographicScope).filter(
             DepartmentGeographicScope.department_id == department_id
         ).delete(synchronize_session=False)
         rows = [
-            DepartmentGeographicScope(department_id=department_id, state_code=state_code, lga_code=lga_code)
-            for state_code, lga_code in validated
+            DepartmentGeographicScope(department_id=department_id, state_code=state_code, lga_code=lga_code, ward_code=ward_code)
+            for state_code, lga_code, ward_code in validated
         ]
         db.add_all(rows)
         db.commit()
@@ -205,7 +211,14 @@ def department_performance(
         raise HTTPException(status_code=403, detail="This dashboard is available to department staff")
     if current_user.department_id is None:
         raise HTTPException(status_code=403, detail="Your account is not assigned to a department")
-    query = db.query(Report).filter(Report.department_id == current_user.department_id)
+    query = db.query(Report).join(
+        DepartmentGeographicScope,
+        and_(
+            DepartmentGeographicScope.department_id == Report.department_id,
+            DepartmentGeographicScope.department_id == current_user.department_id,
+            geographic_scope_filter(DepartmentGeographicScope, Report.incident_state_code, Report.incident_lga_code, Report.incident_ward_code),
+        ),
+    ).filter(Report.department_id == current_user.department_id)
     if current_user.role == "official":
         query = query.filter(Report.assigned_to_user_id == current_user.id)
     reports = query.all()
