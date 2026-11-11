@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
+import LanguageSelector from "../components/LanguageSelector";
+import { useLanguage } from "../state/LanguageContext";
 import { useAuth } from "../state/AuthContext";
 
 const highlights = [
@@ -50,33 +52,35 @@ function NigeriaLandscape() {
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const destination = user ? (user.role === "system_admin" ? "/admin" : "/dashboard") : "/register";
 
   return (
     <main className="home-page">
       <header className="home-nav">
         <Link className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></Link>
-        <nav className="home-nav-actions" aria-label="Main navigation">
-          <a href="#how-it-works">How it works</a>
-          <a href="#our-purpose">Our purpose</a>
-          <Link to="/transparency">Transparency</Link>
+        <nav className="home-nav-actions" aria-label={t("Main navigation")}>
+          <a href="#how-it-works">{t("How it works")}</a>
+          <a href="#our-purpose">{t("Our purpose")}</a>
+          <Link to="/transparency">{t("Transparency")}</Link>
+          <LanguageSelector />
           <ThemeToggle />
           {user
-            ? <Link className="button button-primary" to={destination}>Open dashboard <span aria-hidden="true">→</span></Link>
-            : <><Link className="home-login-link" to="/login">Sign in</Link><Link className="button button-primary" to="/register">Get started <span aria-hidden="true">→</span></Link></>}
+            ? <Link className="button button-primary" to={destination}>{t("Open dashboard")} <span aria-hidden="true">→</span></Link>
+            : <><Link className="home-login-link" to="/login">{t("Sign in")}</Link><Link className="button button-primary" to="/register">{t("Get started")} <span aria-hidden="true">→</span></Link></>}
         </nav>
       </header>
 
       <section className="home-hero civic-hero">
         <div className="home-hero-copy">
-          <p className="eyebrow"><span className="live-dot" /> A NATION THAT LISTENS, A PEOPLE THAT LEAD</p>
-          <h1>Nigeria is <em>ours.</em><br />Let’s make it<br /><span>better together.</span></h1>
-          <p className="home-hero-description">Your community deserves to be heard. Report the issues that matter, follow real progress, and help build a country where every voice can make a difference.</p>
+          <p className="eyebrow"><span className="live-dot" /> {t("A NATION THAT LISTENS, A PEOPLE THAT LEAD")}</p>
+          <h1>{t("Nigeria is")} <em>{t("ours.")}</em><br />{t("Let’s make it")}<br /><span>{t("better together.")}</span></h1>
+          <p className="home-hero-description">{t("Your community deserves to be heard. Report the issues that matter, follow real progress, and help build a country where every voice can make a difference.")}</p>
           <div className="home-hero-actions">
-            <Link className="button button-primary home-primary-cta" to={destination}>{user ? "Open your dashboard" : "Make your voice heard"} <span aria-hidden="true">→</span></Link>
-            <a className="home-secondary-cta" href="#how-it-works">See how it works <span aria-hidden="true">↓</span></a>
+            <Link className="button button-primary home-primary-cta" to={destination}>{user ? t("Open your dashboard") : t("Make your voice heard")} <span aria-hidden="true">→</span></Link>
+            <a className="home-secondary-cta" href="#how-it-works">{t("See how it works")} <span aria-hidden="true">↓</span></a>
           </div>
-          <div className="home-trust-note"><span className="trust-check">✓</span> Your voice matters. Your community matters.</div>
+          <div className="home-trust-note"><span className="trust-check">✓</span> {t("Your voice matters. Your community matters.")}</div>
         </div>
         <div className="landscape-frame">
           <NigeriaLandscape />
@@ -87,19 +91,19 @@ export default function HomePage() {
 
       <section className="home-purpose" id="our-purpose">
         <div className="purpose-kicker"><span>01</span><p className="eyebrow">CITIZENS AND INSTITUTIONS, CONNECTED</p></div>
-        <div className="purpose-content"><h2>A better Nigeria starts with <span>being heard.</span></h2><p>GovConnect gives people a clear way to raise local concerns and gives public institutions a better view of what communities need. No noise. No guesswork. Just a more direct path from reporting to response.</p></div>
+        <div className="purpose-content"><h2>{t("A better Nigeria starts with")} <span>{t("being heard.")}</span></h2><p>{t("GovConnect gives people a clear way to raise local concerns and gives public institutions a better view of what communities need. No noise. No guesswork. Just a more direct path from reporting to response.")}</p></div>
         <div className="purpose-side-note">LISTEN<br /><span>→</span><br />RESPOND<br /><span>→</span><br />IMPROVE</div>
       </section>
 
       <section className="home-highlights" id="how-it-works">
-        <div className="home-section-heading"><p className="eyebrow">FROM YOUR STREET TO THE PEOPLE WHO CAN HELP</p><h2>Small actions. <span>Real progress.</span></h2><p>One simple place to report issues, stay informed and see your community move forward.</p></div>
+        <div className="home-section-heading"><p className="eyebrow">{t("FROM YOUR STREET TO THE PEOPLE WHO CAN HELP")}</p><h2>{t("Small actions.")} <span>{t("Real progress.")}</span></h2><p>{t("One simple place to report issues, stay informed and see your community move forward.")}</p></div>
         <div className="home-feature-grid">
-          {highlights.map((item) => <article className="home-feature" key={item.title}><div className="feature-topline"><span>{item.number}</span><span className="feature-icon">{item.icon}</span></div><h3>{item.title}</h3><p>{item.text}</p></article>)}
+          {highlights.map((item) => <article className="home-feature" key={item.title}><div className="feature-topline"><span>{item.number}</span><span className="feature-icon">{item.icon}</span></div><h3>{t(item.title)}</h3><p>{t(item.text)}</p></article>)}
         </div>
       </section>
 
-      <section className="home-bottom-cta"><div><p className="eyebrow">THE NEXT CHAPTER STARTS WITH US</p><h2>Let’s build the Nigeria we want to live in.</h2><p>Raise a concern. Follow the response. Be part of the progress.</p></div><Link className="button button-light-cta" to={destination}>{user ? "Go to your dashboard" : "Join GovConnect"} <span aria-hidden="true">→</span></Link></section>
-      <footer className="home-footer"><Link className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></Link><span>Connecting citizens and public institutions.</span><nav className="home-legal-links" aria-label="Legal links"><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Notice</Link></nav><span>© {new Date().getFullYear()} GovConnect Nigeria</span></footer>
+      <section className="home-bottom-cta"><div><p className="eyebrow">{t("THE NEXT CHAPTER STARTS WITH US")}</p><h2>{t("Let’s build the Nigeria we want to live in.")}</h2><p>{t("Raise a concern. Follow the response. Be part of the progress.")}</p></div><Link className="button button-light-cta" to={destination}>{user ? t("Go to your dashboard") : t("Join GovConnect")} <span aria-hidden="true">→</span></Link></section>
+      <footer className="home-footer"><Link className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></Link><span>{t("Connecting citizens and public institutions.")}</span><nav className="home-legal-links" aria-label="Legal links"><Link to="/terms">Terms of Use</Link><Link to="/privacy">Privacy Notice</Link></nav><span>© {new Date().getFullYear()} GovConnect Nigeria</span></footer>
     </main>
   );
 }

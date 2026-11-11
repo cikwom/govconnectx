@@ -67,5 +67,7 @@ jobs:
           node-version: "22"
       - name: Install frontend dependencies
         run: npm install
+      - name: Check translation completeness
+        run: npm run check:translations
       - name: Typecheck and build
         run: npm run build
