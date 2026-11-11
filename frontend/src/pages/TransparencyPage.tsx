@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle";
+import LanguageSelector from "../components/LanguageSelector";
+import { useLanguage } from "../state/LanguageContext";
 
 type Transparency = {
   updated_at: string;
@@ -14,6 +16,7 @@ type Transparency = {
 const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
 
 export default function TransparencyPage() {
+  const { t } = useLanguage();
   const [data, setData] = useState<Transparency | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -36,9 +39,10 @@ export default function TransparencyPage() {
       <header className="home-nav">
         <Link className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></Link>
         <nav className="home-nav-actions" aria-label="Main navigation">
-          <Link to="/">Home</Link>
+          <Link to="/">{t("Home")}</Link>
+          <LanguageSelector />
           <ThemeToggle />
-          <Link className="button button-primary" to="/register">Get started</Link>
+          <Link className="button button-primary" to="/register">{t("Get started")}</Link>
         </nav>
       </header>
       <section className="page-content" style={{ minHeight: "70vh" }}>
