@@ -41,6 +41,8 @@ for (const key of [
   "Follow your report as it is received, reviewed, assigned and resolved.",
   "Move Nigeria forward",
   "Turn everyday experiences into clear signals that institutions can act on.",
+  "SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REJECTED",
+  "system admin", "department admin", "supervisor", "field officer", "citizen",
 ]) used.add(key);
 
 const failures = [];
