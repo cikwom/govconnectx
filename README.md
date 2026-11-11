@@ -927,3 +927,67 @@ npm.cmd run check:accessibility
 npm.cmd run typecheck
 npm.cmd run build
 ```
+
+
+---
+
+## Current development checkpoint — Privacy Notice SMS disclosure
+
+**Date:** 11 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Latest merged feature PR:** [#45 — Privacy Notice phone/SMS disclosure](https://github.com/cikwom/govconnectx/pull/45)  
+**Merge commit:** `5f93d1f864ef43a52e7e24327920214ac03acbdf`
+
+### Completed
+
+- **PR #41:** Durable notification outbox, bounded retries, stale-claim recovery, worker and System Admin delivery monitoring.
+- **PR #43:** Daily cleanup of phone-verification challenges after 24 hours; optional retention cleanup for old terminal notification deliveries.
+- **PR #44:** README checkpoint for retention cleanup.
+- **PR #45:** Privacy Notice now explains optional phone-number collection, one-time verification, separate SMS opt-in, consent withdrawal, SMS-provider processing and current retention behavior.
+- Privacy wording remains subject to qualified Nigerian legal/privacy review; no legal compliance certification is claimed.
+
+### Validation for PR #45
+
+- Backend compile and tests: **82 passed**.
+- Frontend translation completeness: **passed**.
+- Accessibility foundation smoke checks: **passed**.
+- Frontend TypeScript and production build: **passed**.
+- CI run: https://github.com/cikwom/govconnectx/actions/runs/43041735747
+
+### Remaining production and acceptance work
+
+1. Approve the privacy controller identity/contact, lawful bases, SMS provider processing locations, cross-border transfer safeguards and retention schedule with qualified Nigerian privacy counsel.
+2. Configure the Render Background Worker with the same database and provider secrets as the API.
+3. Configure and test SMTP, Termii and the approved sender ID.
+4. Complete manual WCAG 2.2 AA tests with keyboard-only use, screen readers, zoom/reflow, contrast and forced-colors.
+5. Complete security, privacy, authorization, integration and load testing.
+6. Complete role-based browser acceptance and database/media restore drills.
+7. Obtain native-speaker review of Hausa/Yorùbá/Igbo translations and authoritative ward/community source data.
+
+### Manual owner tasks
+
+- No manual action is required to continue coding.
+- Before public launch, approve legal/privacy wording and retention, configure providers and the Render worker, and participate in acceptance and restore testing.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\\frontend
+npm.cmd install
+npm.cmd run check:translations
+npm.cmd run check:accessibility
+npm.cmd run typecheck
+npm.cmd run build
+```
