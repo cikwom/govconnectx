@@ -1,13 +1,17 @@
 import unittest
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
-from app.models.location import LocalGovernmentArea, State
+from app.models.audit_event import AuditEvent
+from app.models.location import Community, LocalGovernmentArea, State, Ward
+from app.models.user import User
 from app.routers.locations import seed_location_directory
 
 
@@ -42,6 +46,80 @@ class LocationDirectoryTests(unittest.TestCase):
         db = self.Session()
         seed_location_directory(db)
         db.close()
+
+    def admin_headers(self):
+        email = f"geo-admin-{uuid4().hex}@example.com"
+        db = self.Session()
+        try:
+            db.add(User(email=email, full_name="Geography Admin", password_hash=hash_password("Test-Password-123"), role="system_admin", is_active=True))
+            db.commit()
+        finally:
+            db.close()
+        login = self.client.post("/api/v1/auth/login", json={"email": email, "password": "Test-Password-123"})
+        self.assertEqual(login.status_code, 200)
+        return {"Authorization": "Bearer " + login.json()["access_token"]}
+
+    def test_geography_csv_preview_then_atomic_import_with_provenance(self):
+        headers = self.admin_headers()
+        csv_content = "record_type,code,name,parent_code\\nward,TEST-WARD-BULK,Test Ward,NG025011\\ncommunity,TEST-COMM-BULK,Test Community,TEST-WARD-BULK\\n"
+        form = {"source_name": "INEC published register", "source_reference": "Official reference document 2026", "effective_from": "2026-01-01"}
+        preview = self.client.post("/api/v1/locations/admin/import/preview", headers=headers,
+                                   data=form, files={"file": ("locations.csv", csv_content, "text/csv")})
+        self.assertEqual(preview.status_code, 200)
+        self.assertTrue(preview.json()["can_import"])
+        self.assertEqual(preview.json()["wards"], 1)
+        self.assertEqual(preview.json()["communities"], 1)
+        db = self.Session()
+        try:
+            self.assertIsNone(db.get(Ward, "TEST-WARD-BULK"))
+            self.assertIsNone(db.get(Community, "TEST-COMM-BULK"))
+        finally:
+            db.close()
+
+        committed = self.client.post("/api/v1/locations/admin/import/commit", headers=headers,
+                                     data=form, files={"file": ("locations.csv", csv_content, "text/csv")})
+        self.assertEqual(committed.status_code, 200)
+        self.assertEqual(committed.json()["imported"], 2)
+        db = self.Session()
+        try:
+            ward = db.get(Ward, "TEST-WARD-BULK")
+            community = db.get(Community, "TEST-COMM-BULK")
+            self.assertEqual(ward.source_name, "INEC published register")
+            self.assertEqual(ward.source_reference, "Official reference document 2026")
+            self.assertEqual(ward.imported_by_user_id, int(headers["Authorization"].split(".")[1] != ""))
+            self.assertEqual(community.ward_code, ward.code)
+            self.assertEqual(community.source_name, "INEC published register")
+            self.assertTrue(db.query(AuditEvent).filter(AuditEvent.action == "geography.bulk_imported").first())
+        finally:
+            db.close()
+
+    def test_geography_csv_import_rejects_invalid_parent_without_partial_writes(self):
+        headers = self.admin_headers()
+        csv_content = "record_type,code,name,parent_code\\nward,TEST-WARD-INVALID,Invalid Ward,UNKNOWN-LGA\\ncommunity,TEST-COMM-INVALID,Invalid Community,TEST-WARD-INVALID\\n"
+        form = {"source_name": "Official register", "source_reference": "Reference document"}
+        preview = self.client.post("/api/v1/locations/admin/import/preview", headers=headers,
+                                   data=form, files={"file": ("invalid.csv", csv_content, "text/csv")})
+        self.assertEqual(preview.status_code, 200)
+        self.assertFalse(preview.json()["can_import"])
+        rejected = self.client.post("/api/v1/locations/admin/import/commit", headers=headers,
+                                    data=form, files={"file": ("invalid.csv", csv_content, "text/csv")})
+        self.assertEqual(rejected.status_code, 422)
+        db = self.Session()
+        try:
+            self.assertIsNone(db.get(Ward, "TEST-WARD-INVALID"))
+            self.assertIsNone(db.get(Community, "TEST-COMM-INVALID"))
+        finally:
+            db.close()
+
+    def test_geography_csv_import_is_system_admin_only(self):
+        registered = self.client.post("/api/v1/auth/register", json={"email": "geo-citizen-import@example.com", "full_name": "Citizen", "password": "Strong-Test-Password-42"})
+        self.assertEqual(registered.status_code, 201)
+        login = self.client.post("/api/v1/auth/login", json={"email": "geo-citizen-import@example.com", "password": "Strong-Test-Password-42"})
+        headers = {"Authorization": "Bearer " + login.json()["access_token"]}
+        response = self.client.post("/api/v1/locations/admin/import/preview", headers=headers,
+                                    data={"source_name": "Source", "source_reference": "Document"},
+                                    files={"file": ("data.csv", "record_type,code,name,parent_code\\n", "text/csv")})
+        self.assertEqual(response.status_code, 403)
 
     def test_directory_contains_37_states_and_774_lgas(self):
         db = self.Session()
