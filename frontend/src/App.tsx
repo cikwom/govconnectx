@@ -25,8 +25,6 @@ export default function App() {
       <Route path="/admin/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/admin/login" element={<LoginPage />} />
-      <Route path="/forgot-password" element={<div className="screen-state">Password recovery is being prepared.</div>} />
       <Route path="/register" element={<RegisterPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
