@@ -15,7 +15,7 @@ Never expose the API key through a `VITE_*` frontend variable or commit it to Gi
 
 1. A signed-in user enters a phone number in international E.164 format, for example `+2348012345678`.
 2. GovConnect sends a six-digit one-time code through Termii.
-3. The code is stored as a keyed HMAC digest, expires after 10 minutes, and is limited to five verification attempts. Requests are rate-limited to one per minute and five per hour per account.
+3. The code is stored as a keyed HMAC digest, expires after 10 minutes, and is limited to five verification attempts. Requests are rate-limited to one per minute and five per hour per account and per phone number.
 4. A phone number cannot be verified on multiple accounts.
 5. Verifying a number does **not** enable SMS. The user must separately enable the SMS notification preference.
 6. Changing a phone number clears verification and revokes the previous SMS consent for the new number.
