@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -48,6 +49,8 @@ class UserResponse(BaseModel):
     is_active: bool
     home_state_code: str | None = None
     home_lga_code: str | None = None
+    phone_number: str | None = None
+    phone_verified_at: datetime | None = None
     model_config = ConfigDict(from_attributes=True)
 
 
