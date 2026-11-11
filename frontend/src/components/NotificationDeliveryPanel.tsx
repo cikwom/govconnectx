@@ -54,7 +54,7 @@ export default function NotificationDeliveryPanel() {
           {report.items.map(item => <tr key={item.id}>
             <td>{item.channel.toUpperCase()}</td>
             <td>{item.destination}</td>
-            <td><span className={`delivery-status delivery-status-${item.status}`}>{t(item.status)}</span>{item.last_error && <small>{t(item.last_error)}</small>}</td>
+            <td><span className={`delivery-status delivery-status-${item.status}`}>{t(item.status.charAt(0).toUpperCase() + item.status.slice(1))}</span>{item.last_error && <small>{t(item.last_error)}</small>}</td>
             <td>{item.attempts}/{item.max_attempts}</td>
             <td>{item.status === "queued" ? formatDate(item.next_attempt_at) : "—"}</td>
             <td>{formatDate(item.created_at)}</td>
