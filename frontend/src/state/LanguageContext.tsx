@@ -435,6 +435,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Loading…": "Ana lodawa…",
     "Provider delivery failed or is not configured": "Isar da sanarwa ta gaza ko ba a saita mai aikawa ba",
     "Maximum delivery attempts reached": "An kai iyakar ƙoƙarin isarwa",
+    "Could not load notification delivery status.": "An kasa loda matsayin isar da sanarwa.",
   },
   yo: {
     "Community services": "Àwọn iṣẹ́ àwùjọ", "Command Centre": "Ibùdó ìṣàkóso", "Sign out": "Jáde",
@@ -865,6 +866,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Loading…": "Ń gbé sókè…",
     "Provider delivery failed or is not configured": "Ìfiránṣẹ́ olùpèsè kùnà tàbí a kò tíì ṣètò rẹ̀",
     "Maximum delivery attempts reached": "A ti dé iye ìgbìyànjú ìfiránṣẹ́ tó pọ̀ jù",
+    "Could not load notification delivery status.": "A kò lè gbé ipò ìfiránṣẹ́ ìfitónilétí wá.",
   },
   ig: {
     "Community services": "Ọrụ obodo", "Command Centre": "Ebe njikwa", "Sign out": "Pụọ",
@@ -1295,6 +1297,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Loading…": "A na-ebudata…",
     "Provider delivery failed or is not configured": "Nnyefe onye na-enye ọrụ dara ma ọ bụ ahazighị ya",
     "Maximum delivery attempts reached": "Eruola oke mgbalị nnyefe",
+    "Could not load notification delivery status.": "Enweghị ike ibudata ọnọdụ nnyefe ọkwa.",
   },
 };
 
