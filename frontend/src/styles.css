@@ -383,3 +383,62 @@ h1,h2,h3,.brand,.stat-card strong,.role-line strong,.oversight-stat-grid strong{
 .skip-link{position:fixed;top:-5rem;left:1rem;z-index:1000;padding:.8rem 1rem;background:#ffffff;color:#102a43;border:2px solid #087f70;border-radius:8px;font-weight:800;box-shadow:0 4px 18px rgba(0,0,0,.16)}
 .skip-link:focus{top:1rem}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* Accessibility foundations: comfortable targets, high-contrast focus and system color modes. */
+:root {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+button,
+.button,
+select,
+input:not([type="checkbox"]):not([type="radio"]),
+textarea {
+  min-height: 44px;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  min-height: 24px;
+  accent-color: #087f70;
+}
+:root[data-theme="dark"] :focus-visible {
+  outline-color: #75e5d0;
+}
+@media (prefers-contrast: more) {
+  :focus-visible {
+    outline-width: 4px;
+    outline-offset: 4px;
+  }
+  input,
+  textarea,
+  select,
+  .panel,
+  .auth-card {
+    border-width: 2px;
+  }
+}
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 3px solid Highlight;
+    outline-offset: 3px;
+  }
+  .skip-link {
+    color: LinkText;
+    background: Canvas;
+    border-color: LinkText;
+    box-shadow: none;
+  }
+  button,
+  .button,
+  input,
+  textarea,
+  select {
+    forced-color-adjust: auto;
+  }
+}
