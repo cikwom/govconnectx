@@ -515,3 +515,63 @@ cd ..\\frontend
 npm.cmd install
 npm.cmd run build
 ```
+
+
+---
+
+## Current development checkpoint — Multilingual citizen experience
+
+**Date:** 11 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Latest merged feature PR:** [#32 — Hausa, Yorùbá and Igbo citizen experience](https://github.com/cikwom/govconnectx/pull/32)  
+**Merge commit:** `11b0db9fdf5af0041b504d6343d07a4b7f88e7a6`
+
+### Merged work since the previous checkpoint
+
+- **PR #30:** System Admin-only CSV preview/commit for ward/community data; validates parent relationships, prevents overwrites, records source attribution and import audit events; adds a bulk-import interface and migration. Documentation: `docs/GEOGRAPHIC_REFERENCE_IMPORT.md`.
+- **PR #31:** README checkpoint for the authoritative geography importer.
+- **PR #32:** Expanded English/Hausa/Yorùbá/Igbo language selector and first-pass translations for public and citizen-facing screens; localized date formatting; translation-completeness check in GitHub Actions. Documentation: `docs/LOCALIZATION.md`.
+
+### Validation evidence
+
+- PR #30: 64 backend tests passed; frontend dependency audit, translation-independent typecheck/build passed.
+- PR #32: 64 backend tests passed; translation completeness, frontend typecheck and production build passed.
+- PR #32 Actions: https://github.com/cikwom/govconnectx/actions/runs/43024147242
+- The translation check verifies key coverage and duplicate keys; it does not certify linguistic accuracy.
+
+### Remaining implementation work
+
+1. Complete Hausa/Yorùbá/Igbo localization for report details, agency/field-officer workflows, department performance, System Admin Command Centre and remaining operational components.
+2. Add SMS delivery only with verified phone numbers and explicit user consent; add delivery status, retries and monitoring.
+3. Complete accessibility review against WCAG 2.2 AA and security/privacy/load testing.
+4. Complete manual browser testing for citizen, official, department administrator, supervisor and system administrator roles.
+5. Configure and verify production private object storage, ClamAV, SMTP, managed database backups, media backups and restore drills.
+
+### Manual tasks for the project owner
+
+- Obtain and independently verify genuine ward/community reference data from INEC or the relevant State/LGA authority before importing. No codes or boundaries are fabricated.
+- Manually test a department restricted to one of two wards in the same LGA.
+- Before production, supply/verify provider credentials and sender/domain settings, and participate in a database/media restore drill.
+- Arrange native-speaker review of Hausa, Yorùbá and Igbo interface translations and qualified Nigerian legal/privacy review before translating or publishing legal documents.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\\frontend
+npm.cmd install
+npm.cmd run check:translations
+npm.cmd run typecheck
+npm.cmd run build
+```
