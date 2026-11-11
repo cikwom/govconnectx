@@ -84,7 +84,7 @@ export default function StaffReportWorkflowPanel({ reportId, reportStatus, repor
     {canAssign && <form className="comment-form" onSubmit={assign}>
       <h3>{t("Assign department and officer")}</h3>
       <label>{t("Responsible department")}<select required value={departmentId} onChange={event => setDepartmentId(event.target.value)}><option value="">{t("Select department")}</option>{departments.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>
-      <label>{t("Field officer (optional)")}<select value={assigneeId} onChange={event => setAssigneeId(event.target.value)}><option value="">{t("Leave unassigned in department queue")}</option>{members.map(member => <option key={member.id} value={member.id}>{member.full_name} · {member.role.replaceAll("_", " ")}</option>)}</select></label>
+      <label>{t("Field officer (optional)")}<select value={assigneeId} onChange={event => setAssigneeId(event.target.value)}><option value="">{t("Leave unassigned in department queue")}</option>{members.map(member => <option key={member.id} value={member.id}>{member.full_name} · {t(member.role.replaceAll("_", " "))}</option>)}</select></label>
       <label>{t("Assignment note (optional)")}<textarea rows={2} maxLength={2000} value={assignmentNote} onChange={event => setAssignmentNote(event.target.value)} placeholder={t("Add a handover instruction.")}/></label>
       <button className="button button-quiet" disabled={busy || !departmentId}>{busy ? t("Saving…") : t("Save assignment")}</button>
     </form>}
