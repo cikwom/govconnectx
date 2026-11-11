@@ -60,11 +60,13 @@ const privacy: LegalSection[] = [
     "Report information: report title, description, category, location coordinates, optional address, status, timestamps, and the account associated with the report.",
     "Evidence and attachments: file name, file type, file size, file checksum, upload time, and the file itself.",
     "Workflow information: department assignment, assigned official, report status history, comments, and notifications where those features are used.",
-    "Technical and security information: information needed to authenticate requests, protect accounts, diagnose errors, and maintain the service. The browser client currently keeps its short-lived sign-in token in local storage."
+    "Technical and security information: information needed to authenticate requests, protect accounts, diagnose errors, and maintain the service. The browser client currently keeps its short-lived sign-in token in local storage.",
+    "Optional phone and notification information: if you choose to add a phone number, the platform stores it and sends a one-time verification code. The number is not used for SMS alerts unless you verify it and separately enable SMS notifications in Preferences. The platform stores verification and consent timestamps."
   ]},
   { id: "purposes", title: "3. Why information is used", paragraphs: [
     "Information is used to create and secure accounts, receive and manage civic reports, identify relevant locations, route reports to authorised personnel, communicate report progress within the application, investigate misuse, maintain service security, and meet applicable legal obligations.",
-    "We aim to collect only information that is relevant and reasonably necessary for these purposes. Do not include sensitive personal details about yourself or another person unless they are necessary for the report."
+    "We aim to collect only information that is relevant and reasonably necessary for these purposes. Do not include sensitive personal details about yourself or another person unless they are necessary for the report.",
+    "If you separately opt in to SMS notifications after verifying your phone number, the number is used to send account-related report updates such as assignment, status and escalation notices. SMS is optional; you can turn it off in Preferences. Verification alone does not activate SMS."
   ]},
   { id: "lawful-basis", title: "4. Legal basis for processing", paragraphs: [
     "The Nigeria Data Protection Act 2023 requires a valid lawful basis for each processing purpose. Depending on the actual service arrangement and the facts of a particular report, a lawful basis may include steps requested by the user, a legitimate interest that does not override the person’s rights, consent where genuinely appropriate, a legal obligation, vital interests, or a task carried out in the public interest by an entity legally authorised to do so.",
@@ -73,15 +75,18 @@ const privacy: LegalSection[] = [
   { id: "sharing", title: "5. When information may be shared", paragraphs: [
     "A report and relevant evidence may be made available to authorised platform administrators and, where the workflow supports it, the department or official assigned to review that report. Information may also be processed by infrastructure or service providers that help host, secure, or operate the platform, subject to appropriate safeguards and contractual controls.",
     "We do not sell personal information. We do not publish private account credentials. Any disclosure required by law, court order, or a valid request from a competent authority must be assessed and handled in accordance with applicable law.",
-    "Before public launch, the operator must document the actual hosting, file-storage, email, analytics (if any), and other service providers, including relevant processing locations and any cross-border transfer safeguards."
+    "Before public launch, the operator must document the actual hosting, file-storage, email, analytics (if any), and other service providers, including relevant processing locations and any cross-border transfer safeguards.",
+    "If SMS notifications are enabled by the operator, the phone number and notification message are sent to the configured SMS delivery provider (currently implemented for Termii) to carry out delivery. Provider identity, processing location, contractual safeguards and any international transfer arrangements must be confirmed and disclosed before live SMS is enabled."
   ]},
   { id: "retention", title: "6. Storage, security and retention", paragraphs: [
     "The application uses a configured backend database for account and report records and a separate file-storage location for attachments. The current code can fall back to a local SQLite database when no DATABASE_URL is configured, and attachments use local filesystem storage. On hosting services with an ephemeral filesystem, local files may not survive a restart or redeployment.",
     "Durable production database hosting, private persistent attachment storage, tested backups, a documented retention schedule, and a tested recovery process must be completed before relying on GovConnect for important public records. We do not publish a fixed retention period until the operator has approved a records-retention schedule.",
+    "Phone-verification challenges are automatically removed after 24 hours. Notification delivery history is retained unless and until the operator configures an approved retention period; the current default does not automatically delete that history. Retention periods for reports, evidence, audit events and other records still require an approved schedule.",
     "We use password hashing, role-based access checks, and authenticated access controls in the application. These measures do not mean that every form of data is encrypted at rest or that the platform has completed an independent security audit. Do not submit information that would create an unacceptable risk if exposed."
   ]},
   { id: "rights", title: "7. Your data-protection rights", paragraphs: [
     "Subject to the conditions and exceptions in the Nigeria Data Protection Act 2023, you may have rights to be informed, request access to personal data, seek correction, request erasure, restrict or object to certain processing, request data portability, and withdraw consent where consent is the basis relied upon. You may also lodge a complaint with the Nigeria Data Protection Commission.",
+    "You may withdraw SMS notification consent at any time by turning SMS notifications off in Preferences. This stops future SMS notification queueing; it does not undo messages already accepted by the provider.",
     "A dedicated privacy-request email address and process must be published by the platform operator before public launch. Until then, this notice does not provide a verified channel for submitting a formal data-subject request."
   ]},
   { id: "children", title: "8. Children and vulnerable people", paragraphs: [
