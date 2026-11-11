@@ -69,8 +69,8 @@ class AuthenticationApiTests(unittest.TestCase):
         with patch("app.routers.auth.send_notification_email"):
             response = self.client.post(
                 "/api/v1/auth/login",
-            json={"email": email, "password": "Strong-Test-Password-42"},
-        )
+                json={"email": email, "password": "Strong-Test-Password-42"},
+            )
         self.assertEqual(response.status_code, 200)
         return {"Authorization": "Bearer " + response.json()["access_token"]}
 
@@ -130,6 +130,14 @@ class AuthenticationApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["event_type"], "login_success")
+
+
+    def test_revoke_sessions_invalidates_existing_access_tokens(self):
+        self.assertEqual(self.register("sessions@example.com").status_code, 201)
+        headers = self.login("sessions@example.com")
+        response = self.client.post("/api/v1/auth/security/revoke-sessions", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get("/api/v1/auth/me", headers=headers).status_code, 401)
 
     def test_public_registration_always_creates_citizen(self):
         response = self.client.post(
