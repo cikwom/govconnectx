@@ -459,3 +459,10 @@ input[type="radio"] {
 :root[data-theme="dark"] .delivery-status-failed{background:#4b2828;color:#ffb3b3}
 :root[data-theme="dark"] .delivery-status-sending{background:#4b3b22;color:#f4d28b}
 @media(max-width:720px){.delivery-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Clear, accessible feedback for the Nigerian state and LGA directory. */
+.location-load-error{display:flex;flex-direction:column;align-items:flex-start;gap:9px;margin-top:10px}
+.location-load-error .form-error{width:100%;margin:0;line-height:1.55}
+.location-load-success{margin:8px 0 0;color:#26734d;font-size:.74rem;font-weight:700}
+:root[data-theme="dark"] .location-load-success{color:#8be0b5}
