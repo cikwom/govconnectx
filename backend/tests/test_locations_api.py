@@ -92,6 +92,11 @@ class LocationDirectoryTests(unittest.TestCase):
             self.assertTrue(db.query(AuditEvent).filter(AuditEvent.action == "geography.bulk_imported").first())
         finally:
             db.close()
+        ward_listing = self.client.get("/api/v1/locations/lgas/NG025011/wards")
+        community_listing = self.client.get("/api/v1/locations/wards/TEST-WARD-BULK/communities")
+        self.assertEqual(ward_listing.status_code, 200)
+        self.assertEqual(next(row for row in ward_listing.json() if row["code"] == "TEST-WARD-BULK")["source_name"], "INEC published register")
+        self.assertEqual(community_listing.json()[0]["source_reference"], "Official reference document 2026")
 
     def test_geography_csv_import_rejects_invalid_parent_without_partial_writes(self):
         headers = self.admin_headers()
