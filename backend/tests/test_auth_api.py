@@ -50,7 +50,9 @@ class AuthenticationApiTests(unittest.TestCase):
         db = self.TestSession()
         try:
             seed_location_directory(db)
-            db.query(AuthSecurityEvent).delete()\n            db.query(PasswordResetToken).delete()\n            db.query(DepartmentGeographicScope).delete()
+            db.query(AuthSecurityEvent).delete()
+            db.query(PasswordResetToken).delete()
+            db.query(DepartmentGeographicScope).delete()
             db.query(Report).delete()
             db.query(User).delete()
             db.commit()
@@ -64,8 +66,9 @@ class AuthenticationApiTests(unittest.TestCase):
         )
 
     def login(self, email):
-        response = self.client.post(
-            "/api/v1/auth/login",
+        with patch("app.routers.auth.send_notification_email"):
+            response = self.client.post(
+                "/api/v1/auth/login",
             json={"email": email, "password": "Strong-Test-Password-42"},
         )
         self.assertEqual(response.status_code, 200)
