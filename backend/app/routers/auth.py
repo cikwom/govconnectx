@@ -4,7 +4,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import get_current_user, require_roles
@@ -23,7 +23,7 @@ RESET_REQUEST_COOLDOWN_SECONDS = 60
 
 
 class PasswordResetRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(min_length=5, max_length=255)
 
 
 class PasswordResetComplete(BaseModel):
