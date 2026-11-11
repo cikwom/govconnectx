@@ -32,7 +32,7 @@ export default function PreferencesPage() {
       if (active) setError(reason instanceof Error ? reason.message : t("Could not load preferences."));
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [setLanguage, t]);
+  }, [setLanguage]);
 
   async function requestCode() {
     setRequestingCode(true); setError(""); setNotice("");
