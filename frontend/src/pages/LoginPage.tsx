@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const adminPortal = location.pathname === "/admin/login";
+  const notice = (location.state as { notice?: string } | null)?.notice;
   if (user) return <Navigate to={user.role === "system_admin" ? "/admin" : "/dashboard"} replace />;
 
   async function submit(event: FormEvent) {
@@ -23,7 +24,7 @@ export default function LoginPage() {
     setError("");
     setBusy(true);
     try {
-      const signedInUser = await signIn(email, password);
+      const signedInUser = await signIn(email, password, adminPortal ? ["system_admin", "department_admin", "supervisor", "official"] : undefined);
       
       const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
       navigate(destination || (signedInUser.role === "system_admin" ? "/admin" : "/dashboard"), { replace: true });
@@ -54,6 +55,7 @@ export default function LoginPage() {
           <p className="eyebrow">{adminPortal ? t("GOVERNMENT & ADMINISTRATION") : t("WELCOME BACK")}</p>
           <h2>{adminPortal ? t("Government and administration sign in.") : t("Good to see you again.")}</h2>
           <p className="muted">{adminPortal ? t("Use your authorised institutional account to access government operations.") : t("Sign in to follow your reports and community updates.")}</p>
+          {notice && <p className="form-success" role="status">{notice}</p>}
           <form className="form-stack auth-form" onSubmit={submit}>
             <label>{t("Email address")}<input type="email" autoComplete="email" placeholder="you@example.com" required value={email} onChange={event => setEmail(event.target.value)} /></label>
             <label>{t("Password")}<input type="password" autoComplete="current-password" placeholder={t("Enter your password")} required value={password} onChange={event => setPassword(event.target.value)} /></label>
