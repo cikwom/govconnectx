@@ -14,7 +14,9 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);\n  const adminPortal = location.pathname === "/admin/login";
+  const [busy, setBusy] = useState(false);
+  const adminPortal = location.pathname === "/admin/login";
+  const adminPortal = location.pathname === "/admin/login";
   if (user) return <Navigate to={user.role === "system_admin" ? "/admin" : "/dashboard"} replace />;
 
   async function submit(event: FormEvent) {
@@ -23,6 +25,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const signedInUser = await signIn(email, password);
+      if (adminPortal && !["system_admin", "department_admin", "supervisor", "official"].includes(signedInUser.role)) { signOut(); throw new Error("This sign-in area is for authorised government and administration accounts."); }
       const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
       navigate(destination || (signedInUser.role === "system_admin" ? "/admin" : "/dashboard"), { replace: true });
     } catch (err) {
@@ -58,7 +61,11 @@ export default function LoginPage() {
             {error && <p className="form-error" role="alert">{error}</p>}
             <button className="button button-primary button-full auth-submit" disabled={busy}>{busy ? t("Signing you in…") : t("Sign in to GovConnect")} <span aria-hidden="true">→</span></button>
           </form>
-          <p className="auth-switch"><Link to="/forgot-password">{t("Forgot your password?")}</Link></p>\n          {adminPortal ? <p className="auth-switch">{t("Citizen account?")} <Link to="/login">{t("Citizen sign in")}</Link></p> : <p className="auth-switch">{t("Government staff?")} <Link to="/admin/login">{t("Use the government sign-in")}</Link></p>}\n          {!adminPortal && <p className="auth-switch">{t("New to GovConnect?")} <Link to="/register">{t("Create an account")}</Link></p>}
+          <p className="auth-switch"><Link to="/forgot-password">{t("Forgot your password?")}</Link></p>
+          {adminPortal ? <p className="auth-switch">{t("Citizen account?")} <Link to="/login">{t("Citizen sign in")}</Link></p> : <p className="auth-switch">{t("Government staff?")} <Link to="/admin/login">{t("Use the government sign-in")}</Link></p>}
+          {!adminPortal && <p className="auth-switch"><Link to="/forgot-password">{t("Forgot your password?")}</Link></p>
+          {adminPortal ? <p className="auth-switch">{t("Citizen account?")} <Link to="/login">{t("Citizen sign in")}</Link></p> : <p className="auth-switch">{t("Government staff?")} <Link to="/admin/login">{t("Use the government sign-in")}</Link></p>}
+          {!adminPortal && <p className="auth-switch">{t("New to GovConnect?")} <Link to="/register">{t("Create an account")}</Link></p>}}
           <p className="auth-secure-note"><span>●</span> {t("Your account and reports stay protected.")}</p>
         </div>
       </section>
