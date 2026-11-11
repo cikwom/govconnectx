@@ -28,7 +28,7 @@ export default function AppShell() {
       <main id="main-content" className="page-content" tabIndex={-1}><Outlet /></main>
       <footer className="footer legal-app-footer">
         <span>{t("GovConnect Nigeria · Making public services more accountable")}</span>
-        <nav aria-label={t("Legal links")}><NavLink to="/terms">{t("Terms of Use")}</NavLink><NavLink to="/privacy">{t("Privacy Notice")}</NavLink></nav>
+        <nav aria-label="Legal links"><NavLink to="/terms">Terms of Use</NavLink><NavLink to="/privacy">Privacy Notice</NavLink></nav>
       </footer>
     </div>
   );
