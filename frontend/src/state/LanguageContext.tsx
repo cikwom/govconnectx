@@ -57,9 +57,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Could not load community services.": "An kasa loda ayyukan al'umma.",
     "Your listing has been submitted for administrator review. It will appear publicly after approval.": "An aika sanarwarka don dubawar mai kula da manhaja. Za ta bayyana ga jama'a bayan amincewa.",
     "Could not submit listing.": "An kasa aika sanarwar.",
-    "Listings are reviewed before publication. Do not post passwords, bank details, identity numbers or sensitive personal information.": "Ana duba sanarwa kafin wallafawa. Kada ka sanya kalmomin sirri, bayanan banki, lambobin shaida ko bayanan sirri masu muhimmanci.",
     "Only listings approved by a platform administrator appear here.": "Sanarwar da mai kula da manhaja ya amince da ita kaɗai za ta bayyana a nan.",
-    "Public service listings verified by GovConnectX administrators.": "Jerin ayyukan jama'a da masu kula da GovConnectX suka tantance.",
     "The verified service directory is being prepared.": "Ana shirya kundin ayyukan da aka tantance.",
     "Optional: share your device location to help administrators review the incident location. Your browser will ask for permission. You can continue without sharing it.": "Na zaɓi: raba wurin na'urarka domin taimaka wa masu kula da manhaja su duba wurin lamarin. Burauzarka za ta nemi izini. Za ka iya ci gaba ba tare da rabawa ba.",
     "Location shared — update location": "An raba wuri — sabunta wuri",
@@ -94,8 +92,6 @@ const dictionaries: Record<Language, Dictionary> = {
     "Unable to sign in": "An kasa shiga asusunka",
     "Language": "Harshe", "Interface language": "Yaren manhaja",
     "Home": "Gida",
-    "Optional: share your device location to help administrators review the incident location. Your browser will ask for permission. You can continue without sharing it.": "Na zaɓi: raba wurin na'urarka domin taimaka wa masu kula da manhaja su duba wurin lamarin. Burauzarka za ta nemi izini. Za ka iya ci gaba ba tare da rabawa ba.",
-    "Location shared — update location": "An raba wuri — sabunta wuri",
     "Infrastructure": "Ababen more rayuwa", "Roads and Transport": "Hanyoyi da Sufuri", "Water and Sanitation": "Ruwa da Tsafta",
     "Electricity": "Wutar lantarki", "Public Safety": "Tsaron jama'a", "Healthcare": "Kiwon lafiya", "Environment": "Muhalli", "Other": "Sauran",
     "SUBMITTED": "An aika", "UNDER_REVIEW": "Ana dubawa", "ASSIGNED": "An tura", "IN_PROGRESS": "Ana aiki", "RESOLVED": "An warware", "REJECTED": "An ƙi",
@@ -119,7 +115,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Select your state": "Zaɓi jiharka", "Select your LGA": "Zaɓi ƙaramar hukumarka",
     "I agree to the": "Na amince da", "Terms of Use": "Sharuɗɗan Amfani", "Privacy Notice": "Sanarwar Sirri",
     "and confirm that I have read the": "kuma na tabbatar na karanta", "Creating account…": "Ana ƙirƙirar asusu…",
-    "Already registered?": "Ka riga ka yi rajista?", "Sign in": "Shiga",
+    "Already registered?": "Ka riga ka yi rajista?", "Sign in": "Shiga", "Create account": "Ƙirƙiri asusu",
   },
   yo: {
     "Community services": "Àwọn iṣẹ́ àwùjọ", "Command Centre": "Ibùdó ìṣàkóso", "Sign out": "Jáde",
@@ -230,7 +226,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Select your state": "Yan ìpínlẹ̀ rẹ", "Select your LGA": "Yan ìjọba ìbílẹ̀ rẹ",
     "I agree to the": "Mo gbà láti tẹ̀lé", "Terms of Use": "Àwọn Òfin Lílò", "Privacy Notice": "Ìfitónilétí Àṣírí",
     "and confirm that I have read the": "mo sì jẹ́rìí pé mo ti ka", "Creating account…": "Ń ṣẹ̀dá àkọọ́lẹ̀…",
-    "Already registered?": "Ṣé o ti forúkọ sílẹ̀ tẹ́lẹ̀?", "Sign in": "Wọlé",
+    "Already registered?": "Ṣé o ti forúkọ sílẹ̀ tẹ́lẹ̀?", "Sign in": "Wọlé", "Create account": "Ṣẹ̀dá àkọọ́lẹ̀",
   },
   ig: {
     "Community services": "Ọrụ obodo", "Command Centre": "Ebe njikwa", "Sign out": "Pụọ",
@@ -341,7 +337,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Select your state": "Họrọ steeti gị", "Select your LGA": "Họrọ LGA gị",
     "I agree to the": "Ekwenyere m na", "Terms of Use": "Usoro ojiji", "Privacy Notice": "Ọkwa nzuzo",
     "and confirm that I have read the": "ma kwenye na agụọla m", "Creating account…": "A na-emepụta akaụntụ…",
-    "Already registered?": "Ị debanyela aha mbụ?", "Sign in": "Banye",
+    "Already registered?": "Ị debanyela aha mbụ?", "Sign in": "Banye", "Create account": "Mepụta akaụntụ",
   },
 };
 
