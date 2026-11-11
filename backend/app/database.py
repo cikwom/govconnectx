@@ -111,6 +111,11 @@ def migrate_existing_schema(database_engine=None):
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_home_state_code ON users (home_state_code)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_home_lga_code ON users (home_lga_code)"))
 
+        if "users" in tables:
+            columns = {column["name"] for column in inspector.get_columns("users")}
+            if "token_version" not in columns:
+                connection.execute(text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0"))
+
         if "phone_verifications" in tables:
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_phone_verifications_created_at ON phone_verifications (created_at)"))
         if "user_preferences" in tables:

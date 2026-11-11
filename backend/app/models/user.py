@@ -15,6 +15,7 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(String(30), nullable=False, default="citizen", index=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True, index=True)
+    token_version = Column(Integer, nullable=False, default=0)
     home_state_code = Column(String(12), ForeignKey("states.code"), nullable=True, index=True)
     home_lga_code = Column(String(16), ForeignKey("local_government_areas.code"), nullable=True, index=True)
     phone_number = Column(String(20), nullable=True, unique=True, index=True)

@@ -1,4 +1,6 @@
+import re
 import unittest
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -8,6 +10,8 @@ from sqlalchemy.pool import StaticPool
 from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
+from app.models.auth_security_event import AuthSecurityEvent
+from app.models.password_reset_token import PasswordResetToken
 from app.models.department import Department
 from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.report import Report
@@ -46,6 +50,8 @@ class AuthenticationApiTests(unittest.TestCase):
         db = self.TestSession()
         try:
             seed_location_directory(db)
+            db.query(AuthSecurityEvent).delete()
+            db.query(PasswordResetToken).delete()
             db.query(DepartmentGeographicScope).delete()
             db.query(Report).delete()
             db.query(User).delete()
@@ -60,12 +66,78 @@ class AuthenticationApiTests(unittest.TestCase):
         )
 
     def login(self, email):
-        response = self.client.post(
-            "/api/v1/auth/login",
-            json={"email": email, "password": "Strong-Test-Password-42"},
-        )
+        with patch("app.routers.auth.send_notification_email"):
+            response = self.client.post(
+                "/api/v1/auth/login",
+                json={"email": email, "password": "Strong-Test-Password-42"},
+            )
         self.assertEqual(response.status_code, 200)
         return {"Authorization": "Bearer " + response.json()["access_token"]}
+
+    def test_password_reset_is_one_time_and_revokes_existing_sessions(self):
+        self.assertEqual(self.register("recover@example.com").status_code, 201)
+        old_headers = self.login("recover@example.com")
+
+        with patch("app.routers.auth.send_notification_email") as send_email:
+            response = self.client.post(
+                "/api/v1/auth/password-reset/request",
+                json={"email": "recover@example.com"},
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(send_email.call_count, 1)
+            message = send_email.call_args.args[2]
+            match = re.search(r"token=([A-Za-z0-9_-]+)", message)
+            self.assertIsNotNone(match)
+            reset_token = match.group(1)
+
+        completed = self.client.post(
+            "/api/v1/auth/password-reset/complete",
+            json={"token": reset_token, "new_password": "New-Strong-Password-43"},
+        )
+        self.assertEqual(completed.status_code, 200)
+        self.assertEqual(self.client.get("/api/v1/auth/me", headers=old_headers).status_code, 401)
+        self.assertEqual(
+            self.client.post(
+                "/api/v1/auth/login",
+                json={"email": "recover@example.com", "password": "Strong-Test-Password-42"},
+            ).status_code,
+            401,
+        )
+        with patch("app.routers.auth.send_notification_email"):
+            new_login = self.client.post(
+                "/api/v1/auth/login",
+                json={"email": "recover@example.com", "password": "New-Strong-Password-43"},
+            )
+        self.assertEqual(new_login.status_code, 200)
+
+        reused = self.client.post(
+            "/api/v1/auth/password-reset/complete",
+            json={"token": reset_token, "new_password": "Another-Strong-Password-44"},
+        )
+        self.assertEqual(reused.status_code, 400)
+
+    def test_password_reset_request_does_not_reveal_unknown_accounts(self):
+        with patch("app.routers.auth.send_notification_email") as send_email:
+            known = self.client.post("/api/v1/auth/password-reset/request", json={"email": "unknown@example.com"})
+            self.assertEqual(known.status_code, 200)
+            self.assertEqual(send_email.call_count, 0)
+        self.assertIn("If an account matches", known.json()["message"])
+
+    def test_successful_login_is_recorded_in_security_activity(self):
+        self.assertEqual(self.register("activity@example.com").status_code, 201)
+        headers = self.login("activity@example.com")
+        response = self.client.get("/api/v1/auth/security/activity", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(response.json()), 1)
+        self.assertEqual(response.json()[0]["event_type"], "login_success")
+
+
+    def test_revoke_sessions_invalidates_existing_access_tokens(self):
+        self.assertEqual(self.register("sessions@example.com").status_code, 201)
+        headers = self.login("sessions@example.com")
+        response = self.client.post("/api/v1/auth/security/revoke-sessions", headers=headers)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.client.get("/api/v1/auth/me", headers=headers).status_code, 401)
 
     def test_public_registration_always_creates_citizen(self):
         response = self.client.post(

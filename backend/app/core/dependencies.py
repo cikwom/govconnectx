@@ -20,7 +20,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials | None = Depends(
     except (jwt.InvalidTokenError, TypeError, ValueError):
         raise unauthorized
     user = db.query(User).filter(User.id == user_id).first()
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or payload.get("ver", 0) != user.token_version:
         raise unauthorized
     return user
 

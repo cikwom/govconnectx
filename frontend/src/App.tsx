@@ -11,6 +11,8 @@ import RegisterPage from "./pages/RegisterPage";
 import ReportDetailPage from "./pages/ReportDetailPage";
 import PreferencesPage from "./pages/PreferencesPage";
 import TransparencyPage from "./pages/TransparencyPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 export default function App() {
   return (
@@ -20,6 +22,9 @@ export default function App() {
       <Route path="/terms" element={<LegalPage />} />
       <Route path="/privacy" element={<LegalPage />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/admin/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>

@@ -1,9 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../state/AuthContext";
 import { api } from "../services/api";
 import { useLanguage, type Language } from "../state/LanguageContext";
 
 export default function PreferencesPage() {
   const { language, setLanguage, t } = useLanguage();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState(true);
   const [inApp, setInApp] = useState(true);
   const [sms, setSms] = useState(false);
@@ -17,9 +21,12 @@ export default function PreferencesPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [securityEvents, setSecurityEvents] = useState<Awaited<ReturnType<typeof api.securityActivity>>>([]);
+  const [revokingSessions, setRevokingSessions] = useState(false);
 
   useEffect(() => {
     let active = true;
+    api.securityActivity().then(events => { if (active) setSecurityEvents(events); }).catch(() => { /* Security history is optional if an older API is running. */ });
     api.preferences().then(value => {
       if (!active) return;
       setEmail(value.email_notifications);
@@ -85,6 +92,20 @@ export default function PreferencesPage() {
     }
   }
 
+  async function revokeSessions() {
+    if (!window.confirm(t("This will sign out every device using your account. Continue?"))) return;
+    setRevokingSessions(true);
+    setError("");
+    try {
+      await api.revokeSessions();
+      signOut();
+      navigate("/login", { replace: true, state: { notice: t("All sessions were signed out. Please sign in again.") } });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t("Could not revoke sessions."));
+      setRevokingSessions(false);
+    }
+  }
+
   const validPhone = /^\+[1-9][0-9]{7,14}$/.test(phoneNumber.trim());
   return <section className="panel">
     <p className="eyebrow">{t("ACCOUNT SETTINGS")}</p>
@@ -128,6 +149,13 @@ export default function PreferencesPage() {
     </>}
     {error && <p className="form-error" role="alert">{error}</p>}
     {notice && <p className="muted" role="status">{notice}</p>}
+    <section className="panel" style={{ marginTop: "2rem" }}>
+      <p className="eyebrow">{t("ACCOUNT SECURITY")}</p>
+      <h2>{t("Recent sign-in activity")}</h2>
+      <p className="muted">{t("Review recent successful sign-ins and sign out every device if you notice activity you do not recognise.")}</p>
+      {securityEvents.length === 0 ? <p className="empty-state">{t("No sign-in activity is available yet.")}</p> : <div className="role-breakdown">{securityEvents.map(event => <div className="role-line" key={event.id}><span><strong>{t(event.event_type.replaceAll("_", " "))}</strong><small>{event.ip_address || t("IP unavailable")} · {event.user_agent || t("Device unavailable")}</small></span><time>{event.created_at ? new Date(event.created_at).toLocaleString() : "—"}</time></div>)}</div>}
+      <button className="button button-quiet" type="button" disabled={revokingSessions} onClick={() => void revokeSessions()}>{revokingSessions ? t("Signing out devices…") : t("Sign out all devices")}</button>
+    </section>
     <p className="muted" style={{ marginTop: "1rem" }}>{t("Language support is being expanded. Some legal and official content may remain in English until reviewed translations are approved.")}</p>
   </section>;
 }

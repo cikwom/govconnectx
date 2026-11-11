@@ -8,6 +8,8 @@ from app.models import Community, Department, LocalGovernmentArea, Report, Repor
 from app.models.audit_event import AuditEvent  # noqa: F401 - register audit table before create_all
 from app.models.citizen_services import CommunityListing, PublicServiceDirectoryEntry, ReportEscalation, ReportFeedback  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
+from app.models.password_reset_token import PasswordResetToken  # noqa: F401
+from app.models.auth_security_event import AuthSecurityEvent  # noqa: F401
 from app.models.notification_delivery import NotificationDelivery  # noqa: F401
 from app.models.phone_verification import PhoneVerification  # noqa: F401
 from app.models.user_preference import UserPreference  # noqa: F401
