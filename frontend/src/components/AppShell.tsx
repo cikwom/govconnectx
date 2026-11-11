@@ -9,7 +9,13 @@ import { useLanguage } from "../state/LanguageContext";
 export default function AppShell() {
   const { user, signOut } = useAuth();
   const { setLanguage, t } = useLanguage();
-  useEffect(() => { if (user) api.preferences().then(value => setLanguage(value.preferred_language)).catch(() => undefined); }, [user, setLanguage]);
+  useEffect(() => {
+    if (!user) return;
+    api.preferences().then(value => {
+      // Keep a language chosen on this device; use the account preference on a new device.
+      if (!localStorage.getItem("govconnectx_language")) setLanguage(value.preferred_language);
+    }).catch(() => undefined);
+  }, [user, setLanguage]);
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main-content">{t("Skip to main content")}</a>
