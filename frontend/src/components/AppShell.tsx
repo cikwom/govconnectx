@@ -27,7 +27,7 @@ export default function AppShell() {
           <NavLink className="admin-nav-link" to="/preferences">{t("Preferences")}</NavLink>
           <LanguageSelector />
           <ThemeToggle />
-          <div className="user-copy"><strong>{user?.full_name}</strong><span>{user?.role.replaceAll("_", " ")}</span></div>
+          <div className="user-copy"><strong>{user?.full_name}</strong><span>{user?.role ? t(user.role.replaceAll("_", " ")) : ""}</span></div>
           <button className="button button-quiet button-small" onClick={signOut}>{t("Sign out")}</button>
         </div>
       </header>
