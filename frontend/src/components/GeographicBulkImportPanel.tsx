@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { tokenStore } from "../services/api";
+import { useLanguage } from "../state/LanguageContext";
 
 type ImportPreview = {
   total_rows: number;
@@ -16,6 +17,7 @@ const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replac
 const CSV_TEMPLATE = "record_type,code,name,parent_code\nward,OFFICIAL-WARD-CODE,Official ward name,OFFICIAL-LGA-CODE\ncommunity,OFFICIAL-COMMUNITY-CODE,Official community name,OFFICIAL-WARD-CODE\n";
 
 export default function GeographicBulkImportPanel() {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [sourceName, setSourceName] = useState("");
   const [sourceReference, setSourceReference] = useState("");
@@ -53,18 +55,18 @@ export default function GeographicBulkImportPanel() {
       if (mode === "preview") setPreview(body as ImportPreview);
       else { setResult(body as ImportResult); setPreview(null); setFile(null); }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not process geographic CSV");
+      setError(reason instanceof Error ? reason.message : t("Could not process geographic CSV"));
     } finally { setBusy(false); }
   }
 
   return <section className="panel">
-    <div className="panel-heading"><div><p className="eyebrow">AUTHORITATIVE REFERENCE DATA</p><h2>Bulk import wards and communities</h2>
-      <p className="muted">Upload a UTF-8 CSV, validate every parent relationship, preview the result, then explicitly commit. Existing codes are never overwritten.</p></div></div>
+    <div className="panel-heading"><div><p className="eyebrow">{t("AUTHORITATIVE REFERENCE DATA")}</p><h2>{t("Bulk import wards and communities")}</h2>
+      <p className="muted">{t("Upload a UTF-8 CSV, validate every parent relationship, preview the result, then explicitly commit. Existing codes are never overwritten.")}</p></div></div>
     <div className="form-grid">
-      <label>Source organisation / publisher<input required maxLength={180} value={sourceName} onChange={e => { setSourceName(e.target.value); clearPreview(); }} placeholder="e.g. INEC or State Government" /></label>
-      <label>Source document / reference<input required maxLength={500} value={sourceReference} onChange={e => { setSourceReference(e.target.value); clearPreview(); }} placeholder="Official document title or public reference" /></label>
-      <label>Effective date (optional)<input type="date" value={effectiveFrom} onChange={e => { setEffectiveFrom(e.target.value); clearPreview(); }} /></label>
-      <label>CSV file<input type="file" accept=".csv,text/csv" onChange={e => { setFile(e.target.files?.[0] ?? null); clearPreview(); }} /></label>
+      <label>{t("Source organisation / publisher")}<input required maxLength={180} value={sourceName} onChange={e => { setSourceName(e.target.value); clearPreview(); }} placeholder={t("e.g. INEC or State Government")} /></label>
+      <label>{t("Source document / reference")}<input required maxLength={500} value={sourceReference} onChange={e => { setSourceReference(e.target.value); clearPreview(); }} placeholder={t("Official document title or public reference")} /></label>
+      <label>{t("Effective date (optional)")}<input type="date" value={effectiveFrom} onChange={e => { setEffectiveFrom(e.target.value); clearPreview(); }} /></label>
+      <label>{t("CSV file")}<input type="file" accept=".csv,text/csv" onChange={e => { setFile(e.target.files?.[0] ?? null); clearPreview(); }} /></label>
     </div>
     <div className="form-actions">
       <button type="button" className="button button-quiet button-small" onClick={() => {
@@ -73,18 +75,18 @@ export default function GeographicBulkImportPanel() {
         const anchor = document.createElement("a");
         anchor.href = url; anchor.download = "govconnectx-geography-template.csv"; anchor.click();
         URL.revokeObjectURL(url);
-      }}>Download CSV template</button>
-      <button type="button" className="button button-primary button-small" disabled={busy || !file || !sourceName.trim() || !sourceReference.trim()} onClick={() => void submit("preview")}>{busy ? "Processing…" : "Validate and preview"}</button>
+      }}>{t("Download CSV template")}</button>
+      <button type="button" className="button button-primary button-small" disabled={busy || !file || !sourceName.trim() || !sourceReference.trim()} onClick={() => void submit("preview")}>{busy ? t("Processing…") : t("Validate and preview")}</button>
     </div>
-    <p className="muted">Required columns: <code>record_type,code,name,parent_code</code>. Use <code>ward</code> with an existing LGA code, or <code>community</code> with an existing ward code (a ward may appear earlier in the same file). Maximum 5,000 rows and 2 MB. Use only source data you have independently verified.</p>
+    <p className="muted">Required columns: <code>record_type,code,name,parent_code</code>. Use <code>ward</code> with an existing LGA code, or <code>community</code> with an existing ward code (a ward may appear earlier in the same file). {t("Maximum 5,000 rows and 2 MB. Use only source data you have independently verified.")}</p>
     {preview && <article className="oversight-item">
-      <strong>Import preview</strong>
-      <p>{preview.valid_rows} valid rows of {preview.total_rows} · {preview.wards} wards · {preview.communities} communities</p>
-      {preview.errors.length > 0 && <div role="alert"><strong>{preview.errors.length} issue(s) must be corrected</strong><ul>{preview.errors.map((item, index) => <li key={index}>Row {item.row} · {item.code || "No code"}: {item.error}</li>)}</ul></div>}
+      <strong>{t("Import preview")}</strong>
+      <p>{preview.valid_rows} {t("valid rows of")} {preview.total_rows} · {preview.wards} {t("wards")} · {preview.communities} {t("communities")}</p>
+      {preview.errors.length > 0 && <div role="alert"><strong>{preview.errors.length} {t("issue(s) must be corrected")}</strong><ul>{preview.errors.map((item, index) => <li key={index}>Row {item.row} · {item.code || t("No code")}: {item.error}</li>)}</ul></div>}
       <p className="muted">{preview.notice}</p>
-      <button type="button" className="button button-primary button-small" disabled={busy || !preview.can_import} onClick={() => void submit("commit")}>Commit validated import</button>
+      <button type="button" className="button button-primary button-small" disabled={busy || !preview.can_import} onClick={() => void submit("commit")}>{t("Commit validated import")}</button>
     </article>}
-    {result && <p className="geo-success" role="status">Imported {result.imported} records: {result.wards} wards and {result.communities} communities. Source attribution and import audit record saved.</p>}
+    {result && <p className="geo-success" role="status">{t("Imported")} {result.imported} {t("records:")} {result.wards} {t("wards")} {t("and")} {result.communities} {t("communities")}. {t("Source attribution and import audit record saved.")}</p>}
     {error && <p className="form-error" role="alert">{error}</p>}
   </section>;
 }

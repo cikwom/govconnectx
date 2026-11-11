@@ -43,6 +43,7 @@ for (const key of [
   "Turn everyday experiences into clear signals that institutions can act on.",
   "SUBMITTED", "UNDER_REVIEW", "ASSIGNED", "IN_PROGRESS", "RESOLVED", "REJECTED",
   "system admin", "department admin", "supervisor", "field officer", "citizen",
+  "LOST", "FOUND", "APPROVED", "REJECTED", "pending", "system",
 ]) used.add(key);
 
 const failures = [];

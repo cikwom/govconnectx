@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { tokenStore } from "../services/api";
+import { useLanguage } from "../state/LanguageContext";
 import "../styles.css";
 
 type Department = { id: number; name: string };
@@ -28,6 +29,7 @@ async function geoRequest<T>(path: string, options: RequestInit = {}): Promise<T
 }
 
 export default function GeographicOperationsPanel() {
+  const { t } = useLanguage();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState("");
   const [states, setStates] = useState<StateItem[]>([]);
@@ -79,27 +81,27 @@ export default function GeographicOperationsPanel() {
 
   useEffect(() => {
     setBusy(true);
-    loadOperationalData().catch(e => setError(e instanceof Error ? e.message : "Could not load geographic operations"))
+    loadOperationalData().catch(e => setError(e instanceof Error ? e.message : t("Could not load geographic operations")))
       .finally(() => setBusy(false));
-  }, [loadOperationalData]);
+  }, [loadOperationalData, t]);
 
   useEffect(() => {
-    loadDepartmentSettings().catch(e => setError(e instanceof Error ? e.message : "Could not load department settings"));
-  }, [loadDepartmentSettings]);
+    loadDepartmentSettings().catch(e => setError(e instanceof Error ? e.message : t("Could not load department settings")));
+  }, [loadDepartmentSettings, t]);
 
   useEffect(() => {
     if (!selectedState) { setLgas([]); setSelectedLga(""); setSelectedWard(""); return; }
     geoRequest<LgaItem[]>(`/locations/states/${selectedState}/lgas`)
       .then(rows => setLgas(rows))
-      .catch(e => setError(e instanceof Error ? e.message : "Could not load LGAs"));
-  }, [selectedState]);
+      .catch(e => setError(e instanceof Error ? e.message : t("Could not load LGAs")));
+  }, [selectedState, t]);
 
   useEffect(() => {
     if (!selectedLga) { setWards([]); setSelectedWard(""); return; }
     geoRequest<WardItem[]>(`/locations/lgas/${selectedLga}/wards`)
       .then(rows => setWards(rows))
-      .catch(e => setError(e instanceof Error ? e.message : "Could not load wards"));
-  }, [selectedLga]);
+      .catch(e => setError(e instanceof Error ? e.message : t("Could not load wards")));
+  }, [selectedLga, t]);
 
   async function saveScopes(next: Array<{ state_code: string; lga_code: string | null; ward_code: string | null }>) {
     if (!selectedDepartment) return;
@@ -109,8 +111,8 @@ export default function GeographicOperationsPanel() {
         method: "PUT", body: JSON.stringify(next),
       });
       setScopes(rows);
-      setMessage("Department geographic coverage saved.");
-    } catch (e) { setError(e instanceof Error ? e.message : "Could not save geographic coverage"); }
+      setMessage(t("Department geographic coverage saved."));
+    } catch (e) { setError(e instanceof Error ? e.message : t("Could not save geographic coverage")); }
     finally { setBusy(false); }
   }
 
@@ -133,8 +135,8 @@ export default function GeographicOperationsPanel() {
       });
       setCategories(rows);
       setCategoryText(rows.map(item => item.category).join("\n"));
-      setMessage("Department routing categories saved.");
-    } catch (e) { setError(e instanceof Error ? e.message : "Could not save routing categories"); }
+      setMessage(t("Department routing categories saved."));
+    } catch (e) { setError(e instanceof Error ? e.message : t("Could not save routing categories")); }
     finally { setBusy(false); }
   }
 
@@ -148,61 +150,61 @@ export default function GeographicOperationsPanel() {
       });
       setMessage(`Report #${report.id} assigned successfully.`);
       await loadOperationalData();
-    } catch (e) { setError(e instanceof Error ? e.message : "Could not assign report"); }
+    } catch (e) { setError(e instanceof Error ? e.message : t("Could not assign report")); }
     finally { setBusy(false); }
   }
 
   return <section className="panel geo-operations">
-    <div className="panel-heading"><div><h2>Geographic operations</h2><p className="muted">Define each department’s service area, configure incident routing and review reports awaiting national triage.</p></div><button className="button button-quiet button-small" disabled={busy} onClick={() => { setBusy(true); loadOperationalData().then(loadDepartmentSettings).catch(e => setError(e.message)).finally(() => setBusy(false)); }}>Refresh</button></div>
+    <div className="panel-heading"><div><h2>{t("Geographic operations")}</h2><p className="muted">{t("Define each department’s service area, configure incident routing and review reports awaiting national triage.")}</p></div><button className="button button-quiet button-small" disabled={busy} onClick={() => { setBusy(true); loadOperationalData().then(loadDepartmentSettings).catch(e => setError(e.message)).finally(() => setBusy(false)); }}>{t("Refresh")}</button></div>
     {error && <p className="form-error admin-error" role="alert">{error}</p>}
     {message && <p className="geo-success" role="status">{message}</p>}
 
     <div className="geo-config-grid">
       <article className="geo-config-card">
-        <h3>Department jurisdiction</h3>
-        <p className="muted">A whole State, an entire LGA, or selected wards can be assigned. Staff access is enforced by the backend.</p>
-        <label>Department<select value={selectedDepartment} onChange={e => setSelectedDepartment(e.target.value)}><option value="">Select department</option>{departments.map(dept => <option key={dept.id} value={dept.id}>{dept.name}</option>)}</select></label>
+        <h3>{t("Department jurisdiction")}</h3>
+        <p className="muted">{t("A whole State, an entire LGA, or selected wards can be assigned. Staff access is enforced by the backend.")}</p>
+        <label>{t("Department")}<select value={selectedDepartment} onChange={e => setSelectedDepartment(e.target.value)}><option value="">{t("Select department")}</option>{departments.map(dept => <option key={dept.id} value={dept.id}>{dept.name}</option>)}</select></label>
         <form className="geo-scope-form" onSubmit={addScope}>
-          <label>State<select value={selectedState} onChange={e => { setSelectedState(e.target.value); setSelectedLga(""); setSelectedWard(""); }}><option value="">Choose a State</option>{states.map(state => <option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
-          <label>LGA <span className="muted">(optional — blank means entire State)</span><select value={selectedLga} onChange={e => { setSelectedLga(e.target.value); setSelectedWard(""); }} disabled={!selectedState}><option value="">Entire State</option>{lgas.map(lga => <option key={lga.code} value={lga.code}>{lga.name}</option>)}</select></label>
-          <label>Ward <span className="muted">(optional — blank means entire LGA)</span><select value={selectedWard} onChange={e => setSelectedWard(e.target.value)} disabled={!selectedLga}><option value="">Entire LGA</option>{wards.map(ward => <option key={ward.code} value={ward.code}>{ward.name}</option>)}</select></label>
-          <button className="button button-primary button-small" disabled={busy || !selectedDepartment || !selectedState}>Add geographic scope</button>
+          <label>{t("State")}<select value={selectedState} onChange={e => { setSelectedState(e.target.value); setSelectedLga(""); setSelectedWard(""); }}><option value="">{t("Choose a State")}</option>{states.map(state => <option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
+          <label>{t("LGA")} <span className="muted">{t("(optional — blank means entire State)")}</span><select value={selectedLga} onChange={e => { setSelectedLga(e.target.value); setSelectedWard(""); }} disabled={!selectedState}><option value="">{t("Entire State")}</option>{lgas.map(lga => <option key={lga.code} value={lga.code}>{lga.name}</option>)}</select></label>
+          <label>{t("Ward")} <span className="muted">{t("(optional — blank means entire LGA)")}</span><select value={selectedWard} onChange={e => setSelectedWard(e.target.value)} disabled={!selectedLga}><option value="">{t("Entire LGA")}</option>{wards.map(ward => <option key={ward.code} value={ward.code}>{ward.name}</option>)}</select></label>
+          <button className="button button-primary button-small" disabled={busy || !selectedDepartment || !selectedState}>{t("Add geographic scope")}</button>
         </form>
         <div className="geo-scope-list">
           {scopes.map(scope => {
             const stateName = states.find(state => state.code === scope.state_code)?.name ?? scope.state_code;
             const lgaName = lgas.find(lga => lga.code === scope.lga_code)?.name;
             const wardName = wards.find(ward => ward.code === scope.ward_code)?.name;
-            const coverage = scope.ward_code ? ` · ${wardName ?? scope.ward_code}` : scope.lga_code ? ` · ${lgaName ?? scope.lga_code}` : " · Entire State";
-            return <div className="geo-scope-chip" key={scope.id}><span><strong>{stateName}</strong>{coverage}</span><button type="button" aria-label={`Remove ${stateName} scope`} onClick={() => void saveScopes(scopes.filter(item => item.id !== scope.id).map(({ state_code, lga_code, ward_code }) => ({ state_code, lga_code, ward_code })))}>Remove</button></div>;
+            const coverage = scope.ward_code ? ` · ${wardName ?? scope.ward_code}` : scope.lga_code ? ` · ${lgaName ?? scope.lga_code}` : ` · ${t("Entire State")}`;
+            return <div className="geo-scope-chip" key={scope.id}><span><strong>{stateName}</strong>{coverage}</span><button type="button" aria-label={`Remove ${stateName} scope`} onClick={() => void saveScopes(scopes.filter(item => item.id !== scope.id).map(({ state_code, lga_code, ward_code }) => ({ state_code, lga_code, ward_code })))}>{t("Remove")}</button></div>;
           })}
-          {scopes.length === 0 && <p className="empty-state">No geographic coverage configured. This department cannot access reports yet.</p>}
+          {scopes.length === 0 && <p className="empty-state">{t("No geographic coverage configured. This department cannot access reports yet.")}</p>}
         </div>
       </article>
 
       <article className="geo-config-card">
-        <h3>Automatic category routing</h3>
-        <p className="muted">Enter one incident category per line. A report is routed only when exactly one active department matches both its category and incident area.</p>
+        <h3>{t("Automatic category routing")}</h3>
+        <p className="muted">{t("Enter one incident category per line. A report is routed only when exactly one active department matches both its category and incident area.")}</p>
         <form className="geo-category-form" onSubmit={saveCategories}>
-          <label>Handled categories<textarea rows={7} value={categoryText} onChange={e => setCategoryText(e.target.value)} placeholder={"Roads and Transport\nEnvironment\nPublic Health"} /></label>
-          <button className="button button-primary button-small" disabled={busy || !selectedDepartment}>Save routing categories</button>
+          <label>{t("Handled categories")}<textarea rows={7} value={categoryText} onChange={e => setCategoryText(e.target.value)} placeholder={"Roads and Transport\nEnvironment\nPublic Health"} /></label>
+          <button className="button button-primary button-small" disabled={busy || !selectedDepartment}>{t("Save routing categories")}</button>
         </form>
         <div className="geo-category-tags">{categories.map(item => <span key={item.id}>{item.category}</span>)}</div>
       </article>
     </div>
 
     <article className="geo-config-card geo-queue">
-      <div className="panel-heading"><div><h3>National unassigned triage queue</h3><p className="muted">Reports with no unique automatic department match. Assignment is still checked against the destination department’s scope.</p></div><span className="admin-count">{unassigned.length} waiting</span></div>
-      <label>Assign selected reports to<select value={triageDepartment} onChange={e => setTriageDepartment(e.target.value)}><option value="">Select department</option>{departments.map(dept => <option key={dept.id} value={dept.id}>{dept.name}</option>)}</select></label>
+      <div className="panel-heading"><div><h3>{t("National unassigned triage queue")}</h3><p className="muted">{t("Reports with no unique automatic department match. Assignment is still checked against the destination department’s scope.")}</p></div><span className="admin-count">{unassigned.length} {t("waiting")}</span></div>
+      <label>{t("Assign selected reports to")}<select value={triageDepartment} onChange={e => setTriageDepartment(e.target.value)}><option value="">Select department</option>{departments.map(dept => <option key={dept.id} value={dept.id}>{dept.name}</option>)}</select></label>
       {unassigned.map(report => <div className="geo-queue-row" key={report.id}>
-        <div><strong>#{report.id} · {report.title}</strong><span>{report.category} · {report.address || "Location not provided"}</span><small>{report.incident_state_code ?? "No State"} / {report.incident_lga_code ?? "No LGA"} · {report.status.replaceAll("_", " ")}</small></div>
-        <button className="button button-quiet button-small" disabled={busy || !triageDepartment} onClick={() => void assignFromTriage(report)}>Assign</button>
+        <div><strong>#{report.id} · {report.title}</strong><span>{report.category} · {report.address || "Location not provided"}</span><small>{report.incident_state_code ?? "No State"} / {report.incident_lga_code ?? "No LGA"} · {t(report.status)}</small></div>
+        <button className="button button-quiet button-small" disabled={busy || !triageDepartment} onClick={() => void assignFromTriage(report)}>{t("Assign")}</button>
       </div>)}
-      {unassigned.length === 0 && <p className="empty-state">The national triage queue is clear.</p>}
+      {unassigned.length === 0 && <p className="empty-state">{t("The national triage queue is clear.")}</p>}
     </article>
 
     <article className="geo-config-card geo-drilldown">
-      <div className="panel-heading"><div><h3>National geographic report overview</h3><p className="muted">Aggregated operational totals by geopolitical zone, State and LGA.</p></div><span className="admin-count">{geography?.total_states ?? 0} States · {geography?.total_lgas ?? 0} LGAs</span></div>
+      <div className="panel-heading"><div><h3>{t("National geographic report overview")}</h3><p className="muted">{t("Aggregated operational totals by geopolitical zone, State and LGA.")}</p></div><span className="admin-count">{geography?.total_states ?? 0} States · {geography?.total_lgas ?? 0} LGAs</span></div>
       {geography?.geopolitical_zones.map(zone => <details className="geo-zone" key={zone.name}>
         <summary><strong>{zone.name}</strong><span>{zone.total} reports · {zone.open} open · {zone.unassigned} unassigned</span></summary>
         <div className="geo-state-list">{zone.states.map(state => <details className="geo-state" key={state.code}>
