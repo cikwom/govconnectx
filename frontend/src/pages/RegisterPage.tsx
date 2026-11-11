@@ -20,19 +20,55 @@ export default function RegisterPage() {
   const [homeStateCode, setHomeStateCode] = useState("");
   const [homeLgaCode, setHomeLgaCode] = useState("");
   const [locationError, setLocationError] = useState("");
+  const [statesLoading, setStatesLoading] = useState(true);
+  const [lgasLoading, setLgasLoading] = useState(false);
+  const [directoryAttempt, setDirectoryAttempt] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api.states().then(setStates).catch(() => setLocationError(t("We could not load the state directory. Please refresh and try again.")));
-  }, []);
+    let active = true;
+    setStatesLoading(true);
+    setLocationError("");
+    api.states()
+      .then(items => {
+        if (!active) return;
+        setStates(items);
+        if (items.length === 0) setLocationError(t("The state directory returned no states. Restart the GovConnectX backend and try again."));
+      })
+      .catch(() => {
+        if (active) {
+          setStates([]);
+          setLocationError(t("We could not reach the GovConnectX location service. Make sure the backend is running at http://localhost:8000, then retry."));
+        }
+      })
+      .finally(() => { if (active) setStatesLoading(false); });
+    return () => { active = false; };
+  }, [directoryAttempt, t]);
 
   useEffect(() => {
+    let active = true;
     setHomeLgaCode("");
-    if (!homeStateCode) { setLgas([]); return; }
-    api.lgas(homeStateCode).then(setLgas).catch(() => setLocationError(t("We could not load the local government areas for that state.")));
-  }, [homeStateCode]);
+    setLgas([]);
+    if (!homeStateCode) { setLgasLoading(false); return () => { active = false; }; }
+    setLgasLoading(true);
+    setLocationError("");
+    api.lgas(homeStateCode)
+      .then(items => {
+        if (!active) return;
+        setLgas(items);
+        if (items.length === 0) setLocationError(t("No LGAs were returned for this state. Please retry."));
+      })
+      .catch(() => {
+        if (active) {
+          setLgas([]);
+          setLocationError(t("We could not load LGAs for this state. Please retry."));
+        }
+      })
+      .finally(() => { if (active) setLgasLoading(false); });
+    return () => { active = false; };
+  }, [homeStateCode, t]);
 
   if (user) return <Navigate to="/dashboard" replace />;
 
@@ -76,25 +112,27 @@ export default function RegisterPage() {
               <p className="field-heading">{t("Your home area")}</p>
               <p className="muted">{t("This is used for local updates. It does not restrict where you can report an incident.")}</p>
               <label>{t("State or FCT")}
-                <select required value={homeStateCode} onChange={event => setHomeStateCode(event.target.value)}>
-                  <option value="">{t("Select your state")}</option>
+                <select required value={homeStateCode} disabled={statesLoading || states.length === 0} onChange={event => setHomeStateCode(event.target.value)}>
+                  <option value="">{statesLoading ? t("Loading states…") : t("Select your state")}</option>
                   {states.map(state => <option key={state.code} value={state.code}>{state.name} · {state.geopolitical_zone}</option>)}
                 </select>
               </label>
+              <p className="form-success" role="status">{states.find(state => state.code === homeStateCode) ? <>{t("Geopolitical zone")}: <strong>{states.find(state => state.code === homeStateCode)?.geopolitical_zone}</strong></> : null}</p>
               <label>{t("Local Government Area")}
-                <select required disabled={!homeStateCode || lgas.length === 0} value={homeLgaCode} onChange={event => setHomeLgaCode(event.target.value)}>
-                  <option value="">{t("Select your LGA")}</option>
+                <select required disabled={!homeStateCode || lgasLoading || lgas.length === 0} value={homeLgaCode} onChange={event => setHomeLgaCode(event.target.value)}>
+                  <option value="">{!homeStateCode ? t("Select a state first") : lgasLoading ? t("Loading LGAs…") : t("Select your LGA")}</option>
                   {lgas.map(lga => <option key={lga.code} value={lga.code}>{lga.name}</option>)}
                 </select>
               </label>
-              {locationError && <p className="form-error" role="alert">{locationError}</p>}
+              {locationError && <div className="location-load-error" role="alert"><p className="form-error">{locationError}</p><button className="button button-quiet button-small" type="button" onClick={() => setDirectoryAttempt(value => value + 1)}>{t("Retry loading locations")}</button></div>}
+              {!locationError && !statesLoading && states.length > 0 && <p className="location-load-success" role="status">{t("State directory ready")}: {states.length} {t("states and FCT")}</p>}
             </div>
             <label className="legal-consent">
               <input type="checkbox" required checked={acceptedTerms} onChange={event => setAcceptedTerms(event.target.checked)} />
               <span>{t("I agree to the")} <Link to="/terms" target="_blank" rel="noreferrer">Terms of Use</Link> {t("and confirm that I have read the")} <Link to="/privacy" target="_blank" rel="noreferrer">Privacy Notice</Link>.</span>
             </label>
             {error && <p className="form-error" role="alert">{error}</p>}
-            <button className="button button-primary button-full" disabled={busy || !acceptedTerms || !homeStateCode || !homeLgaCode || !!locationError}>{busy ? t("Creating account…") : t("Create account")}</button>
+            <button className="button button-primary button-full" disabled={busy || statesLoading || lgasLoading || !acceptedTerms || !homeStateCode || !homeLgaCode || !!locationError}>{busy ? t("Creating account…") : t("Create account")}</button>
           </form>
           <p className="auth-switch">{t("Already registered?")} <Link to="/login">{t("Sign in")}</Link></p>
           <p className="auth-legal-links"><Link to="/terms">Terms of Use</Link><span>·</span><Link to="/privacy">Privacy Notice</Link></p>
