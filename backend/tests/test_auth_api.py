@@ -103,10 +103,11 @@ class AuthenticationApiTests(unittest.TestCase):
             ).status_code,
             401,
         )
-        new_login = self.client.post(
-            "/api/v1/auth/login",
-            json={"email": "recover@example.com", "password": "New-Strong-Password-43"},
-        )
+        with patch("app.routers.auth.send_notification_email"):
+            new_login = self.client.post(
+                "/api/v1/auth/login",
+                json={"email": "recover@example.com", "password": "New-Strong-Password-43"},
+            )
         self.assertEqual(new_login.status_code, 200)
 
         reused = self.client.post(
