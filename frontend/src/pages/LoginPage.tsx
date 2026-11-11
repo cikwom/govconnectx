@@ -63,10 +63,10 @@ export default function LoginPage() {
             <button className="button button-primary button-full auth-submit" disabled={busy}>{busy ? t("Signing you in…") : t("Sign in to GovConnect")} <span aria-hidden="true">→</span></button>
           </form>
           <p className="auth-switch"><Link to="/forgot-password">{t("Forgot your password?")}</Link></p>
-          {adminPortal ? <p className="auth-switch">{t("Citizen account?")} <Link to="/login">{t("Citizen sign in")}</Link></p> : <p className="auth-switch">{t("Government staff?")} <Link to="/admin/login">{t("Use the government sign-in")}</Link></p>}
-          {!adminPortal && <p className="auth-switch"><Link to="/forgot-password">{t("Forgot your password?")}</Link></p>
-          {adminPortal ? <p className="auth-switch">{t("Citizen account?")} <Link to="/login">{t("Citizen sign in")}</Link></p> : <p className="auth-switch">{t("Government staff?")} <Link to="/admin/login">{t("Use the government sign-in")}</Link></p>}
-          {!adminPortal && <p className="auth-switch">{t("New to GovConnect?")} <Link to="/register">{t("Create an account")}</Link></p>}}
+          {adminPortal
+            ? <p className="auth-switch">{t("Citizen account?")} <Link to="/login">{t("Citizen sign in")}</Link></p>
+            : <p className="auth-switch">{t("Government staff?")} <Link to="/admin/login">{t("Use the government sign-in")}</Link></p>}
+          {!adminPortal && <p className="auth-switch">{t("New to GovConnect?")} <Link to="/register">{t("Create an account")}</Link></p>}
           <p className="auth-secure-note"><span>●</span> {t("Your account and reports stay protected.")}</p>
         </div>
       </section>
