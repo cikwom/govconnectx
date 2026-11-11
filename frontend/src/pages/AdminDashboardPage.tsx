@@ -130,7 +130,7 @@ export default function AdminDashboardPage() {
     <GeographicOperationsPanel />
 
     <section className="panel"><div className="panel-heading"><div><h2>{t("Incident GPS verification")}</h2><p className="muted">{t("Review citizen-shared device coordinates against the incident State/LGA selected in the report. This is a human review queue, not an automatic location verdict.")}</p></div><span className="admin-count">{locationReviews.length} pending</span></div>
-      {locationReviews.map(item=><article className="oversight-item" key={item.id}><div className="oversight-item-heading"><div><strong>#{item.id} · {item.title}</strong><small>{item.category} · {item.address||t("No address supplied")}</small></div><span className="oversight-priority priority-medium">{t("Pending review")}</span></div><p>Device GPS: {item.gps_latitude.toFixed(6)}, {item.gps_longitude.toFixed(6)}</p><p>Citizen-selected incident area: {item.incident_state_code||"No State"} / {item.incident_lga_code||"No LGA"}</p><div className="form-actions"><button className="button button-primary button-small" onClick={()=>void submitLocationReview(item.id,"verified")}>{t("Mark consistent")}</button><button className="button button-quiet button-small" onClick={()=>void submitLocationReview(item.id,"mismatch")}>{t("Flag mismatch")}</button><button className="button button-quiet button-small" onClick={()=>void submitLocationReview(item.id,"unable_to_verify")}>{t("Unable to verify")}</button></div></article>)}
+      {locationReviews.map(item=><article className="oversight-item" key={item.id}><div className="oversight-item-heading"><div><strong>#{item.id} · {item.title}</strong><small>{item.category} · {item.address||t("No address supplied")}</small></div><span className="oversight-priority priority-medium">{t("Pending review")}</span></div><p>{t("Device GPS:")} {item.gps_latitude.toFixed(6)}, {item.gps_longitude.toFixed(6)}</p><p>{t("Citizen-selected incident area:")} {item.incident_state_code||t("No State")} / {item.incident_lga_code||t("No LGA")}</p><div className="form-actions"><button className="button button-primary button-small" onClick={()=>void submitLocationReview(item.id,"verified")}>{t("Mark consistent")}</button><button className="button button-quiet button-small" onClick={()=>void submitLocationReview(item.id,"mismatch")}>{t("Flag mismatch")}</button><button className="button button-quiet button-small" onClick={()=>void submitLocationReview(item.id,"unable_to_verify")}>{t("Unable to verify")}</button></div></article>)}
       {locationReviews.length===0&&<p className="empty-state">{t("No GPS reports are awaiting review.")}</p>}
     </section>
 
@@ -142,16 +142,16 @@ export default function AdminDashboardPage() {
           <div><strong>{oversight.summary.high_priority}</strong><span>{t("Multiple signals")}</span></div>
           <div><strong>{oversight.summary.reports_analyzed}</strong><span>{t("Reports analyzed")}</span></div>
         </div>
-        <p className="oversight-thresholds">{t("Review thresholds:")} {oversight.thresholds.min_reports}+ {t("reports in")} {oversight.window_days} {t("days")} · {oversight.thresholds.burst_threshold}+ reports in {oversight.thresholds.burst_window_hours} {t("hours")} · {t("repeated report content.")}</p>
+        <p className="oversight-thresholds">{t("Review thresholds:")} {oversight.thresholds.min_reports}+ {t(t("reports in"))} {oversight.window_days} {t("days")} · {oversight.thresholds.burst_threshold}+ reports in {oversight.thresholds.burst_window_hours} {t("hours")} · {t("repeated report content.")}</p>
         <div className="oversight-list">
           {oversight.items.map(item => <article className="oversight-item" key={item.user.id}>
             <div className="oversight-item-heading">
-              <div><strong>{item.user.full_name}</strong><small>{item.user.email} · {item.reports_in_window} reports in {oversight.window_days} days · max {item.max_reports_in_24h} in 24h</small></div>
+              <div><strong>{item.user.full_name}</strong><small>{item.user.email} · {item.reports_in_window} {t("reports in")} {oversight.window_days} {t("days")} · max {item.max_reports_in_24h} in 24h</small></div>
               <span className={`oversight-priority priority-${item.review_priority}`}>{item.review_priority} review priority</span>
             </div>
             <ul className="oversight-signals">{item.signals.map(signal => <li key={signal.code}><strong>{signal.label}:</strong> {signal.detail}</li>)}</ul>
             <details className="oversight-reports"><summary>{t("View related reports")} ({item.reports.length})</summary>
-              {item.reports.map(report => <div className="oversight-report" key={report.id}><strong>#{report.id} · {report.title}</strong><span>{report.category} · {t(report.status)} · {dateTime(report.created_at, locale)}</span><small>{report.address || t("Location not provided")}</small></div>)}
+              {item.reports.map(report => <div className="oversight-report" key={report.id}><strong>#{report.id} · {report.title}</strong><span>{report.category} · {t(report.status)} · {dateTime(report.created_at, locale)}</span><small>{report.address || t(t("Location not provided"))}</small></div>)}
             </details>
           </article>)}
           {oversight.items.length === 0 && <p className="empty-state">{t("No reporting patterns crossed the current review thresholds.")}</p>}
@@ -173,7 +173,7 @@ export default function AdminDashboardPage() {
       <form className="admin-search" onSubmit={searchReports}><input aria-label="Search reports" placeholder={t("Search report, category, location or reporter")} value={reportSearch} onChange={e => setReportSearch(e.target.value)} /><button className="button button-quiet button-small" disabled={filterBusy}>{t("Search reports")}</button></form>
       <div className="admin-report-list">{reports.map(report => <article className="admin-report" key={report.id}>
         <div className="admin-report-top"><div><strong>#{report.id} · {report.title}</strong><p>{report.category} · {report.address || "Location not provided"}</p></div><span className={`status-badge status-${report.status.toLowerCase()}`}>{report.status.replaceAll("_", " ")}</span></div>
-        <p className="admin-reporter">Reported by <strong>{report.reporter?.full_name ?? "Unknown user"}</strong>{report.reporter ? ` · ${report.reporter.email}` : ""} · {dateTime(report.created_at)}</p>
+        <p className="admin-reporter">{t("Reported by")} <strong>{report.reporter?.full_name ?? t("Unknown user")}</strong>{report.reporter ? ` · ${report.reporter.email}` : ""} · {dateTime(report.created_at, locale)}</p>
         <p className="admin-description">{report.description}</p>
       </article>)}{reports.length === 0 && <p className="empty-state">{t("No reports match this search.")}</p>}</div>
     </section>
