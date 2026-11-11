@@ -127,6 +127,17 @@ class NotificationOutboxTests(unittest.TestCase):
         finally:
             db.close()
 
+    def test_worker_processes_due_retry_rows(self):
+        delivery_id = self.create_delivery()
+        with patch("app.services.notification_outbox.SessionLocal", side_effect=lambda: self.TestSession()):
+            with patch("app.services.notification_outbox.send_notification_email", return_value=True):
+                self.assertEqual(process_due_deliveries(batch_size=10), 1)
+        db = self.TestSession()
+        try:
+            self.assertEqual(db.get(NotificationDelivery, delivery_id).status, "sent")
+        finally:
+            db.close()
+
     def test_queue_persists_only_opted_in_channels(self):
         db = self.TestSession()
         try:
