@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.database import Base
+from app.main import app as _app  # noqa: F401 - initialize the shared worker database schema
 from app.models.notification_delivery import NotificationDelivery
 from app.models.phone_verification import PhoneVerification
 from app.models.user import User
