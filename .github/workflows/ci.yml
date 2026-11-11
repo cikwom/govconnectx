@@ -69,5 +69,7 @@ jobs:
         run: npm install
       - name: Check translation completeness
         run: npm run check:translations
+      - name: Check accessibility foundations
+        run: npm run check:accessibility
       - name: Typecheck and build
         run: npm run build
