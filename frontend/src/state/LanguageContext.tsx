@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 export type Language = "en" | "ha" | "yo" | "ig";
@@ -349,10 +349,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem("govconnectx_language");
     return saved === "ha" || saved === "yo" || saved === "ig" ? saved : "en";
   });
-  const setLanguage = (next: Language) => {
+  const setLanguage = useCallback((next: Language) => {
     localStorage.setItem("govconnectx_language", next);
     setLanguageState(next);
-  };
+  }, []);
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -361,7 +361,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     locale: localeByLanguage[language],
     setLanguage,
     t: (key: string) => dictionaries[language][key] ?? key,
-  }), [language]);
+  }), [language, setLanguage]);
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 }
 
