@@ -11,13 +11,13 @@ export default function AppShell() {
   useEffect(() => { if (user) api.preferences().then(value => setLanguage(value.preferred_language)).catch(() => undefined); }, [user, setLanguage]);
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main-content">Skip to main content</a>
+      <a className="skip-link" href="#main-content">{t("Skip to main content")}</a>
       <header className="topbar">
         <NavLink className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></NavLink>
         <div className="topbar-user">
           <NavLink className="admin-nav-link" to="/community-services">{t("Community services")}</NavLink>
           {user?.role === "system_admin" && <NavLink className="admin-nav-link" to="/admin">{t("Command Centre")}</NavLink>}
-          <NavLink className="admin-nav-link" to="/preferences">Preferences</NavLink>
+          <NavLink className="admin-nav-link" to="/preferences">{t("Preferences")}</NavLink>
           <ThemeToggle />
           <div className="user-copy"><strong>{user?.full_name}</strong><span>{user?.role.replaceAll("_", " ")}</span></div>
           <button className="button button-quiet button-small" onClick={signOut}>{t("Sign out")}</button>
@@ -25,8 +25,8 @@ export default function AppShell() {
       </header>
       <main id="main-content" className="page-content" tabIndex={-1}><Outlet /></main>
       <footer className="footer legal-app-footer">
-        <span>GovConnect Nigeria · Making public services more accountable</span>
-        <nav aria-label="Legal links"><NavLink to="/terms">Terms of Use</NavLink><NavLink to="/privacy">Privacy Notice</NavLink></nav>
+        <span>{t("GovConnect Nigeria · Making public services more accountable")}</span>
+        <nav aria-label={t("Legal links")}><NavLink to="/terms">{t("Terms of Use")}</NavLink><NavLink to="/privacy">{t("Privacy Notice")}</NavLink></nav>
       </footer>
     </div>
   );
