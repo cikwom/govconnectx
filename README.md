@@ -781,3 +781,82 @@ npm.cmd run check:accessibility
 npm.cmd run typecheck
 npm.cmd run build
 ```
+
+
+---
+
+## Current development checkpoint — Durable notification outbox
+
+**Date:** 11 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Latest merged feature PR:** [#41 — Durable notification outbox](https://github.com/cikwom/govconnectx/pull/41)  
+**Merge commit:** `72ac6d8c7153d11d85cb1f3f95851d0198c37263`
+
+### Completed
+
+- **PR #37:** Accessibility foundations, increased control target sizes, keyboard focus, contrast and forced-colors support.
+- **PR #39:** Termii SMS adapter, phone verification, explicit opt-in and revocable SMS consent.
+- **PR #40:** README checkpoint for verified SMS notifications.
+- **PR #41:** Durable outbox rows for opted-in email and SMS, immediate first attempt, bounded retries, stale-claim recovery, polling worker, System Admin delivery health endpoint and Command Centre panel.
+- Delivery retries: 30, 60, 120 and 240 seconds after first failure; five attempts maximum.
+- Abandoned `sending` claims are eligible for recovery after five minutes.
+- Admin monitoring masks email/phone destinations and does not expose message bodies.
+- SMS messages contain no report titles or citizen-submitted content.
+- Worker and deployment guide: `docs/NOTIFICATION_OUTBOX.md`.
+
+### Validation for PR #41
+
+- Backend compile and tests: **78 passed**.
+- Frontend translation completeness: **passed**.
+- Accessibility foundation smoke checks: **passed**.
+- Frontend TypeScript and production build: **passed**.
+- CI run: https://github.com/cikwom/govconnectx/actions/runs/43040307084
+
+### Production requirements and limitations
+
+- Configure a separate Render Background Worker with start command `python -m app.workers.notification_worker` to run scheduled retries and recover abandoned claims.
+- The worker and API must share the same `DATABASE_URL`, SMTP and Termii environment variables.
+- Configure valid SMTP credentials and Termii API key/approved sender ID. Provider acceptance does not guarantee handset/mailbox delivery.
+- Delivery is at-least-once; a crash after provider acceptance but before recording success can cause a duplicate.
+- Delivery receipts/webhooks, dead-letter review and a retention/cleanup policy remain outstanding.
+- Do not claim production notification delivery is fully operational until the Render worker and providers are configured and tested.
+
+### Remaining work
+
+1. Complete manual WCAG 2.2 AA testing with keyboard-only journeys, screen readers, zoom/reflow, contrast and forced-colors; fix route-specific findings.
+2. Define and implement an approved retention/deletion policy for reports, evidence, phone-verification challenges, notification delivery records and audit data.
+3. Add provider delivery receipts/webhooks, permanent/transient error classification and dead-letter review.
+4. Complete security, privacy, authorization, integration and load testing.
+5. Complete manual role-based browser acceptance tests.
+6. Obtain native-speaker review of Hausa/Yorùbá/Igbo translations and qualified Nigerian legal/privacy review of legal notices and phone/SMS processing.
+7. Obtain authoritative ward/community data and configure private object storage, ClamAV, SMTP, Termii, database/media backups and restore drills before production.
+
+### Manual owner tasks
+
+- No manual action is required to continue development.
+- Before live retries are enabled, configure the Render Background Worker with the same secrets/database as the API.
+- Before live SMS, configure Termii and its approved sender ID in the backend service and worker only.
+- Before production, participate in role-based acceptance, privacy review and database/media restore testing.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\\frontend
+npm.cmd install
+npm.cmd run check:translations
+npm.cmd run check:accessibility
+npm.cmd run typecheck
+npm.cmd run build
+```
