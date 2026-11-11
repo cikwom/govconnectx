@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [locationLoading, setLocationLoading] = useState(true);
   const [lgasLoading, setLgasLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
+  const [locationRetry, setLocationRetry] = useState(0);
   const adminPortal = location.pathname === "/admin/login";
   const notice = (location.state as { notice?: string } | null)?.notice;
 
@@ -40,7 +41,7 @@ export default function LoginPage() {
       })
       .finally(() => { if (active) setLocationLoading(false); });
     return () => { active = false; };
-  }, [t]);
+  }, [t, locationRetry]);
 
   useEffect(() => {
     let active = true;
@@ -67,7 +68,7 @@ export default function LoginPage() {
       })
       .finally(() => { if (active) setLgasLoading(false); });
     return () => { active = false; };
-  }, [selectedStateCode, t]);
+  }, [selectedStateCode, t, locationRetry]);
 
   const selectedState = states.find(state => state.code === selectedStateCode);
 
@@ -130,7 +131,8 @@ export default function LoginPage() {
                   {lgas.map(lga => <option key={lga.code} value={lga.code}>{lga.name}</option>)}
                 </select>
               </label>
-              {locationError && <p className="form-error" role="alert">{locationError}</p>}
+              {locationError && <div className="location-load-error" role="alert"><p className="form-error">{locationError}</p><button className="button button-quiet button-small" type="button" onClick={() => setLocationRetry(value => value + 1)}>{t("Retry loading locations")}</button></div>}
+              {!locationError && !locationLoading && states.length > 0 && <p className="location-load-success" role="status">{t("State directory ready")}: {states.length} {t("states and FCT")}</p>}
             </div>}
 
             {error && <p className="form-error" role="alert">{error}</p>}
