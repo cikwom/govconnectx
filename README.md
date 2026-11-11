@@ -453,3 +453,65 @@ cd ..\\frontend
 npm.cmd install
 npm.cmd run build
 ```
+
+
+---
+
+## Current development checkpoint — Authoritative geographic CSV imports
+
+**Date:** 11 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Merged feature PR:** [#30 — Authoritative ward and community CSV imports](https://github.com/cikwom/govconnectx/pull/30)  
+**Merge commit:** `aa39a750b42d694446afd428599316fe13926fb2`
+
+### Completed
+
+- Added System Admin-only CSV preview and commit endpoints for ward and community reference records.
+- CSV imports support up to 5,000 rows / 2 MB and validate record types, code/name limits, duplicate codes, existing-code conflicts, and LGA/ward parent relationships.
+- Preview is read-only. Commit revalidates and rejects the entire batch if any row has an error.
+- Existing records are never overwritten or deleted by bulk import.
+- Each imported row records source name, source reference, effective date, import timestamp and importing administrator.
+- Successful batches create an append-only audit event; public ward/community lookups expose source attribution and effective date.
+- Added a System Admin UI with CSV template download, source details, validation preview, row-level errors and explicit commit.
+- Added migration coverage and regression tests for authorization, preview-only behavior, successful import, provenance and all-or-nothing rejection.
+- Documentation: `docs/GEOGRAPHIC_REFERENCE_IMPORT.md`.
+
+### Validation
+
+- Backend: **64 tests passed** in GitHub Actions.
+- Frontend dependency audit, TypeScript check and production build: **passed**.
+- Combined workflow: https://github.com/cikwom/govconnectx/actions/runs/43022253499
+- PR #30: https://github.com/cikwom/govconnectx/pull/30
+
+### Manual / production work still required
+
+1. You must obtain and independently verify the actual ward/community data from INEC or the relevant State/LGA authority before importing it. No official dataset was fabricated or included.
+2. Run the manual two-ward jurisdiction test in the Admin Command Centre.
+3. Configure and verify production S3-compatible storage, ClamAV, SMTP, database/media backups and a restore drill.
+4. Complete full Hausa/Yoruba/Igbo translations, WCAG 2.2 AA review, security/privacy/load testing and integration tests for external services.
+
+### Next implementation batches
+
+- Complete multilingual coverage across citizen, agency and administration experiences.
+- Add consent-based SMS delivery and delivery status/retry monitoring.
+- Continue accessibility and production-readiness hardening.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\\frontend
+npm.cmd install
+npm.cmd run build
+```
