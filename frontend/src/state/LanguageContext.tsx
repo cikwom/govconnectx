@@ -400,6 +400,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "and": "da",
     "e.g. INEC or State Government": "misali INEC ko gwamnatin jiha",
     "Maximum 5,000 rows and 2 MB. Use only source data you have independently verified.": "Matsakaicin layuka 5,000 da girman 2 MB. Yi amfani da bayanan tushe da ka tantance da kanka kawai.",
+    "Official document title or public reference": "Sunan takardar hukuma ko adireshin tushe",
+    "Could not load LGAs": "An kasa loda ƙananan hukumomi",
+    "Could not load wards": "An kasa loda unguwanni",
   },
   yo: {
     "Community services": "Àwọn iṣẹ́ àwùjọ", "Command Centre": "Ibùdó ìṣàkóso", "Sign out": "Jáde",
@@ -795,6 +798,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "and": "àti",
     "e.g. INEC or State Government": "àpẹẹrẹ INEC tàbí Ìjọba Ìpínlẹ̀",
     "Maximum 5,000 rows and 2 MB. Use only source data you have independently verified.": "Ó pọ̀ jù lọ ìlà 5,000 àti 2 MB. Lo ìsọfúnni orísun tí o ti jẹ́rìí sí fúnra rẹ nìkan.",
+    "Official document title or public reference": "Àkọlé ìwé òṣìṣẹ́ tàbí ìtọ́kasí orísun",
+    "Could not load LGAs": "A kò lè ṣí àwọn ìjọba ìbílẹ̀",
+    "Could not load wards": "A kò lè ṣí àwọn wọ́ọ̀dì",
   },
   ig: {
     "Community services": "Ọrụ obodo", "Command Centre": "Ebe njikwa", "Sign out": "Pụọ",
@@ -1190,6 +1196,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "and": "na",
     "e.g. INEC or State Government": "dịka INEC ma ọ bụ Gọọmentị Steeti",
     "Maximum 5,000 rows and 2 MB. Use only source data you have independently verified.": "Ọnụọgụ kachasị bụ ahịrị 5,000 na 2 MB. Jiri naanị data isi mmalite i nyochara n'onwe gị.",
+    "Official document title or public reference": "Aha akwụkwọ gọọmentị ma ọ bụ ntụaka isi mmalite",
+    "Could not load LGAs": "Enweghị ike ibudata LGA",
+    "Could not load wards": "Enweghị ike ibudata ward",
   },
 };
 
