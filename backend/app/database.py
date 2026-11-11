@@ -47,6 +47,19 @@ def migrate_existing_schema(database_engine=None):
             if "ward_code" not in scope_columns:
                 connection.execute(text("ALTER TABLE department_geographic_scopes ADD COLUMN ward_code VARCHAR(24) REFERENCES wards(code)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_department_geographic_scopes_ward_code ON department_geographic_scopes (ward_code)"))
+        for table_name in ("wards", "communities"):
+            if table_name in tables:
+                columns = {column["name"] for column in inspector.get_columns(table_name)}
+                additions = {
+                    "source_name": "VARCHAR(180)",
+                    "source_reference": "VARCHAR(500)",
+                    "effective_from": "DATE",
+                    "imported_at": "DATETIME",
+                    "imported_by_user_id": "INTEGER REFERENCES users(id)",
+                }
+                for name, sql_type in additions.items():
+                    if name not in columns:
+                        connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN {name} {sql_type}"))
         if "reports" in tables:
             columns = {column["name"] for column in inspector.get_columns("reports")}
             additions = {
