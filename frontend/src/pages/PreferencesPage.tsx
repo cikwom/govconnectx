@@ -3,7 +3,7 @@ import { api } from "../services/api";
 import { useLanguage, type Language } from "../state/LanguageContext";
 
 export default function PreferencesPage() {
-  const { language, setLanguage } = useLanguage();
+  const { language, setLanguage, t } = useLanguage();
   const [email, setEmail] = useState(true);
   const [inApp, setInApp] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -33,8 +33,6 @@ export default function PreferencesPage() {
     } catch (reason) { setError(reason instanceof Error ? reason.message : t("Could not save preferences.")); }
     finally { setBusy(false); }
   }
-
-  const { t } = useLanguage();
 
   return <section className="panel">
     <p className="eyebrow">{t("ACCOUNT SETTINGS")}</p>
