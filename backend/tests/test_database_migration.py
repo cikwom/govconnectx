@@ -16,6 +16,8 @@ class LegacyDatabaseMigrationTests(unittest.TestCase):
         try:
             with engine.begin() as connection:
                 connection.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY)"))
+                connection.execute(text("CREATE TABLE wards (code VARCHAR(24) PRIMARY KEY, name VARCHAR(150) NOT NULL, lga_code VARCHAR(16) NOT NULL, is_active BOOLEAN NOT NULL DEFAULT 1)"))
+                connection.execute(text("CREATE TABLE communities (code VARCHAR(32) PRIMARY KEY, name VARCHAR(180) NOT NULL, ward_code VARCHAR(24) NOT NULL, is_active BOOLEAN NOT NULL DEFAULT 1)"))
                 connection.execute(text(
                     "CREATE TABLE reports (id INTEGER PRIMARY KEY, title VARCHAR(200) NOT NULL)"
                 ))
@@ -41,8 +43,13 @@ class LegacyDatabaseMigrationTests(unittest.TestCase):
             report_indexes = {index["name"] for index in inspector.get_indexes("reports")}
             user_indexes = {index["name"] for index in inspector.get_indexes("users")}
             scope_columns = {column["name"] for column in inspector.get_columns("department_geographic_scopes")}
+            ward_columns = {column["name"] for column in inspector.get_columns("wards")}
+            community_columns = {column["name"] for column in inspector.get_columns("communities")}
             scope_indexes = {index["name"] for index in inspector.get_indexes("department_geographic_scopes")}
 
+            provenance_columns = {"source_name", "source_reference", "effective_from", "imported_at", "imported_by_user_id"}
+            self.assertTrue(provenance_columns.issubset(ward_columns))
+            self.assertTrue(provenance_columns.issubset(community_columns))
             self.assertIn("ward_code", scope_columns)
             self.assertIn("ix_department_geographic_scopes_ward_code", scope_indexes)
             with engine.connect() as connection:

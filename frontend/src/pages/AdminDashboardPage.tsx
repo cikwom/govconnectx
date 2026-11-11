@@ -6,6 +6,7 @@ import GeographicOperationsPanel from "../components/GeographicOperationsPanel";
 import AuditLogPanel from "../components/AuditLogPanel";
 import CommunityModerationPanel from "../components/CommunityModerationPanel";
 import GeographicDirectoryPanel from "../components/GeographicDirectoryPanel";
+import GeographicBulkImportPanel from "../components/GeographicBulkImportPanel";
 
 type Overview = {
   users: { total: number; active: number; inactive: number; by_role: Record<string, number>; registered_today: number };
@@ -178,6 +179,7 @@ export default function AdminDashboardPage() {
     <AuditLogPanel />
     <CommunityModerationPanel />
     <GeographicDirectoryPanel />
+    <GeographicBulkImportPanel />
 
     <section className="panel">
       <div className="panel-heading"><div><h2>Recent platform activity</h2><p className="muted">Registrations, report status changes and assignments recorded by the platform.</p></div></div>
