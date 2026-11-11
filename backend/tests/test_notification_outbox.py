@@ -151,6 +151,7 @@ class NotificationOutboxTests(unittest.TestCase):
                 sms_consent_at=datetime.now(timezone.utc),
             )
             db.add(preference)
+            db.flush()
             tasks = BackgroundTasks()
             queue_notification_channels(db, tasks, user.id, "Report updated", "Private report title must not be in SMS.")
             rows = db.query(NotificationDelivery).all()
