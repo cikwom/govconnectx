@@ -575,3 +575,64 @@ npm.cmd run check:translations
 npm.cmd run typecheck
 npm.cmd run build
 ```
+
+
+---
+
+## Current development checkpoint — Agency and report-detail localization
+
+**Date:** 11 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Latest merged feature PR:** [#34 — Report details and agency workflow localization](https://github.com/cikwom/govconnectx/pull/34)  
+**Merge commit:** `09a7bf841a5649a8cf10f302547a742c8264629e`
+
+### Completed since the previous checkpoint
+
+- **PR #32:** Added English/Hausa/Yorùbá/Igbo language selection and first-pass translations for public and citizen-facing pages.
+- **PR #33:** Updated the README checkpoint and resume steps.
+- **PR #34:** Extended Hausa/Yorùbá/Igbo translations to report details, status history, comments, evidence upload/download, escalation, citizen feedback, agency officer workflows, department assignment, performance indicators and signed-in role labels.
+- Localized report detail, citizen report and community-listing timestamps.
+- Added translation completeness checks for literal UI keys plus dynamic workflow statuses, role names and landing-page feature strings.
+- Documentation: `docs/LOCALIZATION.md`.
+
+### Validation
+
+- Backend: **64 tests passed**.
+- Frontend: translation completeness, TypeScript typecheck and production build passed.
+- PR #34 Actions: https://github.com/cikwom/govconnectx/actions/runs/43025101114
+
+### Remaining localization work
+
+1. Localize the full System Admin Command Centre, Geographic Operations, geographic directory/import, community moderation and audit log screens.
+2. Review all first-pass translations with native Hausa, Yorùbá and Igbo speakers familiar with Nigerian public administration.
+3. Keep Terms of Use and Privacy Notice in English until qualified Nigerian legal/privacy reviewers and competent translators approve the legal translations.
+
+### Other remaining implementation and owner tasks
+
+- Add consent-based SMS delivery with phone verification, delivery status, retry policy and monitoring.
+- Complete WCAG 2.2 AA review, security/privacy/load testing and full browser tests for citizen, officer, department admin, supervisor and system admin roles.
+- Independently obtain and verify official ward/community data from INEC or the relevant State/LGA authority before importing.
+- Manually test a department restricted to one ward while another ward in the same LGA remains inaccessible.
+- Before production, configure and verify private object storage, ClamAV, SMTP, database/media backups and restore drills.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\\frontend
+npm.cmd install
+npm.cmd run check:translations
+npm.cmd run typecheck
+npm.cmd run build
+```
