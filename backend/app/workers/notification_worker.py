@@ -2,6 +2,7 @@ import logging
 import os
 import time
 
+from app.main import app as _application  # noqa: F401 - register models and run schema setup
 from app.services.notification_outbox import process_due_deliveries
 from app.services.data_retention import run_retention_cleanup
 
