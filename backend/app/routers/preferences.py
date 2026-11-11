@@ -120,7 +120,11 @@ def request_phone_verification(
         PhoneVerification.user_id == current_user.id,
         PhoneVerification.created_at >= now - timedelta(hours=1),
     ).count()
-    if recent >= 5:
+    phone_recent = db.query(PhoneVerification).filter(
+        PhoneVerification.phone_number == phone_number,
+        PhoneVerification.created_at >= now - timedelta(hours=1),
+    ).count()
+    if recent >= 5 or phone_recent >= 5:
         raise HTTPException(status_code=429, detail="Too many verification requests. Try again later.")
 
     latest = db.query(PhoneVerification).filter(
