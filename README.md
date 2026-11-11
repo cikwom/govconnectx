@@ -860,3 +860,70 @@ npm.cmd run check:accessibility
 npm.cmd run typecheck
 npm.cmd run build
 ```
+
+
+---
+
+## Current development checkpoint — Privacy retention cleanup
+
+**Date:** 11 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Latest merged feature PR:** [#43 — Verification and notification retention cleanup](https://github.com/cikwom/govconnectx/pull/43)  
+**Merge commit:** `6bf15963b9bc04f73ae2de0f9af23544d231f6d3`
+
+### Completed
+
+- **PR #39:** Verified phone-number capture, six-digit phone verification, explicit SMS consent and Termii delivery.
+- **PR #41:** Durable email/SMS outbox, bounded retry schedule, stale-claim recovery, notification worker and System Admin delivery health panel.
+- **PR #42:** README checkpoint for durable notification delivery.
+- **PR #43:** Daily retention cleanup for phone-verification challenges; configurable deletion of old terminal notification deliveries; migration index for verification challenge timestamps.
+- Phone verification records older than 24 hours are purged by the notification worker.
+- Notification delivery cleanup is disabled by default (`NOTIFICATION_DELIVERY_RETENTION_DAYS=0)); when configured, only old `sent` and `failed` rows are deleted. Queued and sending deliveries are preserved.
+- The worker waits for the API's database tables to exist rather than racing the API's schema setup.
+- Documentation: `docs/DATA_RETENTION.md` and `docs/NOTIFICATION_OUTBOX.md`.
+
+### Validation for PR #43
+
+- Backend compile and tests: **82 passed**.
+- Frontend translation completeness: **passed**.
+- Accessibility foundation smoke checks: **passed**.
+- Frontend TypeScript and production build: **passed**.
+- CI run: https://github.com/cikwom/govconnectx/actions/runs/43041204773
+
+### Remaining privacy and production work
+
+1. Obtain an approved retention policy for reports, evidence, comments, feedback, audit events, user accounts and notification history. Only phone verification and optional terminal notification cleanup are implemented so far.
+2. Configure the Render Background Worker with the same database and provider secrets as the API.
+3. Configure and test SMTP, Termii and the approved sender ID; provider acceptance is not proof of delivery.
+4. Complete WCAG 2.2 AA manual keyboard, screen-reader, zoom/reflow, contrast and forced-colors testing.
+5. Complete security, privacy, authorization, integration and load testing.
+6. Complete role-based browser acceptance and restore drills for Neon and private media storage.
+7. Obtain native-speaker review of Hausa/Yorùbá/Igbo interface translations and qualified Nigerian legal/privacy review.
+
+### Manual owner tasks
+
+- No manual action is required to continue development.
+- Before production, approve data-retention periods and privacy disclosures, configure the Render worker and providers, and participate in acceptance and restore tests.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\\frontend
+npm.cmd install
+npm.cmd run check:translations
+npm.cmd run check:accessibility
+npm.cmd run typecheck
+npm.cmd run build
+```
