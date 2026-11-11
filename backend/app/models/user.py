@@ -17,6 +17,8 @@ class User(Base):
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True, index=True)
     home_state_code = Column(String(12), ForeignKey("states.code"), nullable=True, index=True)
     home_lga_code = Column(String(16), ForeignKey("local_government_areas.code"), nullable=True, index=True)
+    phone_number = Column(String(20), nullable=True, unique=True, index=True)
+    phone_verified_at = Column(DateTime(timezone=True), nullable=True)
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
 
