@@ -16,6 +16,7 @@ class LegacyDatabaseMigrationTests(unittest.TestCase):
         try:
             with engine.begin() as connection:
                 connection.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY)"))
+                connection.execute(text("CREATE TABLE user_preferences (id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL, email_notifications BOOLEAN NOT NULL DEFAULT 1, in_app_notifications BOOLEAN NOT NULL DEFAULT 1, preferred_language VARCHAR(8) NOT NULL DEFAULT 'en', updated_at DATETIME NOT NULL)"))
                 connection.execute(text("CREATE TABLE wards (code VARCHAR(24) PRIMARY KEY, name VARCHAR(150) NOT NULL, lga_code VARCHAR(16) NOT NULL, is_active BOOLEAN NOT NULL DEFAULT 1)"))
                 connection.execute(text("CREATE TABLE communities (code VARCHAR(32) PRIMARY KEY, name VARCHAR(180) NOT NULL, ward_code VARCHAR(24) NOT NULL, is_active BOOLEAN NOT NULL DEFAULT 1)"))
                 connection.execute(text(
@@ -42,6 +43,7 @@ class LegacyDatabaseMigrationTests(unittest.TestCase):
             user_columns = {column["name"] for column in inspector.get_columns("users")}
             report_indexes = {index["name"] for index in inspector.get_indexes("reports")}
             user_indexes = {index["name"] for index in inspector.get_indexes("users")}
+            preference_columns = {column["name"] for column in inspector.get_columns("user_preferences")}
             scope_columns = {column["name"] for column in inspector.get_columns("department_geographic_scopes")}
             ward_columns = {column["name"] for column in inspector.get_columns("wards")}
             community_columns = {column["name"] for column in inspector.get_columns("communities")}
@@ -69,6 +71,10 @@ class LegacyDatabaseMigrationTests(unittest.TestCase):
                 "ix_reports_assigned_to_user_id",
             }.issubset(report_indexes))
             self.assertIn("ix_users_department_id", user_indexes)
+            self.assertIn("phone_number", user_columns)
+            self.assertIn("phone_verified_at", user_columns)
+            self.assertIn("ix_users_phone_number", user_indexes)
+            self.assertTrue({"sms_notifications", "sms_consent_at", "sms_consent_revoked_at"}.issubset(preference_columns))
 
             with engine.connect() as connection:
                 row = connection.execute(
