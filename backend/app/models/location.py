@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, String
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -31,6 +31,11 @@ class Ward(Base):
     name = Column(String(150), nullable=False, index=True)
     lga_code = Column(String(16), ForeignKey("local_government_areas.code"), nullable=False, index=True)
     is_active = Column(Boolean, nullable=False, default=True)
+    source_name = Column(String(180), nullable=True)
+    source_reference = Column(String(500), nullable=True)
+    effective_from = Column(Date, nullable=True)
+    imported_at = Column(DateTime(timezone=True), nullable=True)
+    imported_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
 
 
 class Community(Base):
@@ -39,4 +44,9 @@ class Community(Base):
     code = Column(String(32), primary_key=True)
     name = Column(String(180), nullable=False, index=True)
     ward_code = Column(String(24), ForeignKey("wards.code"), nullable=False, index=True)
-    is_active = Column(__import__("sqlalchemy").Boolean, nullable=False, default=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    source_name = Column(String(180), nullable=True)
+    source_reference = Column(String(500), nullable=True)
+    effective_from = Column(Date, nullable=True)
+    imported_at = Column(DateTime(timezone=True), nullable=True)
+    imported_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
