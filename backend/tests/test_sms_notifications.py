@@ -162,10 +162,19 @@ class PhoneVerificationApiTests(unittest.TestCase):
     def test_phone_number_rate_limit_applies_across_accounts(self):
         db = self.TestSession()
         try:
+            other = User(
+                email="rate-limit-owner@example.com",
+                full_name="Rate Limit Owner",
+                password_hash=hash_password("Strong-Test-Password-42"),
+                role="citizen",
+                is_active=True,
+            )
+            db.add(other)
+            db.flush()
             now = datetime.now(timezone.utc)
             for _ in range(5):
                 db.add(PhoneVerification(
-                    user_id=self.user_id,
+                    user_id=other.id,
                     phone_number="+2348012345678",
                     code_hash="not-a-real-code-hash",
                     created_at=now - timedelta(minutes=2),
