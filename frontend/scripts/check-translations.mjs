@@ -11,7 +11,7 @@ function dictionaryKeys(language) {
   const end = context.indexOf("\n  },", start);
   if (start < 0 || end < 0) throw new Error(`Missing ${language} dictionary`);
   const section = context.slice(start, end);
-  const keys = [...section.matchAll(/"([^"]+)"\\s*:/g)].map(match => match[1]);
+  const keys = [...section.matchAll(/"([^"]+)"\s*:/g)].map(match => match[1]);
   const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
   if (duplicates.length) throw new Error(`${language} has duplicate keys: ${[...new Set(duplicates)].join(", ")}`);
   return new Set(keys);
@@ -21,7 +21,7 @@ function sourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const target = path.join(directory, entry.name);
     if (entry.isDirectory()) return sourceFiles(target);
-    return /\\.tsx?$/.test(entry.name) && entry.name !== "vite-env.d.ts" ? [target] : [];
+    return /\.tsx?$/.test(entry.name) && entry.name !== "vite-env.d.ts" ? [target] : [];
   });
 }
 
@@ -30,7 +30,7 @@ const files = sourceFiles(path.join(root, "src"));
 const used = new Set();
 for (const file of files) {
   const source = fs.readFileSync(file, "utf8");
-  for (const match of source.matchAll(/\\bt\\("([^"]+)"\\)/g)) used.add(match[1]);
+  for (const match of source.matchAll(/\bt\("([^"]+)"\)/g)) used.add(match[1]);
 }
 
 // These values are selected dynamically from the landing-page feature list.
@@ -49,8 +49,8 @@ for (const [language, keys] of Object.entries(dictionaries)) {
   if (missing.length) failures.push(`${language}: ${missing.join("; ")}`);
 }
 if (failures.length) {
-  process.stderr.write(`Translation coverage failed:\\n${failures.join("\\n")}\\n`);
+  process.stderr.write(`Translation coverage failed:\n${failures.join("\n")}\n`);
   process.exitCode = 1;
 } else {
-  process.stdout.write(`Translation coverage passed: ${used.size} interface keys exist in Hausa, Yorùbá and Igbo.\\n`);
+  process.stdout.write(`Translation coverage passed: ${used.size} interface keys exist in Hausa, Yorùbá and Igbo.\n`);
 }
