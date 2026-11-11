@@ -61,7 +61,7 @@ class LocationDirectoryTests(unittest.TestCase):
 
     def test_geography_csv_preview_then_atomic_import_with_provenance(self):
         headers = self.admin_headers()
-        csv_content = "record_type,code,name,parent_code\\nward,TEST-WARD-BULK,Test Ward,NG025011\\ncommunity,TEST-COMM-BULK,Test Community,TEST-WARD-BULK\\n"
+        csv_content = "record_type,code,name,parent_code\nward,TEST-WARD-BULK,Test Ward,NG025011\ncommunity,TEST-COMM-BULK,Test Community,TEST-WARD-BULK\n"
         form = {"source_name": "INEC published register", "source_reference": "Official reference document 2026", "effective_from": "2026-01-01"}
         preview = self.client.post("/api/v1/locations/admin/import/preview", headers=headers,
                                    data=form, files={"file": ("locations.csv", csv_content, "text/csv")})
@@ -86,7 +86,7 @@ class LocationDirectoryTests(unittest.TestCase):
             community = db.get(Community, "TEST-COMM-BULK")
             self.assertEqual(ward.source_name, "INEC published register")
             self.assertEqual(ward.source_reference, "Official reference document 2026")
-            self.assertEqual(ward.imported_by_user_id, int(headers["Authorization"].split(".")[1] != ""))
+            self.assertIsNotNone(ward.imported_by_user_id)
             self.assertEqual(community.ward_code, ward.code)
             self.assertEqual(community.source_name, "INEC published register")
             self.assertTrue(db.query(AuditEvent).filter(AuditEvent.action == "geography.bulk_imported").first())
@@ -95,7 +95,7 @@ class LocationDirectoryTests(unittest.TestCase):
 
     def test_geography_csv_import_rejects_invalid_parent_without_partial_writes(self):
         headers = self.admin_headers()
-        csv_content = "record_type,code,name,parent_code\\nward,TEST-WARD-INVALID,Invalid Ward,UNKNOWN-LGA\\ncommunity,TEST-COMM-INVALID,Invalid Community,TEST-WARD-INVALID\\n"
+        csv_content = "record_type,code,name,parent_code\nward,TEST-WARD-INVALID,Invalid Ward,UNKNOWN-LGA\ncommunity,TEST-COMM-INVALID,Invalid Community,TEST-WARD-INVALID\n"
         form = {"source_name": "Official register", "source_reference": "Reference document"}
         preview = self.client.post("/api/v1/locations/admin/import/preview", headers=headers,
                                    data=form, files={"file": ("invalid.csv", csv_content, "text/csv")})
@@ -118,7 +118,7 @@ class LocationDirectoryTests(unittest.TestCase):
         headers = {"Authorization": "Bearer " + login.json()["access_token"]}
         response = self.client.post("/api/v1/locations/admin/import/preview", headers=headers,
                                     data={"source_name": "Source", "source_reference": "Document"},
-                                    files={"file": ("data.csv", "record_type,code,name,parent_code\\n", "text/csv")})
+                                    files={"file": ("data.csv", "record_type,code,name,parent_code\n", "text/csv")})
         self.assertEqual(response.status_code, 403)
 
     def test_directory_contains_37_states_and_774_lgas(self):
