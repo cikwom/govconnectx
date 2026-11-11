@@ -92,6 +92,20 @@ export default function PreferencesPage() {
     }
   }
 
+  async function revokeSessions() {
+    if (!window.confirm(t("This will sign out every device using your account. Continue?"))) return;
+    setRevokingSessions(true);
+    setError("");
+    try {
+      await api.revokeSessions();
+      signOut();
+      navigate("/login", { replace: true, state: { notice: t("All sessions were signed out. Please sign in again.") } });
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t("Could not revoke sessions."));
+      setRevokingSessions(false);
+    }
+  }
+
   const validPhone = /^\+[1-9][0-9]{7,14}$/.test(phoneNumber.trim());
   return <section className="panel">
     <p className="eyebrow">{t("ACCOUNT SETTINGS")}</p>
