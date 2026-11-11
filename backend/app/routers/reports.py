@@ -16,7 +16,7 @@ from app.models.report_history import ReportComment, ReportStatusHistory
 from app.models.notification import Notification
 from app.models.audit_event import record_audit_event
 from app.models.user import User
-from app.services.email_delivery import queue_notification_email
+from app.services.email_delivery import queue_notification_channels
 from app.schemas.report import ReportCreate, ReportResponse
 from app.schemas.workflow import AssignmentResponse, CommentCreate, CommentResponse, HistoryResponse, ReportAssignmentCreate, StatusUpdate
 
@@ -159,7 +159,7 @@ def create_report(report: ReportCreate, background_tasks: BackgroundTasks, db: S
                 title="New report routed to your department",
                 message=f'Report "{new_report.title}" matches your department category and geographic coverage.',
             ))
-            queue_notification_email(db, background_tasks, staff_member.id, "New report routed to your department", f'Report "{new_report.title}" matches your department category and geographic coverage.')
+            queue_notification_channels(db, background_tasks, staff_member.id, "New report routed to your department", f'Report "{new_report.title}" matches your department category and geographic coverage.')
     db.commit()
     db.refresh(new_report)
     return new_report
@@ -224,7 +224,7 @@ def assign_report(report_id: int, payload: ReportAssignmentCreate, background_ta
     recipients.discard(None)
     for recipient_id in recipients:
         db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_assigned", title="Report assignment updated", message=f'Report "{report.title}" has been routed to {department.name}.'))
-        queue_notification_email(db, background_tasks, recipient_id, "Report assignment updated", f'Report "{report.title}" has been routed to {department.name}.')
+        queue_notification_channels(db, background_tasks, recipient_id, "Report assignment updated", f'Report "{report.title}" has been routed to {department.name}.')
     record_audit_event(db, actor_user_id=current_user.id, action="report.assigned", entity_type="report", entity_id=report.id, summary="Report assigned to a department", details={"department_id": department.id, "assignee_user_id": payload.assigned_to_user_id})
     db.commit()
     db.refresh(assignment)
@@ -250,7 +250,7 @@ def update_report_status(report_id: int, payload: StatusUpdate, background_tasks
     for recipient_id in recipients:
         if recipient_id != current_user.id:
             db.add(Notification(recipient_user_id=recipient_id, report_id=report.id, event_type="report_status_changed", title="Report status updated", message=f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.'))
-            queue_notification_email(db, background_tasks, recipient_id, "Report status updated", f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.')
+            queue_notification_channels(db, background_tasks, recipient_id, "Report status updated", f'Report "{report.title}" is now {new_status.replace("_", " ").lower()}.')
     record_audit_event(db, actor_user_id=current_user.id, action="report.status_changed", entity_type="report", entity_id=report.id, summary="Report workflow status changed", details={"from": old_status, "to": new_status})
     db.commit()
     db.refresh(report)
