@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.dependencies import require_roles
 from app.database import get_db
 from app.models.report import Report
+from app.models.notification_delivery import NotificationDelivery
 from app.models.audit_event import AuditEvent, record_audit_event
 from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
@@ -528,3 +529,65 @@ def list_audit_logs(
             "created_at": event.created_at.isoformat() if event.created_at else None,
         })
     return {"total": total, "items": items}
+
+
+def _mask_delivery_destination(channel: str, destination: str) -> str:
+    if channel == "sms":
+        return f"••••{destination[-4:]}"
+    local, separator, domain = destination.partition("@")
+    if not separator:
+        return "••••"
+    return f"{local[:1]}•••@{domain}"
+
+
+@router.get("/notification-deliveries")
+def list_notification_deliveries(
+    delivery_status: str | None = Query(default=None, alias="status", pattern="^(queued|sending|sent|failed)$"),
+    channel: str | None = Query(default=None, pattern="^(email|sms)$"),
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+    _: User = Depends(require_roles("system_admin")),
+):
+    """Show delivery health without exposing message content or full destinations."""
+    query = db.query(NotificationDelivery)
+    if delivery_status:
+        query = query.filter(NotificationDelivery.status == delivery_status)
+    if channel:
+        query = query.filter(NotificationDelivery.channel == channel)
+
+    status_counts = dict(
+        db.query(NotificationDelivery.status, func.count(NotificationDelivery.id))
+        .group_by(NotificationDelivery.status)
+        .all()
+    )
+    channel_counts = dict(
+        db.query(NotificationDelivery.channel, func.count(NotificationDelivery.id))
+        .group_by(NotificationDelivery.channel)
+        .all()
+    )
+    rows = query.order_by(NotificationDelivery.created_at.desc(), NotificationDelivery.id.desc()).limit(limit).all()
+    return {
+        "summary": {
+            "by_status": status_counts,
+            "by_channel": channel_counts,
+            "queued": status_counts.get("queued", 0),
+            "sending": status_counts.get("sending", 0),
+            "sent": status_counts.get("sent", 0),
+            "failed": status_counts.get("failed", 0),
+        },
+        "items": [
+            {
+                "id": row.id,
+                "channel": row.channel,
+                "destination": _mask_delivery_destination(row.channel, row.destination),
+                "status": row.status,
+                "attempts": row.attempts,
+                "max_attempts": row.max_attempts,
+                "next_attempt_at": row.next_attempt_at.isoformat() if row.next_attempt_at else None,
+                "last_error": row.last_error,
+                "created_at": row.created_at.isoformat() if row.created_at else None,
+                "sent_at": row.sent_at.isoformat() if row.sent_at else None,
+            }
+            for row in rows
+        ],
+    }
