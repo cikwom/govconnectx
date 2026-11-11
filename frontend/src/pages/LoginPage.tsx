@@ -7,14 +7,14 @@ import { useLanguage } from "../state/LanguageContext";
 import { useAuth } from "../state/AuthContext";
 
 export default function LoginPage() {
-  const { user, signIn } = useAuth();
+  const { user, signIn, signOut } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);\n  const adminPortal = location.pathname === "/admin/login";
   if (user) return <Navigate to={user.role === "system_admin" ? "/admin" : "/dashboard"} replace />;
 
   async function submit(event: FormEvent) {
@@ -49,16 +49,16 @@ export default function LoginPage() {
       <section className="auth-main">
         <div className="auth-card">
           <Link className="auth-back-link" to="/">← {t("Back to home")}</Link>
-          <p className="eyebrow">{t("WELCOME BACK")}</p>
-          <h2>{t("Good to see you again.")}</h2>
-          <p className="muted">{t("Sign in to follow your reports and community updates.")}</p>
+          <p className="eyebrow">{adminPortal ? t("GOVERNMENT & ADMINISTRATION") : t("WELCOME BACK")}</p>
+          <h2>{adminPortal ? t("Government and administration sign in.") : t("Good to see you again.")}</h2>
+          <p className="muted">{adminPortal ? t("Use your authorised institutional account to access government operations.") : t("Sign in to follow your reports and community updates.")}</p>
           <form className="form-stack auth-form" onSubmit={submit}>
             <label>{t("Email address")}<input type="email" autoComplete="email" placeholder="you@example.com" required value={email} onChange={event => setEmail(event.target.value)} /></label>
             <label>{t("Password")}<input type="password" autoComplete="current-password" placeholder={t("Enter your password")} required value={password} onChange={event => setPassword(event.target.value)} /></label>
             {error && <p className="form-error" role="alert">{error}</p>}
             <button className="button button-primary button-full auth-submit" disabled={busy}>{busy ? t("Signing you in…") : t("Sign in to GovConnect")} <span aria-hidden="true">→</span></button>
           </form>
-          <p className="auth-switch">{t("New to GovConnect?")} <Link to="/register">{t("Create an account")}</Link></p>
+          <p className="auth-switch"><Link to="/forgot-password">{t("Forgot your password?")}</Link></p>\n          {adminPortal ? <p className="auth-switch">{t("Citizen account?")} <Link to="/login">{t("Citizen sign in")}</Link></p> : <p className="auth-switch">{t("Government staff?")} <Link to="/admin/login">{t("Use the government sign-in")}</Link></p>}\n          {!adminPortal && <p className="auth-switch">{t("New to GovConnect?")} <Link to="/register">{t("Create an account")}</Link></p>}
           <p className="auth-secure-note"><span>●</span> {t("Your account and reports stay protected.")}</p>
         </div>
       </section>
