@@ -636,3 +636,72 @@ npm.cmd run check:translations
 npm.cmd run typecheck
 npm.cmd run build
 ```
+
+
+---
+
+## Current development checkpoint — Accessibility foundations
+
+**Date:** 11 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Latest merged feature PR:** [#37 — Accessibility foundations](https://github.com/cikwom/govconnectx/pull/37)  
+**Merge commit:** `45216a7a232a9614179b01d59a751e77de12b118`
+
+### Completed
+
+- **PR #30:** Authoritative ward/community CSV import with source attribution, parent validation, preview and explicit commit.
+- **PR #32:** Hausa, Yorùbá and Igbo localization for public and citizen experiences.
+- **PR #34:** Localization for report details and agency/field-officer workflows.
+- **PR #36:** Localization for the System Admin Command Centre, geographic operations/import, moderation and audit screens.
+- **PR #37:** Accessibility foundations: 44px interactive control heights, 24px checkbox/radio targets, dark-theme keyboard focus, increased-contrast and Windows forced-colors support.
+- Added `frontend/scripts/check-accessibility.mjs` and wired it into GitHub Actions.
+- Added `docs/ACCESSIBILITY_AUDIT.md` with the manual WCAG 2.2 AA verification plan.
+
+### Validation for PR #37
+
+- Translation coverage: **463 interface keys passed**.
+- Accessibility foundation smoke checks: **8 passed**.
+- Frontend dependency install, typecheck and production build: **passed**.
+- Backend compile and unit tests: **passed**.
+- CI run: https://github.com/cikwom/govconnectx/actions/runs/43037844247
+- Frontend build run: https://github.com/cikwom/govconnectx/actions/runs/43037844249
+- Backend test run: https://github.com/cikwom/govconnectx/actions/runs/43037844103
+
+### Remaining work
+
+1. Add SMS delivery only after verified phone numbers and explicit user consent; include delivery status, bounded retries and monitoring.
+2. Complete the manual WCAG 2.2 AA audit with keyboard-only use, NVDA/VoiceOver, zoom/reflow, contrast and forced-colors testing. The automated checks are not proof of conformance.
+3. Review Hausa, Yorùbá and Igbo interface translations with native speakers familiar with Nigerian public services. Keep legal documents in English until qualified legal/privacy and translation review is complete.
+4. Complete security, privacy, API authorization, integration and load testing.
+5. Complete manual role-based browser testing for citizens, officials, department administrators, supervisors and System Administrators.
+6. Obtain and verify authoritative ward/community records before importing them.
+7. Configure private production object storage, ClamAV, SMTP, managed database/media backups and perform a restore drill before production use.
+
+### Manual owner tasks
+
+- No immediate manual action is required to continue development.
+- Before importing geographic data, obtain the genuine source files from INEC or the relevant State/LGA authority and verify their provenance.
+- Before production, supply provider configuration and participate in the restore and role-based acceptance tests.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\\frontend
+npm.cmd install
+npm.cmd run check:translations
+npm.cmd run check:accessibility
+npm.cmd run typecheck
+npm.cmd run build
+```
