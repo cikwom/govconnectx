@@ -11,7 +11,7 @@ export default function DepartmentPerformancePanel() {
     api.departmentPerformance().then(value => { if (active) setData(value); })
       .catch(reason => { if (active) setError(reason instanceof Error ? reason.message : t("Could not load department metrics.")); });
     return () => { active = false; };
-  }, []);
+  }, [t]);
   if (error) return <section className="panel"><p className="form-error" role="alert">{error}</p></section>;
   if (!data) return <section className="panel"><p className="muted">{t("Loading department performance…")}</p></section>;
   return <section className="panel">
