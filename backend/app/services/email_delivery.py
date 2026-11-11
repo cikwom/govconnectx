@@ -70,4 +70,4 @@ def queue_notification_channels(db: Session, background_tasks, recipient_user_id
     from app.services.sms_delivery import queue_notification_sms
 
     queue_notification_email(db, background_tasks, recipient_user_id, subject, body)
-    queue_notification_sms(db, background_tasks, recipient_user_id, f"{subject}: {body}")
+    queue_notification_sms(db, background_tasks, recipient_user_id, f"{subject}. Sign in to GovConnect Nigeria to view details.")
