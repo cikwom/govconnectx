@@ -43,14 +43,14 @@ export default function StaffReportWorkflowPanel({ reportId, reportStatus, repor
       setDepartmentId(String(user.department_id));
       setDepartments([{ id: user.department_id, name: t("My department") }]);
     }
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => {
     if (!canAssign || !departmentId) { setMembers([]); setAssigneeId(""); return; }
     api.departmentMembers(Number(departmentId)).then(value => setMembers(value)).catch(reason => {
       setMembers([]); setError(reason instanceof Error ? reason.message : t("Could not load department staff."));
     });
-  }, [canAssign, departmentId]);
+  }, [canAssign, departmentId, t]);
 
   async function updateStatus(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); setBusy(true); setError(""); setNotice("");
