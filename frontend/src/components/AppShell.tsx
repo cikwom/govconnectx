@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../state/AuthContext";
 import ThemeToggle from "./ThemeToggle";
+import LanguageSelector from "./LanguageSelector";
 import { useEffect } from "react";
 import { api } from "../services/api";
 import { useLanguage } from "../state/LanguageContext";
@@ -18,6 +19,7 @@ export default function AppShell() {
           <NavLink className="admin-nav-link" to="/community-services">{t("Community services")}</NavLink>
           {user?.role === "system_admin" && <NavLink className="admin-nav-link" to="/admin">{t("Command Centre")}</NavLink>}
           <NavLink className="admin-nav-link" to="/preferences">{t("Preferences")}</NavLink>
+          <LanguageSelector />
           <ThemeToggle />
           <div className="user-copy"><strong>{user?.full_name}</strong><span>{user?.role.replaceAll("_", " ")}</span></div>
           <button className="button button-quiet button-small" onClick={signOut}>{t("Sign out")}</button>
