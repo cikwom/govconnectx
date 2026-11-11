@@ -66,8 +66,38 @@ def queue_notification_email(db: Session, background_tasks, recipient_user_id: i
 
 
 def queue_notification_channels(db: Session, background_tasks, recipient_user_id: int, subject: str, body: str) -> None:
-    """Queue each channel independently according to the user's saved preferences."""
-    from app.services.sms_delivery import queue_notification_sms
+    """Persist opted-in channel deliveries before scheduling their first attempt."""
+    from app.services.notification_outbox import enqueue_delivery
 
-    queue_notification_email(db, background_tasks, recipient_user_id, subject, body)
-    queue_notification_sms(db, background_tasks, recipient_user_id, f"{subject}. Sign in to GovConnect Nigeria to view details.")
+    user = db.query(User).filter(User.id == recipient_user_id, User.is_active.is_(True)).first()
+    if user is None:
+        return
+    preference = db.query(UserPreference).filter(UserPreference.user_id == user.id).first()
+
+    if user.email and (preference is None or preference.email_notifications):
+        enqueue_delivery(
+            db,
+            background_tasks,
+            recipient_user_id=user.id,
+            channel="email",
+            destination=user.email,
+            subject=subject,
+            message=body,
+        )
+
+    if (
+        user.phone_number
+        and user.phone_verified_at is not None
+        and preference is not None
+        and preference.sms_notifications
+        and preference.sms_consent_at is not None
+        and preference.sms_consent_revoked_at is None
+    ):
+        enqueue_delivery(
+            db,
+            background_tasks,
+            recipient_user_id=user.id,
+            channel="sms",
+            destination=user.phone_number,
+            message=f"{subject}. Sign in to GovConnect Nigeria to view details.",
+        )
