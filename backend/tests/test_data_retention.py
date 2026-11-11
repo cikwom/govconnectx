@@ -11,6 +11,7 @@ from app.models.notification_delivery import NotificationDelivery
 from app.models.phone_verification import PhoneVerification
 from app.models.user import User
 from app.services.data_retention import prune_expired_phone_verifications, prune_notification_deliveries
+from app.workers.notification_worker import wait_for_schema
 
 
 class DataRetentionTests(unittest.TestCase):
@@ -46,6 +47,9 @@ class DataRetentionTests(unittest.TestCase):
             self.user_id = user.id
         finally:
             db.close()
+
+    def test_worker_schema_readiness_check_returns_when_tables_exist(self):
+        wait_for_schema()
 
     def test_phone_verification_records_older_than_retention_are_deleted(self):
         now = datetime.now(timezone.utc)
