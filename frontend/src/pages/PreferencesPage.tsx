@@ -20,7 +20,7 @@ export default function PreferencesPage() {
       // Preserve an unsaved language choice made in the current browser.
       if (!localStorage.getItem("govconnectx_language")) setLanguage(value.preferred_language);
     }).catch(reason => {
-      if (active) setError(reason instanceof Error ? reason.message : t("Could not load preferences."));
+      if (active) setError(reason instanceof Error ? reason.message : "Could not load preferences.");
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [setLanguage]);
