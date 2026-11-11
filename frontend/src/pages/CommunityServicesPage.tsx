@@ -7,7 +7,7 @@ type Listing = { id: number; listing_type: "lost" | "found"; title: string; desc
 type Service = { id: number; name: string; category: string; description: string; address: string; phone: string | null; website: string | null; is_verified: boolean };
 
 export default function CommunityServicesPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [listings, setListings] = useState<Listing[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function CommunityServicesPage() {
     </section>
     <section className="panel">
       <div className="panel-heading"><div><h2>{t("Community notices")}</h2><p className="muted">{t("Only listings approved by a platform administrator appear here.")}</p></div><button className="button button-quiet button-small" onClick={() => void load()}>{t("Refresh")}</button></div>
-      {loading ? <p className="empty-state">{t("Loading notices…")}</p> : listings.length === 0 ? <p className="empty-state">{t("No approved Lost and Found notices yet.")}</p> : <div className="report-list">{listings.map(item => <article className="report-row" key={item.id}><div className="report-symbol">{item.listing_type === "lost" ? "?" : "✓"}</div><div className="report-main"><div className="report-title-line"><h3>{item.title}</h3><span className="status-badge">{item.listing_type.toUpperCase()}</span></div><p>{item.description}</p><small>{item.location_text} · {new Intl.DateTimeFormat("en-NG", { dateStyle: "medium" }).format(new Date(item.created_at))}</small><p><strong>{t("Contact")}:</strong> {item.contact_instructions}</p></div></article>)}</div>}
+      {loading ? <p className="empty-state">{t("Loading notices…")}</p> : listings.length === 0 ? <p className="empty-state">{t("No approved Lost and Found notices yet.")}</p> : <div className="report-list">{listings.map(item => <article className="report-row" key={item.id}><div className="report-symbol">{item.listing_type === "lost" ? "?" : "✓"}</div><div className="report-main"><div className="report-title-line"><h3>{item.title}</h3><span className="status-badge">{item.listing_type.toUpperCase()}</span></div><p>{item.description}</p><small>{item.location_text} · {new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(new Date(item.created_at))}</small><p><strong>{t("Contact")}:</strong> {item.contact_instructions}</p></div></article>)}</div>}
     </section>
     <section className="panel">
       <div className="panel-heading"><div><h2>{t("Government service directory")}</h2><p className="muted">{t("Public service listings verified by GovConnectX administrators.")}</p></div></div>
