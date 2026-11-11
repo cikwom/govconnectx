@@ -102,6 +102,22 @@ def migrate_existing_schema(database_engine=None):
                 connection.execute(text("ALTER TABLE users ADD COLUMN home_state_code VARCHAR(12)"))
             if "home_lga_code" not in columns:
                 connection.execute(text("ALTER TABLE users ADD COLUMN home_lga_code VARCHAR(16)"))
+            if "phone_number" not in columns:
+                connection.execute(text("ALTER TABLE users ADD COLUMN phone_number VARCHAR(20)"))
+            if "phone_verified_at" not in columns:
+                connection.execute(text("ALTER TABLE users ADD COLUMN phone_verified_at DATETIME"))
+            connection.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ix_users_phone_number ON users (phone_number)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_department_id ON users (department_id)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_home_state_code ON users (home_state_code)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_users_home_lga_code ON users (home_lga_code)"))
+
+        if "user_preferences" in tables:
+            columns = {column["name"] for column in inspector.get_columns("user_preferences")}
+            additions = {
+                "sms_notifications": "BOOLEAN NOT NULL DEFAULT 0",
+                "sms_consent_at": "DATETIME",
+                "sms_consent_revoked_at": "DATETIME",
+            }
+            for name, sql_type in additions.items():
+                if name not in columns:
+                    connection.execute(text(f"ALTER TABLE user_preferences ADD COLUMN {name} {sql_type}"))

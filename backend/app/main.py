@@ -8,6 +8,7 @@ from app.models import Community, Department, LocalGovernmentArea, Report, Repor
 from app.models.audit_event import AuditEvent  # noqa: F401 - register audit table before create_all
 from app.models.citizen_services import CommunityListing, PublicServiceDirectoryEntry, ReportEscalation, ReportFeedback  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
+from app.models.phone_verification import PhoneVerification  # noqa: F401
 from app.models.user_preference import UserPreference  # noqa: F401
 from app.routers.admin import router as admin_router
 from app.routers.attachments import router as attachments_router

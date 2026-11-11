@@ -18,7 +18,7 @@ from app.schemas.citizen_services import (
     ServiceDirectoryCreate, ServiceDirectoryResponse,
 )
 from app.routers.reports import get_accessible_report
-from app.services.email_delivery import queue_notification_email
+from app.services.email_delivery import queue_notification_channels
 
 router = APIRouter(prefix="/api/v1", tags=["Citizen services"])
 
@@ -89,7 +89,7 @@ def request_report_escalation(report_id: int, payload: EscalationCreate, backgro
             title="Report requires escalation review",
             message=f"Report #{report.id} was flagged for {payload.urgency} attention. Review the report and escalation request.",
         ))
-        queue_notification_email(db, background_tasks, admin.id, "Report requires escalation review", f"Report #{report.id} was flagged for {payload.urgency} attention. Review the report and escalation request.")
+        queue_notification_channels(db, background_tasks, admin.id, "Report requires escalation review", f"Report #{report.id} was flagged for {payload.urgency} attention. Review the report and escalation request.")
     db.commit()
     db.refresh(escalation)
     return {"id": escalation.id, "report_id": report.id, "urgency": escalation.urgency, "status": escalation.status, "created_at": escalation.created_at.isoformat(), "notice": "This request alerts platform administrators; it is not an emergency dispatch service. If anyone is in immediate danger, contact the appropriate official emergency service directly."}
