@@ -67,7 +67,7 @@ export default function HomePage() {
           <ThemeToggle />
           {user
             ? <Link className="button button-primary" to={destination}>{t("Open dashboard")} <span aria-hidden="true">→</span></Link>
-            : <><Link className="home-login-link" to="/login">{t("Sign in")}</Link><Link className="button button-primary" to="/register">{t("Get started")} <span aria-hidden="true">→</span></Link></>}
+            : <><Link className="home-login-link" to="/login">{t("Sign in")}</Link><Link className="home-login-link" to="/admin/login">{t("Government / Admin")}</Link><Link className="button button-primary" to="/register">{t("Get started")} <span aria-hidden="true">→</span></Link></>}
         </nav>
       </header>
 
