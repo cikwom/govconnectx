@@ -14,6 +14,10 @@ type Department = { id: number; name: string; description: string | null; is_act
 type DepartmentMember = { id: number; full_name: string; role: string };
 type DepartmentPerformance = { department_id: number; scope: string; total_reports: number; open_reports: number; resolved_reports: number; overdue_reports: number; resolution_rate_percent: number; average_resolution_hours: number | null; status_counts: Record<string, number>; measurement_note: string };
 
+type NotificationDeliverySummary = { by_status: Record<string, number>; by_channel: Record<string, number>; queued: number; sending: number; sent: number; failed: number };
+type NotificationDeliveryItem = { id: number; channel: "email" | "sms"; destination: string; status: "queued" | "sending" | "sent" | "failed"; attempts: number; max_attempts: number; next_attempt_at: string | null; last_error: string | null; created_at: string | null; sent_at: string | null };
+type NotificationDeliveryReport = { summary: NotificationDeliverySummary; items: NotificationDeliveryItem[] };
+
 export const tokenStore = {
   get: () => localStorage.getItem(TOKEN_KEY),
   set: (token: string) => localStorage.setItem(TOKEN_KEY, token),
@@ -86,6 +90,7 @@ export const api = {
   adminCommunityListings: () => request<AdminCommunityListing[]>("/admin/community/listings"),
   moderateCommunityListing: (id: number, moderation_status: "APPROVED" | "REJECTED") => request<{ id: number; moderation_status: string }>(`/admin/community/listings/${id}`, { method: "PATCH", body: JSON.stringify({ moderation_status }) }),
   createServiceDirectoryEntry: (payload: { name: string; category: string; description: string; address: string; phone?: string }) => request<ServiceDirectoryEntry>("/admin/service-directory", { method: "POST", body: JSON.stringify(payload) }),
+  adminNotificationDeliveries: () => request<NotificationDeliveryReport>("/admin/notification-deliveries"),
   preferences: () => request<Preferences>("/preferences"),
   updatePreferences: (payload: Pick<Preferences, "email_notifications" | "in_app_notifications" | "sms_notifications" | "preferred_language">) => request<Preferences>("/preferences", { method: "PUT", body: JSON.stringify(payload) }),
   requestPhoneVerification: (phone_number: string) => request<{ message: string }>("/preferences/phone/request-verification", { method: "POST", body: JSON.stringify({ phone_number }) }),
