@@ -215,6 +215,12 @@ const dictionaries: Record<Language, Dictionary> = {
     "Not enough data": "Babu isasshen bayani",
     "Could not load department metrics.": "An kasa loda ma'aunin aikin hukuma.",
     "Loading department performance…": "Ana loda bayanan aikin hukuma…",
+    "Sending…": "Ana aikawa…",
+    "system admin": "mai kula da tsarin",
+    "department admin": "mai kula da hukuma",
+    "supervisor": "mai sa ido",
+    "field officer": "jami'in filin aiki",
+    "citizen": "ɗan ƙasa",
   },
   yo: {
     "Community services": "Àwọn iṣẹ́ àwùjọ", "Command Centre": "Ibùdó ìṣàkóso", "Sign out": "Jáde",
@@ -425,6 +431,12 @@ const dictionaries: Record<Language, Dictionary> = {
     "Not enough data": "Kò sí ìsọfúnni tó tó",
     "Could not load department metrics.": "A kò lè ṣí àwọn ìwọ̀n iṣẹ́ ẹ̀ka.",
     "Loading department performance…": "Ń ṣí ìròyìn iṣẹ́ ẹ̀ka…",
+    "Sending…": "Ń fi ránṣẹ́…",
+    "system admin": "olùṣàkóso ètò",
+    "department admin": "olùṣàkóso ẹ̀ka",
+    "supervisor": "alábójútó",
+    "field officer": "òṣìṣẹ́ pápá",
+    "citizen": "ọmọ ìlú",
   },
   ig: {
     "Community services": "Ọrụ obodo", "Command Centre": "Ebe njikwa", "Sign out": "Pụọ",
@@ -635,6 +647,12 @@ const dictionaries: Record<Language, Dictionary> = {
     "Not enough data": "Enweghị data zuru ezu",
     "Could not load department metrics.": "Enweghị ike ibudata nha arụmọrụ ngalaba.",
     "Loading department performance…": "A na-ebudata arụmọrụ ngalaba…",
+    "Sending…": "A na-ezipụ…",
+    "system admin": "onye nchịkwa sistemụ",
+    "department admin": "onye nchịkwa ngalaba",
+    "supervisor": "onye nlekọta",
+    "field officer": "onye ọrụ ubi",
+    "citizen": "nwa amaala",
   },
 };
 
