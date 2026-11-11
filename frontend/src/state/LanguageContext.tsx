@@ -395,6 +395,11 @@ const dictionaries: Record<Language, Dictionary> = {
     "records:": "bayanan:",
     "Source attribution and import audit record saved.": "An adana tushen bayanai da tarihin shigarwa.",
     "Could not process geographic CSV": "An kasa sarrafa CSV na bayanan yanki",
+    "wards": "unguwa",
+    "communities": "al'umma",
+    "and": "da",
+    "e.g. INEC or State Government": "misali INEC ko gwamnatin jiha",
+    "Maximum 5,000 rows and 2 MB. Use only source data you have independently verified.": "Matsakaicin layuka 5,000 da girman 2 MB. Yi amfani da bayanan tushe da ka tantance da kanka kawai.",
   },
   yo: {
     "Community services": "Àwọn iṣẹ́ àwùjọ", "Command Centre": "Ibùdó ìṣàkóso", "Sign out": "Jáde",
@@ -785,6 +790,11 @@ const dictionaries: Record<Language, Dictionary> = {
     "records:": "àkọsílẹ̀:",
     "Source attribution and import audit record saved.": "A ti fi ìtọ́kasí orísun àti àkọsílẹ̀ ìgbéwọlé pamọ́.",
     "Could not process geographic CSV": "A kò lè ṣe ìlò CSV agbègbè",
+    "wards": "wọ́ọ̀dì",
+    "communities": "àwùjọ",
+    "and": "àti",
+    "e.g. INEC or State Government": "àpẹẹrẹ INEC tàbí Ìjọba Ìpínlẹ̀",
+    "Maximum 5,000 rows and 2 MB. Use only source data you have independently verified.": "Ó pọ̀ jù lọ ìlà 5,000 àti 2 MB. Lo ìsọfúnni orísun tí o ti jẹ́rìí sí fúnra rẹ nìkan.",
   },
   ig: {
     "Community services": "Ọrụ obodo", "Command Centre": "Ebe njikwa", "Sign out": "Pụọ",
@@ -1175,6 +1185,11 @@ const dictionaries: Record<Language, Dictionary> = {
     "records:": "ndekọ:",
     "Source attribution and import audit record saved.": "Echekwala isi mmalite na ndekọ nyocha mbubata.",
     "Could not process geographic CSV": "Enweghị ike ịhazi CSV mpaghara",
+    "wards": "ward",
+    "communities": "obodo",
+    "and": "na",
+    "e.g. INEC or State Government": "dịka INEC ma ọ bụ Gọọmentị Steeti",
+    "Maximum 5,000 rows and 2 MB. Use only source data you have independently verified.": "Ọnụọgụ kachasị bụ ahịrị 5,000 na 2 MB. Jiri naanị data isi mmalite i nyochara n'onwe gị.",
   },
 };
 
