@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
 export type Language = "en" | "ha" | "yo" | "ig";
@@ -264,8 +264,10 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLanguage = (next: Language) => {
     localStorage.setItem("govconnectx_language", next);
     setLanguageState(next);
-    document.documentElement.lang = next === "ha" ? "ha" : next === "yo" ? "yo" : next === "ig" ? "ig" : "en";
   };
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
   const value = useMemo(() => ({
     language,
     locale: localeByLanguage[language],
