@@ -212,7 +212,12 @@ def list_lga_wards(lga_code: str, db: Session = Depends(get_db)):
         .order_by(Ward.name.asc())
         .all()
     )
-    return [{"code": row.code, "name": row.name, "lga_code": row.lga_code} for row in rows]
+    return [{
+        "code": row.code, "name": row.name, "lga_code": row.lga_code,
+        "source_name": row.source_name, "source_reference": row.source_reference,
+        "effective_from": row.effective_from.isoformat() if row.effective_from else None,
+        "imported_at": row.imported_at.isoformat() if row.imported_at else None,
+    } for row in rows]
 
 
 @router.get("/wards/{ward_code}/communities")
@@ -226,7 +231,12 @@ def list_ward_communities(ward_code: str, db: Session = Depends(get_db)):
         .order_by(Community.name.asc())
         .all()
     )
-    return [{"code": row.code, "name": row.name, "ward_code": row.ward_code} for row in rows]
+    return [{
+        "code": row.code, "name": row.name, "ward_code": row.ward_code,
+        "source_name": row.source_name, "source_reference": row.source_reference,
+        "effective_from": row.effective_from.isoformat() if row.effective_from else None,
+        "imported_at": row.imported_at.isoformat() if row.imported_at else None,
+    } for row in rows]
 
 
 @router.post("/admin/wards", status_code=status.HTTP_201_CREATED)
