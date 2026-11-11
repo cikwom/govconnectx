@@ -45,6 +45,11 @@ h1,h2,h3,.brand,.stat-card strong,.role-line strong,.oversight-stat-grid strong{
 .theme-toggle{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid #dfe9e5;border-radius:999px;padding:8px 12px;background:#fff;color:#35564f;font-size:.76rem;font-weight:800;white-space:nowrap;transition:background .18s,border-color .18s,transform .18s}
 .theme-toggle:hover{background:#eff8f5;border-color:#b8d9d0;transform:translateY(-1px)}
 .theme-toggle>span:first-child{font-size:1rem;line-height:1}
+.language-control{display:inline-flex;align-items:center}
+.language-control select{border:1px solid #dfe9e5;border-radius:999px;padding:8px 12px;background:#fff;color:#35564f;font:inherit;font-size:.76rem;font-weight:800;white-space:nowrap}
+.language-control select:focus-visible{outline:3px solid #087f70;outline-offset:2px}
+:root[data-theme="dark"] .language-control select{background:#203431;border-color:#36534b;color:#d8eee6}
+
 .home-page{min-height:100vh;overflow:hidden;background:#f8fbf9;color:#183b38}
 .home-nav{height:82px;width:min(1180px,90vw);margin:auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .home-nav-actions{display:flex;align-items:center;gap:25px}
