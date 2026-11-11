@@ -7,7 +7,7 @@ import { useLanguage } from "../state/LanguageContext";
 import { useAuth } from "../state/AuthContext";
 
 export default function LoginPage() {
-  const { user, signIn, signOut } = useAuth();
+  const { user, signIn } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
@@ -15,7 +15,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const adminPortal = location.pathname === "/admin/login";
   const adminPortal = location.pathname === "/admin/login";
   if (user) return <Navigate to={user.role === "system_admin" ? "/admin" : "/dashboard"} replace />;
 
@@ -25,7 +24,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const signedInUser = await signIn(email, password);
-      if (adminPortal && !["system_admin", "department_admin", "supervisor", "official"].includes(signedInUser.role)) { signOut(); throw new Error("This sign-in area is for authorised government and administration accounts."); }
+      
       const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
       navigate(destination || (signedInUser.role === "system_admin" ? "/admin" : "/dashboard"), { replace: true });
     } catch (err) {
