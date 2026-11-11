@@ -705,3 +705,79 @@ npm.cmd run check:accessibility
 npm.cmd run typecheck
 npm.cmd run build
 ```
+
+
+---
+
+## Current development checkpoint — Verified consent-based SMS notifications
+
+**Date:** 11 November 2026  
+**Repository:** `cikwom/govconnectx`  
+**Branch:** `main`  
+**Latest merged feature PR:** [#39 — Verified consent-based SMS alerts](https://github.com/cikwom/govconnectx/pull/39)  
+**Merge commit:** `1881c6539f5d62aa020e09da26b4588aa1155b8b`
+
+### Completed
+
+- **PR #37:** Accessibility foundations — 44px interactive control heights, 24px checkbox/radio targets, improved dark-theme keyboard focus, increased-contrast and Windows forced-colors support; automated smoke checks and manual audit checklist.
+- **PR #39:** Optional Termii SMS adapter; international phone-number capture; one-time phone verification; explicit SMS opt-in; consent revocation; per-account and per-number rate limits; SMS routing for report auto-routing, assignment, status changes and escalation notifications.
+- Verification codes are stored as keyed HMAC digests, expire after 10 minutes and allow at most five attempts.
+- Changing a phone number clears verification and disables SMS for that number until it is verified and the user opts in again.
+- SMS messages do not include report titles or user-submitted report content.
+- Added frontend phone verification and SMS preferences in English, Hausa, Yorùbá and Igbo.
+- Documentation: `docs/SMS_NOTIFICATIONS.md` and `docs/ACCESSIBILITY_AUDIT.md`.
+
+### Validation for PR #39
+
+- Backend compile and tests: **72 passed**.
+- Frontend translation completeness: **passed**.
+- Accessibility foundation smoke checks: **passed**.
+- Frontend TypeScript and production build: **passed**.
+- CI run: https://github.com/cikwom/govconnectx/actions/runs/43039268728
+
+### Important production limitations
+
+- Real SMS is not active until the backend environment has a valid `TERMII_API_KEY` and an approved `TERMII_SENDER_ID`.
+- The first SMS implementation uses FastAPI background tasks. A durable outbox, delivery receipts, scheduled retry policy and provider monitoring dashboard remain future work.
+- Provider acceptance does not guarantee handset delivery.
+- The Privacy Notice needs qualified Nigerian privacy review covering phone-number processing, SMS provider sharing, consent, retention and user rights.
+- Do not claim formal WCAG 2.2 AA conformance until the manual keyboard, screen-reader, contrast and zoom/reflow audit is completed.
+
+### Remaining work
+
+1. Build a durable notification outbox with bounded retries, delivery states, idempotency and monitoring for email/SMS.
+2. Complete the manual WCAG 2.2 AA review and fix route-specific findings.
+3. Obtain native-speaker review of Hausa, Yorùbá and Igbo translations; obtain qualified Nigerian legal/privacy review for legal notices.
+4. Complete security, privacy, API authorization, integration and load testing.
+5. Complete role-based manual browser tests.
+6. Obtain and verify authoritative ward/community records before import.
+7. Configure private production object storage, ClamAV, SMTP, Termii, managed database/media backups and restore drills before production use.
+
+### Manual owner tasks
+
+- No manual action is required to continue coding.
+- Before enabling live SMS, create/configure the Termii account, obtain an approved sender ID and add the API key only to the backend service's secret environment.
+- Before importing geography, provide genuine INEC or State/LGA source data.
+- Before production, participate in provider, privacy, role-based acceptance and restore testing.
+
+### Resume commands — Windows PowerShell
+
+```powershell
+cd C:\\Users\\gentle\\govconnectx
+git fetch origin
+git switch main
+git pull --ff-only origin main
+
+# Backend
+cd backend
+.\\.venv\\Scripts\\python.exe -m compileall -q app
+.\\.venv\\Scripts\\python.exe -m unittest discover -s tests -v
+
+# Frontend
+cd ..\\frontend
+npm.cmd install
+npm.cmd run check:translations
+npm.cmd run check:accessibility
+npm.cmd run typecheck
+npm.cmd run build
+```
