@@ -13,7 +13,7 @@ def main():
     poll_seconds = max(5, int(os.getenv("NOTIFICATION_WORKER_POLL_SECONDS", "15")))
     batch_size = max(1, min(100, int(os.getenv("NOTIFICATION_WORKER_BATCH_SIZE", "25"))))
     logger.info("GovConnectX notification worker started")
-    last_cleanup = 0.0
+    last_cleanup = time.monotonic() - 86400
     while True:
         try:
             if time.monotonic() - last_cleanup >= 86400:
