@@ -7,10 +7,11 @@ import {useAuth} from "../state/AuthContext";
 import DepartmentPerformancePanel from "../components/DepartmentPerformancePanel";
 import { useLanguage } from "../state/LanguageContext";
 
-const dateFormat=new Intl.DateTimeFormat("en-NG",{dateStyle:"medium"});
+const dateFormat=(locale:string)=>new Intl.DateTimeFormat(locale,{dateStyle:"medium"});
 
 export default function DashboardPage(){
-  const {t}=useLanguage();
+  const {t,locale}=useLanguage();
+  const formatDate=dateFormat(locale);
   const{user}=useAuth();
   const[reports,setReports]=useState<Report[]>([]);
   const[loading,setLoading]=useState(true);
@@ -29,7 +30,7 @@ export default function DashboardPage(){
     {showForm&&<ReportForm onSubmit={submit} onCancel={()=>setShowForm(false)}/>}
     <section className="panel"><div className="panel-heading"><div><h2>{t("Your reports")}</h2><p className="muted">{t("Open a report to see its details, updates, and evidence.")}</p></div><button className="button button-quiet button-small" onClick={()=>void load()}>{t("Refresh")}</button></div>
       {error&&<p className="form-error" role="alert">{error}</p>}
-      {loading?<div className="empty-state">{t("Loading your reports…")}</div>:reports.length===0?<div className="empty-state"><div className="empty-icon">＋</div><h3>{t("No reports yet")}</h3><p>{t("When you submit a community issue, it will appear here.")}</p><button className="button button-primary" onClick={()=>setShowForm(true)}>{t("Submit your first report")}</button></div>:<div className="report-list">{reports.map(r=><Link className="report-row report-row-link" to={`/reports/${r.id}`} key={r.id}><div className="report-symbol">{r.category.slice(0,1).toUpperCase()}</div><div className="report-main"><div className="report-title-line"><h3>{r.title}</h3><span className={`status-badge status-${r.status.toLowerCase()}`}>{r.status.replaceAll("_"," ")}</span></div><p>{r.category} · {r.address||`${r.latitude.toFixed(3)}, ${r.longitude.toFixed(3)}`}</p><small>Submitted {dateFormat.format(new Date(r.created_at))} · Report #{r.id}</small></div><span className="report-open">{t("View details")} →</span></Link>)}</div>}
+      {loading?<div className="empty-state">{t("Loading your reports…")}</div>:reports.length===0?<div className="empty-state"><div className="empty-icon">＋</div><h3>{t("No reports yet")}</h3><p>{t("When you submit a community issue, it will appear here.")}</p><button className="button button-primary" onClick={()=>setShowForm(true)}>{t("Submit your first report")}</button></div>:<div className="report-list">{reports.map(r=><Link className="report-row report-row-link" to={`/reports/${r.id}`} key={r.id}><div className="report-symbol">{r.category.slice(0,1).toUpperCase()}</div><div className="report-main"><div className="report-title-line"><h3>{r.title}</h3><span className={`status-badge status-${r.status.toLowerCase()}`}>{t(r.status)}</span></div><p>{r.category} · {r.address||`${r.latitude.toFixed(3)}, ${r.longitude.toFixed(3)}`}</p><small>Submitted {formatDate.format(new Date(r.created_at))} · Report #{r.id}</small></div><span className="report-open">{t("View details")} →</span></Link>)}</div>}
     </section>
   </>;
 }
@@ -78,7 +79,7 @@ function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promi
     <div className="panel-heading"><div><h2>{t("Submit a community report")}</h2><p className="muted">{t("Tell us what happened and select where the incident occurred. This can be different from your home area.")}</p></div></div>
     <form className="form-grid" onSubmit={submit}>
       <label className="field-wide">{t("Report title")}<input required maxLength={180} value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Large pothole on Market Road"/></label>
-      <label>{t("Category")}<select value={category} onChange={e=>setCategory(e.target.value)}>{["Infrastructure","Roads and Transport","Water and Sanitation","Electricity","Public Safety","Healthcare","Environment","Other"].map(v=><option key={v}>{v}</option>)}</select></label>
+      <label>{t("Category")}<select value={category} onChange={e=>setCategory(e.target.value)}>{["Infrastructure","Roads and Transport","Water and Sanitation","Electricity","Public Safety","Healthcare","Environment","Other"].map(v=><option key={v}>{t(v)}</option>)}</select></label>
       <label className="field-wide">{t("Description")}<textarea required rows={4} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Explain what happened, where it is, and how it affects the community."/></label>
       <label>{t("Incident state or FCT")}<select required value={stateCode} onChange={e=>setStateCode(e.target.value)}><option value="">{t("Select state")}</option>{states.map(state=><option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
       <label>{t("Incident LGA")}<select required disabled={!stateCode||lgas.length===0} value={lgaCode} onChange={e=>setLgaCode(e.target.value)}><option value="">{t("Select LGA")}</option>{lgas.map(lga=><option key={lga.code} value={lga.code}>{lga.name}</option>)}</select></label>
