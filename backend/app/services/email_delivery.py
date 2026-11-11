@@ -63,3 +63,11 @@ def queue_notification_email(db: Session, background_tasks, recipient_user_id: i
     if preference is not None and not preference.email_notifications:
         return
     background_tasks.add_task(send_notification_email, user.email, subject, body)
+
+
+def queue_notification_channels(db: Session, background_tasks, recipient_user_id: int, subject: str, body: str) -> None:
+    """Queue each channel independently according to the user's saved preferences."""
+    from app.services.sms_delivery import queue_notification_sms
+
+    queue_notification_email(db, background_tasks, recipient_user_id, subject, body)
+    queue_notification_sms(db, background_tasks, recipient_user_id, f"{subject}: {body}")
