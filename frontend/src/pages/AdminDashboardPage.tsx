@@ -4,6 +4,7 @@ import { tokenStore } from "../services/api";
 import { useAuth } from "../state/AuthContext";
 import GeographicOperationsPanel from "../components/GeographicOperationsPanel";
 import AuditLogPanel from "../components/AuditLogPanel";
+import NotificationDeliveryPanel from "../components/NotificationDeliveryPanel";
 import CommunityModerationPanel from "../components/CommunityModerationPanel";
 import GeographicDirectoryPanel from "../components/GeographicDirectoryPanel";
 import GeographicBulkImportPanel from "../components/GeographicBulkImportPanel";
@@ -178,6 +179,7 @@ export default function AdminDashboardPage() {
       </article>)}{reports.length === 0 && <p className="empty-state">{t("No reports match this search.")}</p>}</div>
     </section>
 
+    <NotificationDeliveryPanel />
     <AuditLogPanel />
     <CommunityModerationPanel />
     <GeographicDirectoryPanel />
