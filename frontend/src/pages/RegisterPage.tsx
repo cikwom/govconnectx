@@ -68,7 +68,7 @@ export default function RegisterPage() {
       })
       .finally(() => { if (active) setLgasLoading(false); });
     return () => { active = false; };
-  }, [homeStateCode, t]);
+  }, [homeStateCode, t, directoryAttempt]);
 
   if (user) return <Navigate to="/dashboard" replace />;
 
