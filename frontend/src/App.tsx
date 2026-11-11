@@ -11,6 +11,8 @@ import RegisterPage from "./pages/RegisterPage";
 import ReportDetailPage from "./pages/ReportDetailPage";
 import PreferencesPage from "./pages/PreferencesPage";
 import TransparencyPage from "./pages/TransparencyPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 export default function App() {
   return (
@@ -19,7 +21,12 @@ export default function App() {
       <Route path="/transparency" element={<TransparencyPage />} />
       <Route path="/terms" element={<LegalPage />} />
       <Route path="/privacy" element={<LegalPage />} />
-      <Route path="/login" element={<LoginPage />} />\n      <Route path="/admin/login" element={<LoginPage />} />\n      <Route path="/forgot-password" element={<div className="screen-state">Password recovery is being prepared.</div>} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/admin/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/admin/login" element={<LoginPage />} />
+      <Route path="/forgot-password" element={<div className="screen-state">Password recovery is being prepared.</div>} />
       <Route path="/register" element={<RegisterPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
