@@ -1,6 +1,6 @@
 import re
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -138,12 +138,76 @@ class PhoneVerificationApiTests(unittest.TestCase):
         self.assertIsNotNone(opted_in.json()["sms_consent_at"])
         self.assertEqual(opted_in.json()["phone_number"], "+2348012345678")
 
+        opted_out = self.client.put(
+            "/api/v1/preferences",
+            headers=self.headers,
+            json={
+                "email_notifications": True,
+                "in_app_notifications": True,
+                "sms_notifications": False,
+                "preferred_language": "en",
+            },
+        )
+        self.assertEqual(opted_out.status_code, 200)
+        self.assertFalse(opted_out.json()["sms_notifications"])
+        self.assertIsNotNone(opted_out.json()["sms_consent_revoked_at"])
+
         reused = self.client.post(
             "/api/v1/preferences/phone/verify",
             headers=self.headers,
             json={"code": code},
         )
         self.assertEqual(reused.status_code, 400)
+
+    def test_phone_number_rate_limit_applies_across_accounts(self):
+        db = self.TestSession()
+        try:
+            now = datetime.now(timezone.utc)
+            for _ in range(5):
+                db.add(PhoneVerification(
+                    user_id=self.user_id,
+                    phone_number="+2348012345678",
+                    code_hash="not-a-real-code-hash",
+                    created_at=now - timedelta(minutes=2),
+                    expires_at=now + timedelta(minutes=8),
+                ))
+            db.commit()
+        finally:
+            db.close()
+
+        with patch("app.routers.preferences.send_sms") as send:
+            response = self.client.post(
+                "/api/v1/preferences/phone/request-verification",
+                headers=self.headers,
+                json={"phone_number": "+2348012345678"},
+            )
+        self.assertEqual(response.status_code, 429)
+        send.assert_not_called()
+
+    def test_phone_number_cannot_be_associated_with_another_account(self):
+        db = self.TestSession()
+        try:
+            db.add(User(
+                email="other-phone-owner@example.com",
+                full_name="Other Owner",
+                password_hash=hash_password("Strong-Test-Password-42"),
+                role="citizen",
+                phone_number="+2348012345678",
+                phone_verified_at=datetime.now(timezone.utc),
+                is_active=True,
+            ))
+            db.commit()
+        finally:
+            db.close()
+
+        with patch("app.routers.preferences.send_sms") as send:
+            response = self.client.post(
+                "/api/v1/preferences/phone/request-verification",
+                headers=self.headers,
+                json={"phone_number": "+2348012345678"},
+            )
+        self.assertEqual(response.status_code, 409)
+        send.assert_not_called()
 
     def test_sms_notification_queue_requires_verified_number_and_consent(self):
         db = self.TestSession()
