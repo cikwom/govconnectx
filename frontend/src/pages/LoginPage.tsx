@@ -22,6 +22,7 @@ export default function LoginPage() {
   const [selectedStateCode, setSelectedStateCode] = useState("");
   const [selectedLgaCode, setSelectedLgaCode] = useState("");
   const [locationLoading, setLocationLoading] = useState(true);
+  const [lgasLoading, setLgasLoading] = useState(false);
   const [locationError, setLocationError] = useState("");
   const adminPortal = location.pathname === "/admin/login";
   const notice = (location.state as { notice?: string } | null)?.notice;
@@ -46,8 +47,11 @@ export default function LoginPage() {
     setSelectedLgaCode("");
     if (!selectedStateCode) {
       setLgas([]);
+      setLgasLoading(false);
       return () => { active = false; };
     }
+    setLgas([]);
+    setLgasLoading(true);
     api.lgas(selectedStateCode)
       .then(items => {
         if (active) {
@@ -60,7 +64,8 @@ export default function LoginPage() {
           setLgas([]);
           setLocationError(t("We could not load LGAs for this state. Please choose the state again or refresh."));
         }
-      });
+      })
+      .finally(() => { if (active) setLgasLoading(false); });
     return () => { active = false; };
   }, [selectedStateCode, t]);
 
@@ -121,7 +126,7 @@ export default function LoginPage() {
               {selectedState && <p className="form-success" role="status">{t("Geopolitical zone")}: <strong>{selectedState.geopolitical_zone}</strong></p>}
               <label>{t("Local Government Area")}
                 <select value={selectedLgaCode} disabled={!selectedStateCode || lgas.length === 0} onChange={event => setSelectedLgaCode(event.target.value)}>
-                  <option value="">{selectedStateCode ? (lgas.length ? t("Select your LGA") : t("Loading LGAs…")) : t("Select a state first")}</option>
+                  <option value="">{!selectedStateCode ? t("Select a state first") : lgasLoading ? t("Loading LGAs…") : t("No LGAs available")}</option>
                   {lgas.map(lga => <option key={lga.code} value={lga.code}>{lga.name}</option>)}
                 </select>
               </label>
