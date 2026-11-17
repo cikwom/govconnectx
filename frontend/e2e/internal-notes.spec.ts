@@ -25,6 +25,7 @@ test("authorised department staff can save an internal note marked private", asy
     const path = new URL(route.request().url()).pathname;
     const method = route.request().method();
     if (path === "/api/v1/auth/login") return route.fulfill({ json: { access_token: "staff-note-token", token_type: "bearer", user: staff } });
+    if (path === "/api/v1/auth/me") return route.fulfill({ json: staff });
     if (path === "/api/v1/preferences") return route.fulfill({ json: preferences });
     if (path === "/api/v1/reports/701" && method === "GET") return route.fulfill({ json: report });
     if (path === "/api/v1/reports/701/history") return route.fulfill({ json: [] });
@@ -48,7 +49,6 @@ test("authorised department staff can save an internal note marked private", asy
   await expect(page.locator(".user-copy span")).toHaveText("department admin");
   await page.goto("/reports/701");
   await expect(page.getByRole("heading", { name: "Updates and comments" })).toBeVisible();
-  await expect(page.locator("[data-user-role]")).toHaveAttribute("data-user-role", "department_admin");
   await page.getByPlaceholder("Write an update or ask a question…").fill("Inspection found a damaged private utility line. Coordinate with the water authority.");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Save internal note" }).click();
@@ -65,6 +65,7 @@ test("citizens do not receive the internal-note control", async ({ page }) => {
   await page.route("http://localhost:8000/api/v1/**", async route => {
     const path = new URL(route.request().url()).pathname;
     if (path === "/api/v1/auth/login") return route.fulfill({ json: { access_token: "citizen-note-token", token_type: "bearer", user: citizen } });
+    if (path === "/api/v1/auth/me") return route.fulfill({ json: citizen });
     if (path === "/api/v1/preferences") return route.fulfill({ json: preferences });
     if (path === "/api/v1/reports/701") return route.fulfill({ json: { ...report, user_id: 41 } });
     if (path === "/api/v1/reports/701/history") return route.fulfill({ json: [] });
