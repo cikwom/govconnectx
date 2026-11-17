@@ -73,6 +73,10 @@ const dictionaries: Record<Language, Dictionary> = {
     "Activate staff account": "Activate staff account",
     "Activating…": "Activating…",
     "Return to sign in": "Return to sign in",
+    "State (optional)": "State (optional)",
+    "No geographic restriction": "No geographic restriction",
+    "Local government area": "Local government area",
+    "Select LGA (optional)": "Select LGA (optional)",
   },
   ha: {
     "No states are currently available. Please try again later.": "Ba a samu jihohi a yanzu ba. Da fatan za a sake gwadawa daga baya.",
@@ -619,6 +623,10 @@ const dictionaries: Record<Language, Dictionary> = {
     "Activate staff account": "Kunna asusun ma’aikaci",
     "Activating…": "Ana kunnawa…",
     "Return to sign in": "Koma shiga",
+    "State (optional)": "Jiha (na zaɓi)",
+    "No geographic restriction": "Babu takaita yanki",
+    "Local government area": "Karamar hukuma",
+    "Select LGA (optional)": "Zaɓi karamar hukuma (na zaɓi)",
   },
   yo: {
     "No states are currently available. Please try again later.": "Ko si ipinlẹ kankan lọwọlọwọ. Jọ̀wọ́ tún gbìyànjú lẹ́yìn náà.",
@@ -1165,6 +1173,10 @@ const dictionaries: Record<Language, Dictionary> = {
     "Activate staff account": "Mú àkáǹtì òṣìṣẹ́ ṣiṣẹ́",
     "Activating…": "Ó ń ṣiṣẹ́…",
     "Return to sign in": "Padà sí ìwọlé",
+    "State (optional)": "Ìpínlẹ̀ (àṣàyàn)",
+    "No geographic restriction": "Kò sí ìdíwọ̀ agbègbè",
+    "Local government area": "Agbègbè ìjọba ìbílẹ̀",
+    "Select LGA (optional)": "Yan agbègbè ìjọba ìbílẹ̀ (àṣàyàn)",
   },
   ig: {
     "No states are currently available. Please try again later.": "Enweghị steeti dị ugbu a. Biko nwaa ọzọ ma emechaa.",
@@ -1710,6 +1722,10 @@ const dictionaries: Record<Language, Dictionary> = {
     "Activate staff account": "Mee ka akaụntụ onye ọrụ rụọ ọrụ",
     "Activating…": "Na-arụ ọrụ…",
     "Return to sign in": "Laghachi na nbanye",
+    "State (optional)": "Steeti (nhọrọ)",
+    "No geographic restriction": "Enweghị mmachi mpaghara",
+    "Local government area": "Mpaghara ọchịchị ime obodo",
+    "Select LGA (optional)": "Họrọ LGA (nhọrọ)",
   },
 
 };
