@@ -475,3 +475,8 @@ input[type="radio"] {
 :root[data-theme="dark"] .internal-note-option{background:#1d302c;border-color:#3c5c51}
 :root[data-theme="dark"] .internal-note-option strong{color:#d9eee5}
 :root[data-theme="dark"] .internal-note-option small{color:#a8c0b7}
+
+.admin-department-select{min-width:150px;max-width:220px;font-size:.75rem;padding:8px 10px;border:1px solid #d9e4e1;border-radius:8px;background:#fff;color:#26463f}
+:root[data-theme="dark"] .admin-department-select{background:#203431;border-color:#36534b;color:#d8eee6}
+.form-success{padding:11px 14px;border:1px solid #bfe3d7;border-radius:9px;background:#f0faf5;color:#176b50;font-size:.82rem}
+:root[data-theme="dark"] .form-success{background:#1d302c;border-color:#3c5c51;color:#a8e4c7}
