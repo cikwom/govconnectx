@@ -81,3 +81,26 @@ Copy this section for each manual test session:
 - **PR checks:** PASS — GovConnectX CI run [44171424732](https://github.com/cikwom/govconnectx/actions/runs/44171424732), backend tests run [44171424509](https://github.com/cikwom/govconnectx/actions/runs/44171424509), frontend build run [44171424504](https://github.com/cikwom/govconnectx/actions/runs/44171424504).
 - **Post-merge checks:** PASS — GovConnectX CI run [44171665891](https://github.com/cikwom/govconnectx/actions/runs/44171665891), backend tests run [44171665876](https://github.com/cikwom/govconnectx/actions/runs/44171665876), frontend build run [44171665997](https://github.com/cikwom/govconnectx/actions/runs/44171665997).
 - **Limitations:** the report detail tests use mocked API fixtures and synthetic image bytes. They do not prove production storage, malware scanning, signed download URLs, or live database persistence. Those remain NOT RUN.
+
+
+## 2026-11-17 — Agency operations dashboard — PR #69
+- **PR:** [#69](https://github.com/cikwom/govconnectx/pull/69) — merged.
+- **Merged commit:** `31207da4c2e5e345ca8b04e27002f30fe7ca460d`
+- **Browser suite:** PASS — 6/6 Chromium tests. Covers the department report queue, field-officer assignment, status progression, and the individual field-officer view.
+- **Translations/accessibility:** 569 interface keys covered in Hausa, Yorùbá and Igbo; 22 automated accessibility source checks passed.
+- **PR checks:** PASS — GovConnectX CI [44175013940](https://github.com/cikwom/govconnectx/actions/runs/44175013940), backend tests [44175013801](https://github.com/cikwom/govconnectx/actions/runs/44175013801), frontend build [44175013826](https://github.com/cikwom/govconnectx/actions/runs/44175013826).
+- **Post-merge checks:** PASS — GovConnectX CI [44175271456](https://github.com/cikwom/govconnectx/actions/runs/44175271456), backend tests [44175271156](https://github.com/cikwom/govconnectx/actions/runs/44175271156), frontend build [44175271151](https://github.com/cikwom/govconnectx/actions/runs/44175271151).
+
+## 2026-11-17 — Private staff notes — PR #70
+- **PR:** [#70](https://github.com/cikwom/govconnectx/pull/70) — merged.
+- **Merged commit:** `d065dc33cca86784a1a1894c0ac95dece5a36056`
+- **Browser suite:** PASS — 8/8 Chromium tests. Covers staff-only internal-note creation and verifies the citizen view does not receive the private-note control.
+- **Backend privacy test:** Existing `test_internal_comments_hidden_from_citizens` passed in the backend suite; the API filters internal comments from citizen responses and rejects citizen attempts to create internal notes.
+- **Translations/accessibility:** 572 interface keys covered in Hausa, Yorùbá and Igbo; 22 automated accessibility source checks passed.
+- **PR checks:** PASS — GovConnectX CI [44178340205](https://github.com/cikwom/govconnectx/actions/runs/44178340205), backend tests [44178309011](https://github.com/cikwom/govconnectx/actions/runs/44178309011), frontend build [44178339909](https://github.com/cikwom/govconnectx/actions/runs/44178339909).
+- **Post-merge checks:** PASS — GovConnectX CI [44178593088](https://github.com/cikwom/govconnectx/actions/runs/44178593088), backend tests [44178593163](https://github.com/cikwom/govconnectx/actions/runs/44178593163), frontend build [44178593112](https://github.com/cikwom/govconnectx/actions/runs/44178593112).
+
+### Additional limitations
+- Agency and internal-note browser tests use mocked API fixtures and synthetic identities. They validate navigation, role-specific UI and request payloads, not a live deployed API or production database.
+- Internal notes are protected by the existing backend authorization and citizen comment filtering; production integration still requires a live-backend regression.
+- Manual mobile, keyboard-only and screen-reader testing remains NOT RUN.
