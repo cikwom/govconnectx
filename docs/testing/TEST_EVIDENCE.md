@@ -71,3 +71,13 @@ Copy this section for each manual test session:
 - **Production media upload/download and external email/SMS delivery:** NOT RUN.
 - Automated accessibility source checks passed (22 checks) and translation coverage passed (544 keys); these do not replace a manual WCAG or native-speaker review.
 - The frontend dependency audit blocks high-severity production dependencies and critical-severity findings across the full dependency tree. A newly disclosed high-severity `picomatch` build-tool advisory has no published fixed release in the advisory; it remains an upstream dependency risk to revisit when a fix is available.
+
+
+## 2026-11-17 — Report detail actions and evidence upload — PR #67
+- **Repository:** `cikwom/govconnectx`
+- **PR:** [#67](https://github.com/cikwom/govconnectx/pull/67) — merged.
+- **Merged commit:** `e1c567438da5f4dc56603854f884362af747eb5a`
+- **Browser suite:** PASS — 4/4 Chromium tests on PR head `ab9e451c4a0d4b989f624e82bf02e6e66b25bfc9`. New report-detail test verifies duplicate guidance, synthetic PNG evidence upload, critical escalation payload, and resolved-report feedback payload.
+- **PR checks:** PASS — GovConnectX CI run [44171424732](https://github.com/cikwom/govconnectx/actions/runs/44171424732), backend tests run [44171424509](https://github.com/cikwom/govconnectx/actions/runs/44171424509), frontend build run [44171424504](https://github.com/cikwom/govconnectx/actions/runs/44171424504).
+- **Post-merge checks:** PASS — GovConnectX CI run [44171665891](https://github.com/cikwom/govconnectx/actions/runs/44171665891), backend tests run [44171665876](https://github.com/cikwom/govconnectx/actions/runs/44171665876), frontend build run [44171665997](https://github.com/cikwom/govconnectx/actions/runs/44171665997).
+- **Limitations:** the report detail tests use mocked API fixtures and synthetic image bytes. They do not prove production storage, malware scanning, signed download URLs, or live database persistence. Those remain NOT RUN.
