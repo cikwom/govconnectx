@@ -72,7 +72,7 @@ export default function LoginPage() {
 
   const selectedState = states.find(state => state.code === selectedStateCode);
 
-  if (user) return <Navigate to={user.role === "system_admin" ? "/admin" : "/dashboard"} replace />;
+  if (user) return <Navigate to={user.role === "system_admin" ? "/admin" : ["official", "department_admin", "supervisor"].includes(user.role) ? "/agency" : "/dashboard"} replace />;
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -82,7 +82,7 @@ export default function LoginPage() {
       const signedInUser = await signIn(email, password, adminPortal ? ["system_admin", "department_admin", "supervisor", "official"] : undefined);
 
       const destination = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-      navigate(destination || (signedInUser.role === "system_admin" ? "/admin" : "/dashboard"), { replace: true });
+      navigate(destination || (signedInUser.role === "system_admin" ? "/admin" : ["official", "department_admin", "supervisor"].includes(signedInUser.role) ? "/agency" : "/dashboard"), { replace: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Unable to sign in"));
     } finally {
