@@ -11,6 +11,7 @@ from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
 from app.models.auth_security_event import AuthSecurityEvent
+from app.models.login_attempt import LoginAttempt
 from app.models.password_reset_token import PasswordResetToken
 from app.models.department import Department
 from app.models.department_geographic_scope import DepartmentGeographicScope
@@ -50,6 +51,7 @@ class AuthenticationApiTests(unittest.TestCase):
         db = self.TestSession()
         try:
             seed_location_directory(db)
+            db.query(LoginAttempt).delete()
             db.query(AuthSecurityEvent).delete()
             db.query(PasswordResetToken).delete()
             db.query(DepartmentGeographicScope).delete()
@@ -73,6 +75,38 @@ class AuthenticationApiTests(unittest.TestCase):
             )
         self.assertEqual(response.status_code, 200)
         return {"Authorization": "Bearer " + response.json()["access_token"]}
+
+    def test_login_throttle_limits_repeated_failures_and_returns_retry_after(self):
+        self.assertEqual(self.register("throttle@example.com").status_code, 201)
+        payload = {"email": "throttle@example.com", "password": "wrong-password"}
+        with patch("app.routers.auth.verify_password", return_value=False):
+            for _ in range(5):
+                self.assertEqual(self.client.post("/api/v1/auth/login", json=payload).status_code, 401)
+
+        with patch("app.routers.auth.verify_password", return_value=True):
+            blocked = self.client.post(
+                "/api/v1/auth/login",
+                json={"email": "throttle@example.com", "password": "Strong-Test-Password-42"},
+            )
+        self.assertEqual(blocked.status_code, 429)
+        self.assertEqual(blocked.headers.get("retry-after"), "900")
+
+    def test_successful_login_clears_previous_failed_attempts(self):
+        self.assertEqual(self.register("clear-throttle@example.com").status_code, 201)
+        payload = {"email": "clear-throttle@example.com", "password": "wrong-password"}
+        with patch("app.routers.auth.verify_password", return_value=False):
+            for _ in range(2):
+                self.assertEqual(self.client.post("/api/v1/auth/login", json=payload).status_code, 401)
+
+        with patch("app.routers.auth.verify_password", return_value=True), patch("app.routers.auth.send_notification_email"):
+            success = self.client.post(
+                "/api/v1/auth/login",
+                json={"email": "clear-throttle@example.com", "password": "Strong-Test-Password-42"},
+            )
+        self.assertEqual(success.status_code, 200)
+        with patch("app.routers.auth.verify_password", return_value=False):
+            retry = self.client.post("/api/v1/auth/login", json=payload)
+        self.assertEqual(retry.status_code, 401)
 
     def test_password_reset_is_one_time_and_revokes_existing_sessions(self):
         self.assertEqual(self.register("recover@example.com").status_code, 201)
@@ -130,7 +164,6 @@ class AuthenticationApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertGreaterEqual(len(response.json()), 1)
         self.assertEqual(response.json()[0]["event_type"], "login_success")
-
 
     def test_revoke_sessions_invalidates_existing_access_tokens(self):
         self.assertEqual(self.register("sessions@example.com").status_code, 201)
