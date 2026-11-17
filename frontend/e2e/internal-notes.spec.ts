@@ -48,6 +48,7 @@ test("authorised department staff can save an internal note marked private", asy
   await expect(page.locator(".user-copy span")).toHaveText("department admin");
   await page.goto("/reports/701");
   await expect(page.getByRole("heading", { name: "Updates and comments" })).toBeVisible();
+  await expect(page.locator("[data-user-role]")).toHaveAttribute("data-user-role", "department_admin");
   await page.getByPlaceholder("Write an update or ask a question…").fill("Inspection found a damaged private utility line. Coordinate with the water authority.");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Save internal note" }).click();
