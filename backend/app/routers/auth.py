@@ -11,6 +11,7 @@ from app.core.dependencies import get_current_user, require_roles
 from app.core.security import create_access_token, hash_password, verify_password
 from app.database import get_db
 from app.models.auth_security_event import AuthSecurityEvent
+from app.models.login_attempt import LoginAttempt
 from app.models.location import LocalGovernmentArea, State
 from app.models.password_reset_token import PasswordResetToken
 from app.models.user import User
@@ -20,6 +21,8 @@ from app.services.email_delivery import send_notification_email
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 RESET_TOKEN_TTL_MINUTES = 30
 RESET_REQUEST_COOLDOWN_SECONDS = 60
+LOGIN_FAILURE_LIMIT = 5
+LOGIN_FAILURE_WINDOW_MINUTES = 15
 
 
 class PasswordResetRequest(BaseModel):
@@ -38,6 +41,11 @@ def _client_details(request: Request) -> tuple[str | None, str | None]:
     return ip_address, user_agent
 
 
+def _login_attempt_key(email: str, ip_address: str | None) -> str:
+    # Store only a digest; never persist the submitted email/IP pair in this throttle table.
+    return hashlib.sha256(f"{(ip_address or 'unknown').strip()}:{email}".encode("utf-8")).hexdigest()
+
+
 def validate_home_location(payload: RegisterRequest, db: Session) -> None:
     if bool(payload.home_state_code) != bool(payload.home_lga_code):
         raise HTTPException(status_code=400, detail="Select both your state and local government area")
@@ -51,7 +59,6 @@ def validate_home_location(payload: RegisterRequest, db: Session) -> None:
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(payload: RegisterRequest, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
-        # Keep the response generic so public registration cannot be used to enumerate accounts.
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Unable to create an account with those details. Sign in or use password recovery if you already registered.")
     validate_home_location(payload, db)
     user = User(
@@ -72,13 +79,34 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
 @router.post("/login", response_model=TokenResponse)
 def login(payload: LoginRequest, request: Request, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     email = payload.email.strip().lower()
+    ip_address, user_agent = _client_details(request)
+    attempt_key = _login_attempt_key(email, ip_address)
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(minutes=LOGIN_FAILURE_WINDOW_MINUTES)
+
+    # Opportunistically remove expired records so this table does not grow indefinitely.
+    db.query(LoginAttempt).filter(LoginAttempt.attempted_at < now - timedelta(days=1)).delete(synchronize_session=False)
+    recent_failures = db.query(LoginAttempt).filter(
+        LoginAttempt.key_hash == attempt_key,
+        LoginAttempt.attempted_at >= cutoff,
+    ).count()
+    if recent_failures >= LOGIN_FAILURE_LIMIT:
+        db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many unsuccessful sign-in attempts. Please wait 15 minutes before trying again.",
+            headers={"Retry-After": str(LOGIN_FAILURE_WINDOW_MINUTES * 60)},
+        )
+
     user = db.query(User).filter(User.email == email).first()
     if user is None or not verify_password(payload.password, user.password_hash):
+        db.add(LoginAttempt(key_hash=attempt_key, attempted_at=now))
+        db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password", headers={"WWW-Authenticate": "Bearer"})
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This account is disabled")
 
-    ip_address, user_agent = _client_details(request)
+    db.query(LoginAttempt).filter(LoginAttempt.key_hash == attempt_key).delete(synchronize_session=False)
     db.add(AuthSecurityEvent(user_id=user.id, event_type="login_success", ip_address=ip_address, user_agent=user_agent))
     db.commit()
     background_tasks.add_task(
