@@ -220,6 +220,15 @@ class AdminCommandCentreTests(unittest.TestCase):
                 AuditEvent.entity_id == citizen_id,
             ).one()
             self.assertIn("Citizen requested account removal", event.details_json)
+            self.assertNotIn("citizen@example.com", event.details_json)
+        finally:
+            db.close()
+
+        users_after_deletion = self.client.get("/api/v1/admin/users", headers=admin_headers)
+        self.assertEqual(users_after_deletion.status_code, 200)
+        self.assertNotIn(citizen_id, [item["id"] for item in users_after_deletion.json()["items"]])
+        overview_after_deletion = self.client.get("/api/v1/admin/overview", headers=admin_headers)
+        self.assertEqual(overview_after_deletion.json()["users"]["total"], 1)
         finally:
             db.close()
 
