@@ -466,3 +466,12 @@ input[type="radio"] {
 .location-load-error .form-error{width:100%;margin:0;line-height:1.55}
 .location-load-success{margin:8px 0 0;color:#26734d;font-size:.74rem;font-weight:700}
 :root[data-theme="dark"] .location-load-success{color:#8be0b5}
+
+.internal-note-option{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid #cfe2dc;border-radius:10px;background:#f5faf8;cursor:pointer}
+.internal-note-option input{margin-top:3px;accent-color:#087f70}
+.internal-note-option span{display:flex;flex-direction:column;gap:3px}
+.internal-note-option strong{font-size:.82rem;color:#254b43}
+.internal-note-option small{font-size:.72rem;line-height:1.45;color:#637b73}
+:root[data-theme="dark"] .internal-note-option{background:#1d302c;border-color:#3c5c51}
+:root[data-theme="dark"] .internal-note-option strong{color:#d9eee5}
+:root[data-theme="dark"] .internal-note-option small{color:#a8c0b7}

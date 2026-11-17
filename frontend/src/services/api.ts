@@ -76,7 +76,7 @@ export const api = {
   createReport: (p: CreateReportPayload) => request<Report>("/reports", { method: "POST", body: JSON.stringify(p) }),
   reportHistory: (id: number) => request<HistoryItem[]>(`/reports/${id}/history`),
   reportComments: (id: number) => request<CommentItem[]>(`/reports/${id}/comments`),
-  addReportComment: (id: number, body: string) => request<CommentItem>(`/reports/${id}/comments`, { method: "POST", body: JSON.stringify({ body, is_internal: false }) }),
+  addReportComment: (id: number, body: string, isInternal = false) => request<CommentItem>(`/reports/${id}/comments`, { method: "POST", body: JSON.stringify({ body, is_internal: isInternal }) }),
   reportAttachments: (id: number) => request<ReportAttachment[]>(`/reports/${id}/attachments`),
   uploadReportAttachment: (id: number, file: File) => {
     const form = new FormData();
