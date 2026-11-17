@@ -10,6 +10,7 @@ from app.models.citizen_services import CommunityListing, PublicServiceDirectory
 from app.models.notification import Notification  # noqa: F401
 from app.models.password_reset_token import PasswordResetToken  # noqa: F401
 from app.models.auth_security_event import AuthSecurityEvent  # noqa: F401
+from app.models.login_attempt import LoginAttempt  # noqa: F401 - register persistent login throttle table
 from app.models.notification_delivery import NotificationDelivery  # noqa: F401
 from app.models.phone_verification import PhoneVerification  # noqa: F401
 from app.models.user_preference import UserPreference  # noqa: F401
