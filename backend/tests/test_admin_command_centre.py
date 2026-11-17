@@ -183,6 +183,83 @@ class AdminCommandCentreTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    def test_admin_can_anonymize_account_preserve_reports_and_free_email(self):
+        citizen_headers = self.headers("citizen@example.com")
+        admin_headers = self.headers("admin@example.com")
+        db = self.TestSession()
+        try:
+            citizen = db.query(User).filter(User.email == "citizen@example.com").one()
+            citizen_id = citizen.id
+            report = db.query(Report).filter(Report.user_id == citizen_id).one()
+            report_id = report.id
+        finally:
+            db.close()
+
+        response = self.client.delete(
+            f"/api/v1/admin/users/{citizen_id}",
+            headers=admin_headers,
+            json={"reason": "Citizen requested account removal"},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["anonymized"])
+        self.assertTrue(response.json()["email_reusable"])
+        self.assertTrue(response.json()["reports_preserved"])
+        self.assertEqual(self.client.get("/api/v1/auth/me", headers=citizen_headers).status_code, 401)
+
+        db = self.TestSession()
+        try:
+            deleted = db.query(User).filter(User.id == citizen_id).one()
+            self.assertEqual(deleted.email, f"deleted-{citizen_id}@accounts.govconnectx.invalid")
+            self.assertEqual(deleted.full_name, "Deleted account")
+            self.assertEqual(deleted.role, "deleted")
+            self.assertFalse(deleted.is_active)
+            preserved_report = db.query(Report).filter(Report.id == report_id).one()
+            self.assertEqual(preserved_report.user_id, citizen_id)
+            event = db.query(AuditEvent).filter(
+                AuditEvent.action == "user.account_anonymized",
+                AuditEvent.entity_id == citizen_id,
+            ).one()
+            self.assertIn("Citizen requested account removal", event.details_json)
+        finally:
+            db.close()
+
+        recreated = self.client.post(
+            "/api/v1/auth/register",
+            json={
+                "email": "citizen@example.com",
+                "full_name": "A New Citizen",
+                "password": "New-Test-Password-456",
+            },
+        )
+        self.assertEqual(recreated.status_code, 201)
+        self.assertEqual(recreated.json()["email"], "citizen@example.com")
+
+    def test_admin_cannot_anonymize_own_account(self):
+        db = self.TestSession()
+        try:
+            admin_id = db.query(User).filter(User.email == "admin@example.com").one().id
+        finally:
+            db.close()
+        response = self.client.delete(
+            f"/api/v1/admin/users/{admin_id}",
+            headers=self.headers("admin@example.com"),
+            json={"reason": "Administrator requested removal"},
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_citizen_cannot_anonymize_accounts(self):
+        db = self.TestSession()
+        try:
+            admin_id = db.query(User).filter(User.email == "admin@example.com").one().id
+        finally:
+            db.close()
+        response = self.client.delete(
+            f"/api/v1/admin/users/{admin_id}",
+            headers=self.headers("citizen@example.com"),
+            json={"reason": "Unauthorized account deletion"},
+        )
+        self.assertEqual(response.status_code, 403)
+
     def test_admin_can_see_reporter_and_report_content(self):
         response = self.client.get("/api/v1/admin/reports", headers=self.headers("admin@example.com"))
         self.assertEqual(response.status_code, 200)
