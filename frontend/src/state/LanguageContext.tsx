@@ -32,6 +32,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "Open report": "Open report",
     "Could not load operational reports.": "Could not load operational reports.",
     "Search title, location or report number": "Search title, location or report number",
+    "Internal staff note": "Internal staff note",
+    "Only authorised staff can view this note. It will not be visible to the citizen.": "Only authorised staff can view this note. It will not be visible to the citizen.",
+    "Save internal note": "Save internal note",
   },
   ha: {
     "No states are currently available. Please try again later.": "Ba a samu jihohi a yanzu ba. Da fatan za a sake gwadawa daga baya.",
@@ -539,6 +542,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "Could not load operational reports.": "An kasa loda rahotannin aiki.",
     "Search title, location or report number": "Nemi suna, wuri ko lambar rahoto",
     "Loading operational reports…": "Ana loda rahotannin aiki…",
+    "Internal staff note": "Bayanan sirri na ma'aikata",
+    "Only authorised staff can view this note. It will not be visible to the citizen.": "Ma'aikatan da aka ba izini kawai za su iya ganin wannan bayani. Dan ƙasa ba zai gan shi ba.",
+    "Save internal note": "Ajiye bayanin sirri",
   },
   yo: {
     "No states are currently available. Please try again later.": "Ko si ipinlẹ kankan lọwọlọwọ. Jọ̀wọ́ tún gbìyànjú lẹ́yìn náà.",
@@ -1046,6 +1052,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "Could not load operational reports.": "A kò lè ṣí àwọn ìròyìn iṣẹ́.",
     "Search title, location or report number": "Wá akọlé, ibi tàbí nọ́ńbà ìròyìn",
     "Loading operational reports…": "A ń gbé àwọn ìròyìn iṣẹ́ sókè…",
+    "Internal staff note": "Àkọsílẹ̀ àṣírí òṣìṣẹ́",
+    "Only authorised staff can view this note. It will not be visible to the citizen.": "Àwọn òṣìṣẹ́ tó ní àṣẹ nìkan ló lè rí àkọsílẹ̀ yìí. Ọmọ ìlú kò ní rí i.",
+    "Save internal note": "Fi àkọsílẹ̀ àṣírí pamọ́",
   },
   ig: {
     "No states are currently available. Please try again later.": "Enweghị steeti dị ugbu a. Biko nwaa ọzọ ma emechaa.",
@@ -1552,6 +1561,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "Could not load operational reports.": "Enweghị ike ibudata mkpesa ọrụ.",
     "Search title, location or report number": "Chọọ aha, ebe ma ọ bụ nọmba mkpesa",
     "Loading operational reports…": "A na-ebudata mkpesa ọrụ…",
+    "Internal staff note": "Ihe ndekọ nzuzo ndị ọrụ",
+    "Only authorised staff can view this note. It will not be visible to the citizen.": "Naanị ndị ọrụ enyere ikike nwere ike ịhụ ihe ndekọ a. Nwa amaala agaghị ahụ ya.",
+    "Save internal note": "Chekwaa ihe ndekọ nzuzo",
   },
 
 };
