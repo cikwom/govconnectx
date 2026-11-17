@@ -89,14 +89,18 @@ class AdminCommandCentreTests(unittest.TestCase):
     def test_admin_can_suspend_and_reactivate_account_with_audit_and_session_revocation(self):
         citizen_headers = self.headers("citizen@example.com")
         admin_headers = self.headers("admin@example.com")
+        db = self.TestSession()
+        try:
+            citizen_id = db.query(User).filter(User.email == "citizen@example.com").one().id
+        finally:
+            db.close()
         suspended = self.client.patch(
-            "/api/v1/admin/users/2/status",
+            f"/api/v1/admin/users/{citizen_id}/status",
             headers=admin_headers,
             json={"is_active": False, "reason": "Repeated abusive and verified submissions"},
         )
         self.assertEqual(suspended.status_code, 200)
         self.assertTrue(suspended.json()["sessions_revoked"])
-        # Existing citizen access token is no longer accepted.
         protected = self.client.get("/api/v1/auth/security/activity", headers=citizen_headers)
         self.assertEqual(protected.status_code, 403)
 
@@ -114,7 +118,7 @@ class AdminCommandCentreTests(unittest.TestCase):
             db.close()
 
         reactivated = self.client.patch(
-            "/api/v1/admin/users/2/status",
+            f"/api/v1/admin/users/{citizen_id}/status",
             headers=admin_headers,
             json={"is_active": True, "reason": "Appeal reviewed and access restored"},
         )
@@ -127,22 +131,42 @@ class AdminCommandCentreTests(unittest.TestCase):
 
     def test_admin_cannot_suspend_self_or_last_active_admin(self):
         admin_headers = self.headers("admin@example.com")
+        db = self.TestSession()
+        try:
+            admin = db.query(User).filter(User.email == "admin@example.com").one()
+            admin_id = admin.id
+            db.add(User(
+                email="second-admin@example.com",
+                full_name="Second Admin",
+                password_hash=hash_password("Test-Password-123"),
+                role="system_admin",
+                is_active=True,
+            ))
+            db.commit()
+        finally:
+            db.close()
         self_suspension = self.client.patch(
-            "/api/v1/admin/users/1/status",
+            f"/api/v1/admin/users/{admin_id}/status",
             headers=admin_headers,
             json={"is_active": False, "reason": "Temporary administrative suspension"},
         )
         self.assertEqual(self_suspension.status_code, 400)
+        second_admin_headers = self.headers("second-admin@example.com")
         last_admin = self.client.patch(
-            "/api/v1/admin/users/1/status",
-            headers=admin_headers,
+            f"/api/v1/admin/users/{admin_id}/status",
+            headers=second_admin_headers,
             json={"is_active": False, "reason": "Administrative access review"},
         )
-        self.assertEqual(last_admin.status_code, 400)
+        self.assertEqual(last_admin.status_code, 409)
 
     def test_citizen_cannot_change_account_status(self):
+        db = self.TestSession()
+        try:
+            admin_id = db.query(User).filter(User.email == "admin@example.com").one().id
+        finally:
+            db.close()
         response = self.client.patch(
-            "/api/v1/admin/users/1/status",
+            f"/api/v1/admin/users/{admin_id}/status",
             headers=self.headers("citizen@example.com"),
             json={"is_active": False, "reason": "Unauthorized attempt to suspend"},
         )
