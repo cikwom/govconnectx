@@ -514,7 +514,6 @@ const dictionaries: Record<Language, Dictionary> = {
     "Device unavailable": "Ba a samu bayanin na'ura ba",
     "Signing out devices…": "Ana fitar da na'urori…",
     "Sign out all devices": "Fitar da duk na'urori",
-  },
     "Agency operations": "Ayyukan hukumomi",
     "AGENCY OPERATIONS": "AYYUKAN HUKUMOMI",
     "My field assignments": "Ayyukan filin da aka ba ni",
@@ -539,6 +538,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Open report": "Buɗe rahoto",
     "Could not load operational reports.": "An kasa loda rahotannin aiki.",
     "Search title, location or report number": "Nemi suna, wuri ko lambar rahoto",
+  },
   yo: {
     "No states are currently available. Please try again later.": "Ko si ipinlẹ kankan lọwọlọwọ. Jọ̀wọ́ tún gbìyànjú lẹ́yìn náà.",
     "We could not load the state directory. Check that the GovConnectX API is running, then refresh.": "A kò lè ṣí àkójọ àwọn ipinlẹ. Ṣàyẹ̀wò pé API GovConnectX ń ṣiṣẹ́, lẹ́yìn náà tún ojú-ìwé ṣe.",
@@ -1020,7 +1020,6 @@ const dictionaries: Record<Language, Dictionary> = {
     "Device unavailable": "Kò sí àlàyé ẹ̀rọ",
     "Signing out devices…": "Ń jáde kúrò ní àwọn ẹ̀rọ…",
     "Sign out all devices": "Jáde kúrò ní gbogbo ẹ̀rọ",
-  },
     "Agency operations": "Iṣẹ́ àwọn àjọ",
     "AGENCY OPERATIONS": "IṢẸ́ ÀWỌN ÀJỌ",
     "My field assignments": "Àwọn iṣẹ́ pápá tí a yàn fún mi",
@@ -1045,6 +1044,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Open report": "Ṣí ìròyìn",
     "Could not load operational reports.": "A kò lè ṣí àwọn ìròyìn iṣẹ́.",
     "Search title, location or report number": "Wá akọlé, ibi tàbí nọ́ńbà ìròyìn",
+  },
   ig: {
     "No states are currently available. Please try again later.": "Enweghị steeti dị ugbu a. Biko nwaa ọzọ ma emechaa.",
     "We could not load the state directory. Check that the GovConnectX API is running, then refresh.": "Anyị enweghị ike ibudata ndepụta steeti. Lelee na GovConnectX API na-arụ ọrụ, wee mee ka ibe ahụ dị ọhụrụ.",
@@ -1525,8 +1525,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "IP unavailable": "Enweghị adreesị IP",
     "Device unavailable": "Enweghị nkọwa ngwaọrụ",
     "Signing out devices…": "A na-ewepụ nbanye ngwaọrụ…",
-    "Sign out all devices": "Wepụ nbanye na ngwaọrụ niile",
-  },    "Agency operations": "Ọrụ ụlọ ọrụ gọọmentị",
+    "Sign out all devices": "Wepụ nbanye na ngwaọrụ niile",    "Agency operations": "Ọrụ ụlọ ọrụ gọọmentị",
     "AGENCY OPERATIONS": "ỌRỤ ỤLỌ ỌRỤ GỌỌMENTỊ",
     "My field assignments": "Ọrụ ubi e kenyere m",
     "Department report queue": "Ahịrị mkpesa ngalaba",
@@ -1550,6 +1549,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Open report": "Mepee mkpesa",
     "Could not load operational reports.": "Enweghị ike ibudata mkpesa ọrụ.",
     "Search title, location or report number": "Chọọ aha, ebe ma ọ bụ nọmba mkpesa",
+  },
 
 };
 
