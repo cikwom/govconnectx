@@ -104,3 +104,14 @@ Copy this section for each manual test session:
 - Agency and internal-note browser tests use mocked API fixtures and synthetic identities. They validate navigation, role-specific UI and request payloads, not a live deployed API or production database.
 - Internal notes are protected by the existing backend authorization and citizen comment filtering; production integration still requires a live-backend regression.
 - Manual mobile, keyboard-only and screen-reader testing remains NOT RUN.
+
+
+## 2026-11-17 — Administrator staff-to-department assignment — PR #72
+- **PR:** [#72](https://github.com/cikwom/govconnectx/pull/72) — merged.
+- **Merged commit:** `46a5d7c2c9d20d15d42e60a94c288467b301a7b3`
+- **Browser suite:** PASS — 9/9 Chromium tests. Added coverage for a system administrator assigning a field officer to the Public Works department.
+- **Backend coverage:** Added tests for system-admin assignment, unassigning a staff member, citizen access denial, and rejection of attempts to assign a citizen account.
+- **Translations/accessibility:** 575 interface keys covered in Hausa, Yorùbá and Igbo; 22 automated accessibility source checks passed.
+- **PR checks:** PASS — GovConnectX CI [44180019091](https://github.com/cikwom/govconnectx/actions/runs/44180019091), backend tests [44180019031](https://github.com/cikwom/govconnectx/actions/runs/44180019031), frontend build [44180019157](https://github.com/cikwom/govconnectx/actions/runs/44180019157).
+- **Post-merge checks:** PASS — GovConnectX CI [44180484918](https://github.com/cikwom/govconnectx/actions/runs/44180484918), backend tests [44180484636](https://github.com/cikwom/govconnectx/actions/runs/44180484636), frontend build [44180484650](https://github.com/cikwom/govconnectx/actions/runs/44180484650).
+- **Limitations:** Browser API calls are mocked. This does not replace live-backend verification of staff provisioning, department membership persistence, or geographic access enforcement.
