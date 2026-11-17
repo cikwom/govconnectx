@@ -195,7 +195,7 @@ class AdminCommandCentreTests(unittest.TestCase):
         finally:
             db.close()
 
-        response = self.client.delete(
+        response = self.client.request("DELETE", 
             f"/api/v1/admin/users/{citizen_id}",
             headers=admin_headers,
             json={"reason": "Citizen requested account removal"},
@@ -240,7 +240,7 @@ class AdminCommandCentreTests(unittest.TestCase):
             admin_id = db.query(User).filter(User.email == "admin@example.com").one().id
         finally:
             db.close()
-        response = self.client.delete(
+        response = self.client.request("DELETE", 
             f"/api/v1/admin/users/{admin_id}",
             headers=self.headers("admin@example.com"),
             json={"reason": "Administrator requested removal"},
@@ -253,7 +253,7 @@ class AdminCommandCentreTests(unittest.TestCase):
             admin_id = db.query(User).filter(User.email == "admin@example.com").one().id
         finally:
             db.close()
-        response = self.client.delete(
+        response = self.client.request("DELETE", 
             f"/api/v1/admin/users/{admin_id}",
             headers=self.headers("citizen@example.com"),
             json={"reason": "Unauthorized account deletion"},
