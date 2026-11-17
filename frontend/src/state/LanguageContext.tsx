@@ -538,6 +538,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Open report": "Buɗe rahoto",
     "Could not load operational reports.": "An kasa loda rahotannin aiki.",
     "Search title, location or report number": "Nemi suna, wuri ko lambar rahoto",
+    "Loading operational reports…": "Ana loda rahotannin aiki…",
   },
   yo: {
     "No states are currently available. Please try again later.": "Ko si ipinlẹ kankan lọwọlọwọ. Jọ̀wọ́ tún gbìyànjú lẹ́yìn náà.",
@@ -1044,6 +1045,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Open report": "Ṣí ìròyìn",
     "Could not load operational reports.": "A kò lè ṣí àwọn ìròyìn iṣẹ́.",
     "Search title, location or report number": "Wá akọlé, ibi tàbí nọ́ńbà ìròyìn",
+    "Loading operational reports…": "A ń gbé àwọn ìròyìn iṣẹ́ sókè…",
   },
   ig: {
     "No states are currently available. Please try again later.": "Enweghị steeti dị ugbu a. Biko nwaa ọzọ ma emechaa.",
@@ -1549,6 +1551,7 @@ const dictionaries: Record<Language, Dictionary> = {
     "Open report": "Mepee mkpesa",
     "Could not load operational reports.": "Enweghị ike ibudata mkpesa ọrụ.",
     "Search title, location or report number": "Chọọ aha, ebe ma ọ bụ nọmba mkpesa",
+    "Loading operational reports…": "A na-ebudata mkpesa ọrụ…",
   },
 
 };
