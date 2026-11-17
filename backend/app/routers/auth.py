@@ -21,6 +21,8 @@ from app.services.email_delivery import send_notification_email
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 RESET_TOKEN_TTL_MINUTES = 30
 RESET_REQUEST_COOLDOWN_SECONDS = 60
+RESET_REQUEST_DAILY_LIMIT = 5
+RESET_REQUEST_DAILY_WINDOW_HOURS = 24
 LOGIN_FAILURE_LIMIT = 5
 LOGIN_FAILURE_WINDOW_MINUTES = 15
 
@@ -133,6 +135,13 @@ def request_password_reset(payload: PasswordResetRequest, background_tasks: Back
         PasswordResetToken.created_at >= now - timedelta(seconds=RESET_REQUEST_COOLDOWN_SECONDS),
     ).first()
     if recent_request is not None:
+        return generic_response
+
+    daily_request_count = db.query(PasswordResetToken).filter(
+        PasswordResetToken.user_id == user.id,
+        PasswordResetToken.created_at >= now - timedelta(hours=RESET_REQUEST_DAILY_WINDOW_HOURS),
+    ).count()
+    if daily_request_count >= RESET_REQUEST_DAILY_LIMIT:
         return generic_response
 
     db.query(PasswordResetToken).filter(
