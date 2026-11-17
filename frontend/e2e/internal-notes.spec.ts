@@ -45,6 +45,7 @@ test("authorised department staff can save an internal note marked private", asy
   await page.getByLabel("Password").fill("ManagerTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
   await expect(page).toHaveURL(/\/agency$/);
+  await expect(page.locator(".user-copy span")).toHaveText("department admin");
   await page.goto("/reports/701");
   await expect(page.getByRole("heading", { name: "Updates and comments" })).toBeVisible();
   await page.getByPlaceholder("Write an update or ask a question…").fill("Inspection found a damaged private utility line. Coordinate with the water authority.");
@@ -76,6 +77,7 @@ test("citizens do not receive the internal-note control", async ({ page }) => {
   await page.getByLabel("Password").fill("CitizenTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.locator(".user-copy span")).toHaveText("citizen");
   await page.goto("/reports/701");
   await expect(page.getByRole("heading", { name: "Updates and comments" })).toBeVisible();
   await expect(page.locator(".internal-note-option input[type=\"checkbox\"]")).toHaveCount(0);
