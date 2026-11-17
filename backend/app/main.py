@@ -25,6 +25,7 @@ from app.routers.public import router as public_router
 from app.routers.preferences import router as preferences_router
 from app.routers.reports import router as reports_router
 from app.routers.sla import router as sla_router
+from app.routers.staff_invitations import router as staff_invitations_router
 
 Base.metadata.create_all(bind=engine)
 migrate_existing_schema()
@@ -51,4 +52,5 @@ app.include_router(attachments_router)
 app.include_router(notifications_router)
 app.include_router(preferences_router)
 app.include_router(sla_router)
+app.include_router(staff_invitations_router)
 app.include_router(public_router)
