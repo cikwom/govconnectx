@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
-import { tokenStore } from "../services/api";
+import { api, tokenStore } from "../services/api";
 import { useAuth } from "../state/AuthContext";
 import GeographicOperationsPanel from "../components/GeographicOperationsPanel";
 import AuditLogPanel from "../components/AuditLogPanel";
@@ -14,7 +14,8 @@ type Overview = {
   users: { total: number; active: number; inactive: number; by_role: Record<string, number>; registered_today: number };
   reports: { total: number; by_status: Record<string, number>; open: number; overdue: number };
 };
-type AdminUser = { id: number; full_name: string; email: string; role: string; is_active: boolean; created_at: string | null; reports_submitted: number };
+type AdminUser = { id: number; full_name: string; email: string; role: string; is_active: boolean; department_id?: number | null; created_at: string | null; reports_submitted: number };
+type DepartmentOption = { id: number; name: string };
 type Activity = { id: string; type: string; actor: string; actor_role: string; description: string; report_id: number | null; created_at: string | null };
 type AdminReport = { id: number; title: string; description: string; category: string; status: string; address: string | null; created_at: string | null; reporter: { id: number; full_name: string; email: string } | null };
 type LocationReview = { id:number; title:string; category:string; gps_latitude:number; gps_longitude:number; incident_state_code:string|null; incident_lga_code:string|null; address:string|null; location_review_status:string; created_at:string|null };
@@ -47,6 +48,9 @@ export default function AdminDashboardPage() {
   const { t, locale } = useLanguage();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [departments, setDepartments] = useState<DepartmentOption[]>([]);
+  const [departmentSavingId, setDepartmentSavingId] = useState<number | null>(null);
+  const [notice, setNotice] = useState("");
   const [reports, setReports] = useState<AdminReport[]>([]);
   const [activity, setActivity] = useState<Activity[]>([]);
   const [oversight, setOversight] = useState<Oversight | null>(null);
@@ -60,16 +64,18 @@ export default function AdminDashboardPage() {
   const load = useCallback(async () => {
     setError("");
     try {
-      const [summary, people, reportList, events, patterns, gpsReviews] = await Promise.all([
+      const [summary, people, reportList, events, patterns, gpsReviews, departmentList] = await Promise.all([
         adminRequest<Overview>("/overview"),
         adminRequest<{ items: AdminUser[] }>("/users?limit=100"),
         adminRequest<{ items: AdminReport[] }>("/reports?limit=100"),
         adminRequest<Activity[]>("/activity?limit=35"),
         adminRequest<Oversight>("/oversight?window_days=30"),
         adminRequest<{items:LocationReview[]}>("/reports/location-review?status=pending"),
+        api.departments(),
       ]);
       setOverview(summary);
       setUsers(people.items);
+      setDepartments(departmentList);
       setReports(reportList.items);
       setActivity(events);
       setOversight(patterns);
@@ -100,6 +106,27 @@ export default function AdminDashboardPage() {
     finally { setFilterBusy(false); }
   }
 
+  async function changeDepartment(person: AdminUser, departmentId: number | null) {
+    if (!["official", "department_admin", "supervisor"].includes(person.role)) return;
+    setDepartmentSavingId(person.id);
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(`${API_URL}/api/v1/departments/members/${person.id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${tokenStore.get() ?? ""}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ department_id: departmentId }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.detail ?? `Department assignment failed (${response.status})`);
+      setUsers(current => current.map(item => item.id === person.id ? { ...item, department_id: body.department_id } : item));
+      setNotice(t("Department assignment saved."));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : t("Could not update department assignment."));
+    } finally {
+      setDepartmentSavingId(null);
+    }
+  }
   async function changeAccountStatus(person: AdminUser) {
     const nextActive = !person.is_active;
     const reason = window.prompt(nextActive
@@ -192,6 +219,7 @@ export default function AdminDashboardPage() {
       <button className="button button-primary" onClick={() => { setBusy(true); void load(); }}>{t("Refresh data")}</button>
     </section>
     {error && <p className="form-error admin-error" role="alert">{error}</p>}
+    {notice && <p className="form-success" role="status">{notice}</p>}
 
     {overview && <>
       <div className="admin-section-label">{t("PLATFORM OVERVIEW")}</div>
@@ -243,8 +271,13 @@ export default function AdminDashboardPage() {
     <section className="panel">
       <div className="panel-heading"><div><h2>{t("People on the platform")}</h2><p className="muted">{t("Account directory and each citizen’s report contribution.")}</p></div><span className="admin-count">{users.length} {t("shown")}</span></div>
       <form className="admin-search" onSubmit={searchUsers}><input aria-label="Search users" placeholder={t("Search name or email")} value={search} onChange={e => setSearch(e.target.value)} /><button className="button button-quiet button-small" disabled={filterBusy}>{t("Search users")}</button></form>
-      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{t("User")}</th><th>{t("Role")}</th><th>{t("Reports")}</th><th>{t("Account")}</th><th>{t("Joined")}</th><th>{t("Account actions")}</th></tr></thead><tbody>
-        {users.map(person => <tr key={person.id}><td><strong>{person.full_name}</strong><small>{person.email}</small></td><td><span className="admin-role">{t(person.role.replaceAll("_", " "))}</span></td><td>{person.reports_submitted}</td><td><span className={person.is_active ? "account-active" : "account-inactive"}>{person.is_active ? t("Active") : t("Inactive")}</span></td><td>{dateTime(person.created_at, locale)}</td><td><div className="form-actions"><button className={person.is_active ? "button button-quiet button-small" : "button button-primary button-small"} disabled={filterBusy || person.id === user?.id} title={person.id === user?.id ? t("You cannot suspend your own account") : undefined} onClick={() => void changeAccountStatus(person)}>{person.is_active ? t("Suspend account") : t("Reactivate account")}</button><button className="button button-quiet button-small" disabled={filterBusy || person.id === user?.id} onClick={() => void deleteAccount(person)}>{t("Delete account")}</button></div></td></tr>)}
+      <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{t("User")}</th><th>{t("Role")}</th><th>{t("Department")}</th><th>{t("Reports")}</th><th>{t("Account")}</th><th>{t("Joined")}</th><th>{t("Account actions")}</th></tr></thead><tbody>
+        {users.map(person => <tr key={person.id}><td><strong>{person.full_name}</strong><small>{person.email}</small></td><td><span className="admin-role">{t(person.role.replaceAll("_", " "))}</span></td><td>{["official", "department_admin", "supervisor"].includes(person.role)
+          ? <select className="admin-department-select" aria-label={`${t("Department")} ${person.full_name}`} value={person.department_id ?? ""} disabled={departmentSavingId === person.id || filterBusy} onChange={event => void changeDepartment(person, event.target.value ? Number(event.target.value) : null)}>
+              <option value="">{t("No department")}</option>
+              {departments.map(department => <option key={department.id} value={department.id}>{department.name}</option>)}
+            </select>
+          : <span className="muted">—</span>}</td><td>{person.reports_submitted}</td><td><span className={person.is_active ? "account-active" : "account-inactive"}>{person.is_active ? t("Active") : t("Inactive")}</span></td><td>{dateTime(person.created_at, locale)}</td><td><div className="form-actions"><button className={person.is_active ? "button button-quiet button-small" : "button button-primary button-small"} disabled={filterBusy || person.id === user?.id} title={person.id === user?.id ? t("You cannot suspend your own account") : undefined} onClick={() => void changeAccountStatus(person)}>{person.is_active ? t("Suspend account") : t("Reactivate account")}</button><button className="button button-quiet button-small" disabled={filterBusy || person.id === user?.id} onClick={() => void deleteAccount(person)}>{t("Delete account")}</button></div></td></tr>)}
       </tbody></table>{users.length === 0 && <p className="empty-state">{t("No users match this search.")}</p>}</div>
     </section>
 
