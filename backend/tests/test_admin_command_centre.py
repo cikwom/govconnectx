@@ -102,7 +102,7 @@ class AdminCommandCentreTests(unittest.TestCase):
         self.assertEqual(suspended.status_code, 200)
         self.assertTrue(suspended.json()["sessions_revoked"])
         protected = self.client.get("/api/v1/auth/security/activity", headers=citizen_headers)
-        self.assertEqual(protected.status_code, 403)
+        self.assertEqual(protected.status_code, 401)
 
         db = self.TestSession()
         try:
@@ -152,12 +152,18 @@ class AdminCommandCentreTests(unittest.TestCase):
         )
         self.assertEqual(self_suspension.status_code, 400)
         second_admin_headers = self.headers("second-admin@example.com")
-        last_admin = self.client.patch(
+        remaining_admin = self.client.patch(
             f"/api/v1/admin/users/{admin_id}/status",
             headers=second_admin_headers,
             json={"is_active": False, "reason": "Administrative access review"},
         )
-        self.assertEqual(last_admin.status_code, 409)
+        self.assertEqual(remaining_admin.status_code, 200)
+        self_suspension_as_only_admin = self.client.patch(
+            "/api/v1/admin/users/" + str(db.query(User).filter(User.email == "second-admin@example.com").one().id) + "/status",
+            headers=second_admin_headers,
+            json={"is_active": False, "reason": "Attempt to remove final administrator"},
+        )
+        self.assertEqual(self_suspension_as_only_admin.status_code, 400)
 
     def test_citizen_cannot_change_account_status(self):
         db = self.TestSession()
