@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 import json
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
@@ -101,6 +102,65 @@ def list_users(
             }
             for user in users
         ],
+    }
+
+
+class AccountStatusUpdate(BaseModel):
+    is_active: bool
+    reason: str = Field(min_length=8, max_length=500)
+
+
+@router.patch("/users/{user_id}/status")
+def update_user_account_status(
+    user_id: int,
+    payload: AccountStatusUpdate,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_roles("system_admin")),
+):
+    """Suspend or reactivate an account with reason, session revocation and audit record."""
+    reason = payload.reason.strip()
+    if len(reason) < 8:
+        raise HTTPException(status_code=422, detail="A reason of at least 8 characters is required")
+    if user_id == actor.id and not payload.is_active:
+        raise HTTPException(status_code=400, detail="Administrators cannot suspend their own account")
+
+    target = db.query(User).filter(User.id == user_id).with_for_update().first()
+    if target is None:
+        raise HTTPException(status_code=404, detail="User account not found")
+    if target.is_active == payload.is_active:
+        return {"user_id": target.id, "is_active": target.is_active, "message": "Account status is unchanged"}
+
+    if target.role == "system_admin" and target.is_active and not payload.is_active:
+        active_admins = db.query(func.count(User.id)).filter(
+            User.role == "system_admin", User.is_active.is_(True)
+        ).scalar() or 0
+        if active_admins <= 1:
+            raise HTTPException(status_code=409, detail="The last active system administrator cannot be suspended")
+
+    previous_status = target.is_active
+    target.is_active = payload.is_active
+    target.token_version += 1
+    record_audit_event(
+        db,
+        actor_user_id=actor.id,
+        action="user.account_reactivated" if payload.is_active else "user.account_suspended",
+        entity_type="user",
+        entity_id=target.id,
+        summary="Administrator changed account active status",
+        details={
+            "previous_is_active": previous_status,
+            "is_active": target.is_active,
+            "reason": reason,
+            "sessions_revoked": True,
+        },
+    )
+    db.commit()
+    db.refresh(target)
+    return {
+        "user_id": target.id,
+        "is_active": target.is_active,
+        "sessions_revoked": True,
+        "message": "Account reactivated" if target.is_active else "Account suspended",
     }
 
 
