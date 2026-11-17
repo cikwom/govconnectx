@@ -19,13 +19,24 @@ python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-Frontend:
+Frontend build and static checks:
 ```bash
 cd frontend
 npm ci
+npm run check:translations
+npm run check:accessibility
 npm run typecheck
 npm run build
 ```
+
+Browser end-to-end checks (requires Chromium):
+```bash
+cd frontend
+npm install --no-save @playwright/test
+npx playwright install chromium
+npm run test:e2e
+```
+The Playwright suite uses mocked API fixtures. It covers citizen registration/sign-in/report submission and administrator account lifecycle actions. See [TEST_EVIDENCE.md](TEST_EVIDENCE.md) for the latest CI runs and checks that remain NOT RUN.
 
 Run backend and frontend in separate terminals for browser checks. See the root README for environment setup.
 
