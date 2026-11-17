@@ -20,22 +20,39 @@ if ENVIRONMENT == "production" and len(JWT_SECRET) < 32:
 JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_MINUTES = int(os.getenv("ACCESS_TOKEN_MINUTES", "30"))
 PASSWORD_ITERATIONS = 600_000
+MIN_PASSWORD_ITERATIONS = 100_000
+MAX_PASSWORD_ITERATIONS = 1_000_000
+PASSWORD_SALT_BYTES = 16
+PASSWORD_DIGEST_BYTES = 32
 
 
 def hash_password(password: str) -> str:
-    salt = secrets.token_bytes(16)
+    salt = secrets.token_bytes(PASSWORD_SALT_BYTES)
     digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PASSWORD_ITERATIONS)
     return "pbkdf2_sha256$" + str(PASSWORD_ITERATIONS) + "$" + salt.hex() + "$" + digest.hex()
 
 
 def verify_password(password: str, stored_hash: str) -> bool:
+    """Verify a stored PBKDF2 hash without allowing attacker-controlled work factors."""
+    if not isinstance(password, str) or not isinstance(stored_hash, str):
+        return False
     try:
-        algorithm, iterations, salt_hex, digest_hex = stored_hash.split("$", 3)
+        algorithm, iterations_text, salt_hex, digest_hex = stored_hash.split("$", 3)
         if algorithm != "pbkdf2_sha256":
             return False
-        calculated = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), bytes.fromhex(salt_hex), int(iterations))
-        return hmac.compare_digest(calculated.hex(), digest_hex)
-    except (ValueError, TypeError):
+
+        iterations = int(iterations_text)
+        if not MIN_PASSWORD_ITERATIONS <= iterations <= MAX_PASSWORD_ITERATIONS:
+            return False
+
+        salt = bytes.fromhex(salt_hex)
+        expected_digest = bytes.fromhex(digest_hex)
+        if len(salt) != PASSWORD_SALT_BYTES or len(expected_digest) != PASSWORD_DIGEST_BYTES:
+            return False
+
+        calculated = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, iterations)
+        return hmac.compare_digest(calculated, expected_digest)
+    except (ValueError, TypeError, OverflowError):
         return False
 
 
