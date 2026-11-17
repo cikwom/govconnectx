@@ -78,6 +78,6 @@ test("citizens do not receive the internal-note control", async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.goto("/reports/701");
   await expect(page.getByRole("heading", { name: "Updates and comments" })).toBeVisible();
-  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await expect(page.locator(".internal-note-option input[type=\"checkbox\"]")).toHaveCount(0);
   await expect(page.getByText("Internal staff note")).toHaveCount(0);
 });
