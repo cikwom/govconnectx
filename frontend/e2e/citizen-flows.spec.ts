@@ -18,6 +18,11 @@ test("citizen registration submits the selected state and LGA", async ({ page })
     const path = new URL(route.request().url()).pathname;
     if (path === "/api/v1/locations/states") return route.fulfill({ json: states });
     if (path === "/api/v1/locations/states/LA/lgas") return route.fulfill({ json: lgas });
+    if (path === "/api/v1/preferences") return route.fulfill({ json: {
+      email_notifications: true, in_app_notifications: true, sms_notifications: false,
+      sms_consent_at: null, sms_consent_revoked_at: null, phone_number: null,
+      phone_verified_at: null, preferred_language: "en", updated_at: "2026-11-17T12:00:00Z",
+    } });
     if (path === "/api/v1/auth/register" && route.request().method() === "POST") {
       registrations.push(route.request().postDataJSON() as Record<string, unknown>);
       return route.fulfill({ status: 201, json: citizen });
@@ -54,6 +59,11 @@ test("citizen signs in and submits a report with state, LGA, ward and community"
     if (path === "/api/v1/locations/states/LA/lgas") return route.fulfill({ json: lgas });
     if (path === "/api/v1/locations/lgas/IKE/wards") return route.fulfill({ json: wards });
     if (path === "/api/v1/locations/wards/IKE-01/communities") return route.fulfill({ json: communities });
+    if (path === "/api/v1/preferences") return route.fulfill({ json: {
+      email_notifications: true, in_app_notifications: true, sms_notifications: false,
+      sms_consent_at: null, sms_consent_revoked_at: null, phone_number: null,
+      phone_verified_at: null, preferred_language: "en", updated_at: "2026-11-17T12:00:00Z",
+    } });
     if (path === "/api/v1/auth/login") {
       return route.fulfill({ json: { access_token: "e2e-test-token", token_type: "bearer", user: citizen } });
     }
@@ -76,6 +86,7 @@ test("citizen signs in and submits a report with state, LGA, ward and community"
   await page.getByLabel("Password").fill("StrongTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole("heading", { name: /Citizen Dashboard/ })).toBeVisible();
 
   await page.getByRole("button", { name: /Submit a report/ }).click();
   await page.getByLabel("Report title").fill("Blocked drainage on Market Road");
