@@ -9,10 +9,10 @@ import { useLanguage } from "../state/LanguageContext";
 export default function AppShell() {
   const { user, signOut } = useAuth();
   const { setLanguage, t } = useLanguage();
+  const staffUser = user?.role === "official" || user?.role === "department_admin" || user?.role === "supervisor";
   useEffect(() => {
     if (!user) return;
     api.preferences().then(value => {
-      // Keep a language chosen on this device; use the account preference on a new device.
       if (!localStorage.getItem("govconnectx_language")) setLanguage(value.preferred_language);
     }).catch(() => undefined);
   }, [user, setLanguage]);
@@ -23,6 +23,7 @@ export default function AppShell() {
         <NavLink className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></NavLink>
         <div className="topbar-user">
           <NavLink className="admin-nav-link" to="/community-services">{t("Community services")}</NavLink>
+          {staffUser && <NavLink className="admin-nav-link" to="/agency">{t("Agency operations")}</NavLink>}
           {user?.role === "system_admin" && <NavLink className="admin-nav-link" to="/admin">{t("Command Centre")}</NavLink>}
           <NavLink className="admin-nav-link" to="/preferences">{t("Preferences")}</NavLink>
           <LanguageSelector />

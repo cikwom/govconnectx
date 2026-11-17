@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/AppShell";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AgencyDashboardPage from "./pages/AgencyDashboardPage";
 import DashboardPage from "./pages/DashboardPage";
 import CommunityServicesPage from "./pages/CommunityServicesPage";
 import HomePage from "./pages/HomePage";
@@ -29,6 +30,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/agency" element={<AgencyDashboardPage />} />
           <Route path="/community-services" element={<CommunityServicesPage />} />
           <Route path="/preferences" element={<PreferencesPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
