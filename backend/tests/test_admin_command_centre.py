@@ -14,6 +14,7 @@ from app.models.report_history import ReportStatusHistory
 from app.models.report_assignment import ReportAssignment
 from app.models.audit_event import AuditEvent
 from app.models.user import User
+from app.models.department import Department
 from app.routers.locations import seed_location_directory
 
 
@@ -67,6 +68,42 @@ class AdminCommandCentreTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         return {"Authorization": "Bearer " + response.json()["access_token"]}
 
+    def test_system_admin_can_assign_staff_to_department_and_clear_assignment(self):
+        db = self.TestSession()
+        try:
+            department = Department(name="Public Works", is_active=True)
+            officer = User(email="officer@example.com", full_name="Field Officer", password_hash=hash_password("Test-Password-123"), role="official", is_active=True)
+            db.add_all([department, officer])
+            db.commit()
+            department_id = department.id
+            officer_id = officer.id
+        finally:
+            db.close()
+        headers = self.headers("admin@example.com")
+        assigned = self.client.patch(f"/api/v1/departments/members/{officer_id}", headers=headers, json={"department_id": department_id})
+        self.assertEqual(assigned.status_code, 200)
+        self.assertEqual(assigned.json()["department_id"], department_id)
+        cleared = self.client.patch(f"/api/v1/departments/members/{officer_id}", headers=headers, json={"department_id": None})
+        self.assertEqual(cleared.status_code, 200)
+        self.assertIsNone(cleared.json()["department_id"])
+
+    def test_only_system_admin_can_assign_staff_and_citizens_cannot_be_assigned(self):
+        db = self.TestSession()
+        try:
+            department = Department(name="Works Department", is_active=True)
+            officer = User(email="officer@example.com", full_name="Field Officer", password_hash=hash_password("Test-Password-123"), role="official", is_active=True)
+            citizen = db.query(User).filter(User.email == "citizen@example.com").one()
+            db.add_all([department, officer])
+            db.commit()
+            department_id = department.id
+            officer_id = officer.id
+            citizen_id = citizen.id
+        finally:
+            db.close()
+        citizen_attempt = self.client.patch(f"/api/v1/departments/members/{officer_id}", headers=self.headers("citizen@example.com"), json={"department_id": department_id})
+        self.assertEqual(citizen_attempt.status_code, 403)
+        admin_attempt = self.client.patch(f"/api/v1/departments/members/{citizen_id}", headers=self.headers("admin@example.com"), json={"department_id": department_id})
+        self.assertEqual(admin_attempt.status_code, 400)
     def test_citizen_cannot_access_admin_overview(self):
         response = self.client.get("/api/v1/admin/overview", headers=self.headers("citizen@example.com"))
         self.assertEqual(response.status_code, 403)

@@ -35,6 +35,10 @@ const dictionaries: Record<Language, Dictionary> = {
     "Internal staff note": "Internal staff note",
     "Only authorised staff can view this note. It will not be visible to the citizen.": "Only authorised staff can view this note. It will not be visible to the citizen.",
     "Save internal note": "Save internal note",
+    "Department": "Department",
+    "No department": "No department",
+    "Department assignment saved.": "Department assignment saved.",
+    "Could not update department assignment.": "Could not update department assignment.",
   },
   ha: {
     "No states are currently available. Please try again later.": "Ba a samu jihohi a yanzu ba. Da fatan za a sake gwadawa daga baya.",
@@ -545,6 +549,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "Internal staff note": "Bayanan sirri na ma'aikata",
     "Only authorised staff can view this note. It will not be visible to the citizen.": "Ma'aikatan da aka ba izini kawai za su iya ganin wannan bayani. Dan ƙasa ba zai gan shi ba.",
     "Save internal note": "Ajiye bayanin sirri",
+    "No department": "Babu sashe",
+    "Department assignment saved.": "An ajiye haɗa ma'aikaci da sashe.",
+    "Could not update department assignment.": "An kasa sabunta haɗa ma'aikaci da sashe.",
   },
   yo: {
     "No states are currently available. Please try again later.": "Ko si ipinlẹ kankan lọwọlọwọ. Jọ̀wọ́ tún gbìyànjú lẹ́yìn náà.",
@@ -1055,6 +1062,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "Internal staff note": "Àkọsílẹ̀ àṣírí òṣìṣẹ́",
     "Only authorised staff can view this note. It will not be visible to the citizen.": "Àwọn òṣìṣẹ́ tó ní àṣẹ nìkan ló lè rí àkọsílẹ̀ yìí. Ọmọ ìlú kò ní rí i.",
     "Save internal note": "Fi àkọsílẹ̀ àṣírí pamọ́",
+    "No department": "Kò sí ẹ̀ka",
+    "Department assignment saved.": "A ti fi yíyan ẹ̀ka pamọ́.",
+    "Could not update department assignment.": "A kò lè ṣe àtúnṣe yíyan ẹ̀ka.",
   },
   ig: {
     "No states are currently available. Please try again later.": "Enweghị steeti dị ugbu a. Biko nwaa ọzọ ma emechaa.",
@@ -1564,6 +1574,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "Internal staff note": "Ihe ndekọ nzuzo ndị ọrụ",
     "Only authorised staff can view this note. It will not be visible to the citizen.": "Naanị ndị ọrụ enyere ikike nwere ike ịhụ ihe ndekọ a. Nwa amaala agaghị ahụ ya.",
     "Save internal note": "Chekwaa ihe ndekọ nzuzo",
+    "No department": "Enweghị ngalaba",
+    "Department assignment saved.": "Echekwara nhọpụta ngalaba.",
+    "Could not update department assignment.": "Enweghị ike imelite nhọpụta ngalaba.",
   },
 
 };
