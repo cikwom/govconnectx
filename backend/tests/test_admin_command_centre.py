@@ -229,8 +229,6 @@ class AdminCommandCentreTests(unittest.TestCase):
         self.assertNotIn(citizen_id, [item["id"] for item in users_after_deletion.json()["items"]])
         overview_after_deletion = self.client.get("/api/v1/admin/overview", headers=admin_headers)
         self.assertEqual(overview_after_deletion.json()["users"]["total"], 1)
-        finally:
-            db.close()
 
         recreated = self.client.post(
             "/api/v1/auth/register",
