@@ -91,3 +91,34 @@ test("department staff receive a scoped queue and can assign and progress a repo
     status: "IN_PROGRESS", message: "Field officer dispatched for inspection.",
   });
 });
+
+
+test("field officers land on their individual assignment view", async ({ page }) => {
+  const officerUser = { id: 88, email: "officer@example.test", full_name: "Field Officer", role: "official", department_id: 5, is_active: true };
+  await page.route("http://localhost:8000/api/v1/**", async route => {
+    const path = new URL(route.request().url()).pathname;
+    if (path === "/api/v1/auth/login") return route.fulfill({ json: { access_token: "officer-e2e-token", token_type: "bearer", user: officerUser } });
+    if (path === "/api/v1/preferences") return route.fulfill({ json: {
+      email_notifications: true, in_app_notifications: true, sms_notifications: false,
+      sms_consent_at: null, sms_consent_revoked_at: null, phone_number: null,
+      phone_verified_at: null, preferred_language: "en", updated_at: "2026-11-17T12:00:00Z",
+    } });
+    if (path === "/api/v1/reports") return route.fulfill({ json: [{ ...report, assigned_to_user_id: 88 }] });
+    if (path === "/api/v1/departments/me/performance") return route.fulfill({ json: {
+      department_id: 5, scope: "individual_assignments", total_reports: 1, open_reports: 1,
+      resolved_reports: 0, overdue_reports: 0, resolution_rate_percent: 0,
+      average_resolution_hours: null, status_counts: { ASSIGNED: 1 },
+      measurement_note: "Only this officer's assignments are included.",
+    } });
+    return route.fulfill({ status: 200, json: [] });
+  });
+
+  await page.goto("/admin/login");
+  await page.getByLabel("Email address").fill("officer@example.test");
+  await page.getByLabel("Password").fill("OfficerTestPassword123");
+  await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
+  await expect(page).toHaveURL(/\/agency$/);
+  await expect(page.getByRole("heading", { name: "My field assignments" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My assigned reports" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Blocked drainage on Market Road/ })).toBeVisible();
+});
