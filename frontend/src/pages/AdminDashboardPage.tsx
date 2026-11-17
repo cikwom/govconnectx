@@ -8,6 +8,7 @@ import NotificationDeliveryPanel from "../components/NotificationDeliveryPanel";
 import CommunityModerationPanel from "../components/CommunityModerationPanel";
 import GeographicDirectoryPanel from "../components/GeographicDirectoryPanel";
 import GeographicBulkImportPanel from "../components/GeographicBulkImportPanel";
+import StaffInvitationPanel from "../components/StaffInvitationPanel";
 import { useLanguage } from "../state/LanguageContext";
 
 type Overview = {
@@ -267,6 +268,8 @@ export default function AdminDashboardPage() {
         <p className="oversight-notice">{oversight.notice}</p>
       </>}
     </section>
+
+    <StaffInvitationPanel />
 
     <section className="panel">
       <div className="panel-heading"><div><h2>{t("People on the platform")}</h2><p className="muted">{t("Account directory and each citizen’s report contribution.")}</p></div><span className="admin-count">{users.length} {t("shown")}</span></div>
