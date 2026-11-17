@@ -27,8 +27,8 @@ function sourceFiles(directory) {
 const missingImageAlt = [];
 for (const file of sourceFiles(sourceRoot).filter(file => file.endsWith(".tsx") || file.endsWith(".ts"))) {
   const source = fs.readFileSync(file, "utf8");
-  for (const match of source.matchAll(/<img\\b[^>]*>/gs)) {
-    if (!/\\balt\\s*=/.test(match[0])) missingImageAlt.push(path.relative(root, file));
+  for (const match of source.matchAll(/<img\b[^>]*>/gs)) {
+    if (!/\balt\s*=/.test(match[0])) missingImageAlt.push(path.relative(root, file));
   }
 }
 
@@ -38,18 +38,18 @@ const checks = [
   ["prefers-reduced-motion", css.includes("prefers-reduced-motion:reduce"), "reduced-motion support"],
   ["prefers-contrast", css.includes("prefers-contrast: more"), "increased-contrast support"],
   ["forced-colors", css.includes("forced-colors: active"), "forced-colors support"],
-  ["44px controls", /min-height:\\s*44px/.test(css), "minimum interactive control size"],
-  ["24px checkboxes/radios", /input\\[type="checkbox"\\][\\s\\S]*?width:\\s*24px/.test(css) && /input\\[type="radio"\\][\\s\\S]*?height:\\s*24px/.test(css), "checkbox and radio target size"],
+  ["44px controls", /min-height:\s*44px/.test(css), "minimum interactive control size"],
+  ["24px checkboxes/radios", /input\[type="checkbox"\][\s\S]*?width:\s*24px/.test(css) && /input\[type="radio"\][\s\S]*?height:\s*24px/.test(css), "checkbox and radio target size"],
   ["theme toggle name", themeToggle.includes("aria-label=") && themeToggle.includes("nextTheme"), "accessible theme toggle name"],
   ["document language", languageContext.includes("document.documentElement.lang = language"), "document language follows selected language"],
   ["image alternative text", missingImageAlt.length === 0, missingImageAlt.length ? "images missing alt text: " + [...new Set(missingImageAlt)].join(", ") : "all JSX images have alt text"],
 ];
 
 for (const [name, page] of authPages) {
-  const controls = [...page.matchAll(/<(input|select|textarea)\\b/g)].length;
-  const labels = [...page.matchAll(/<label\\b/g)].length;
+  const controls = [...page.matchAll(/<(input|select|textarea)\b/g)].length;
+  const labels = [...page.matchAll(/<label\b/g)].length;
   checks.push([name + " labelled controls", labels >= controls, name + " form controls have associated label wrappers (" + labels + " labels / " + controls + " controls)"]);
-  checks.push([name + " main landmark", /<main\\b/.test(page), name + " page has a main landmark"]);
+  checks.push([name + " main landmark", /<main\b/.test(page), name + " page has a main landmark"]);
   checks.push([name + " error announcement", /role="alert"/.test(page), name + " validation errors use an alert region"]);
 }
 
