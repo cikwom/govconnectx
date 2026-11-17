@@ -1,5 +1,6 @@
 import re
 import unittest
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -156,6 +157,32 @@ class AuthenticationApiTests(unittest.TestCase):
             self.assertEqual(known.status_code, 200)
             self.assertEqual(send_email.call_count, 0)
         self.assertIn("If an account matches", known.json()["message"])
+
+    def test_password_reset_requests_are_capped_per_account_per_day(self):
+        self.assertEqual(self.register("reset-cap@example.com").status_code, 201)
+        db = self.TestSession()
+        try:
+            user = db.query(User).filter(User.email == "reset-cap@example.com").first()
+            now = datetime.now(timezone.utc)
+            for index in range(5):
+                db.add(PasswordResetToken(
+                    user_id=user.id,
+                    token_hash=f"daily-cap-token-{index}".ljust(64, "0"),
+                    expires_at=now + timedelta(minutes=30),
+                    created_at=now - timedelta(minutes=2 + index),
+                ))
+            db.commit()
+        finally:
+            db.close()
+
+        with patch("app.routers.auth.send_notification_email") as send_email:
+            response = self.client.post(
+                "/api/v1/auth/password-reset/request",
+                json={"email": "reset-cap@example.com"},
+            )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("If an account matches", response.json()["message"])
+        self.assertEqual(send_email.call_count, 0)
 
     def test_successful_login_is_recorded_in_security_activity(self):
         self.assertEqual(self.register("activity@example.com").status_code, 201)
