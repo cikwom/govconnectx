@@ -37,7 +37,7 @@ test("citizen registration submits the selected state and LGA", async ({ page })
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Create account" }).click();
 
-  await expect(page).toHaveURL(/\\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
   expect(registrations).toHaveLength(1);
   expect(registrations[0]).toMatchObject({
     email: "citizen@example.test", home_state_code: "LA", home_lga_code: "IKE",
@@ -75,7 +75,7 @@ test("citizen signs in and submits a report with state, LGA, ward and community"
   await page.getByLabel("Email address").fill("citizen@example.test");
   await page.getByLabel("Password").fill("StrongTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
-  await expect(page).toHaveURL(/\\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 
   await page.getByRole("button", { name: /Submit a report/ }).click();
   await page.getByLabel("Report title").fill("Blocked drainage on Market Road");
