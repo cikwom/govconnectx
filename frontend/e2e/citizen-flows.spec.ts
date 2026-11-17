@@ -86,7 +86,7 @@ test("citizen signs in and submits a report with state, LGA, ward and community"
   await page.getByLabel("Password").fill("StrongTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole("heading", { name: /Citizen Dashboard/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Good day/ })).toBeVisible();
 
   await page.getByRole("button", { name: /Submit a report/ }).click();
   await page.getByLabel("Report title").fill("Blocked drainage on Market Road");
