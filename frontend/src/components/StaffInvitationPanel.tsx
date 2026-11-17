@@ -4,11 +4,17 @@ import { useLanguage } from "../state/LanguageContext";
 
 type Invitation = { id: number; email: string; full_name: string; role: string; department_id: number | null; expires_at: string; accepted_at: string | null; revoked_at: string | null; status: string; created_at: string | null };
 type Department = { id: number; name: string };
+type StateOption = { code: string; name: string };
+type LgaOption = { code: string; name: string; state_code: string };
 
 export default function StaffInvitationPanel() {
   const { t } = useLanguage();
   const [items, setItems] = useState<Invitation[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [states, setStates] = useState<StateOption[]>([]);
+  const [lgas, setLgas] = useState<LgaOption[]>([]);
+  const [stateCode, setStateCode] = useState("");
+  const [lgaCode, setLgaCode] = useState("");
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("official");
@@ -20,9 +26,10 @@ export default function StaffInvitationPanel() {
 
   const load = useCallback(async () => {
     try {
-      const [data, departmentList] = await Promise.all([api.staffInvitations(), api.departments()]);
+      const [data, departmentList, stateList] = await Promise.all([api.staffInvitations(), api.departments(), api.states()]);
       setItems(data.items ?? []);
       setDepartments(departmentList);
+      setStates(stateList);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t("Could not load staff invitations."));
     }
@@ -32,10 +39,10 @@ export default function StaffInvitationPanel() {
   async function createInvitation(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError(""); setNotice(""); setDevUrl("");
     try {
-      const body = await api.createStaffInvitation({ email, full_name: fullName, role, department_id: departmentId ? Number(departmentId) : null });
+      const body = await api.createStaffInvitation({ email, full_name: fullName, role, department_id: departmentId ? Number(departmentId) : null, home_state_code: stateCode || null, home_lga_code: lgaCode || null });
       setNotice(t("Invitation created. Email delivery will be attempted in the background."));
       setDevUrl(body.development_invitation_url ?? "");
-      setEmail(""); setFullName(""); setRole("official"); setDepartmentId("");
+      setEmail(""); setFullName(""); setRole("official"); setDepartmentId(""); setStateCode(""); setLgaCode(""); setLgas([]);
       await load();
     } catch (reason) { setError(reason instanceof Error ? reason.message : t("Could not create invitation.")); }
     finally { setBusy(false); }
@@ -59,6 +66,8 @@ export default function StaffInvitationPanel() {
       <input aria-label={t("Staff email")} type="email" placeholder={t("Staff email")} value={email} onChange={event => setEmail(event.target.value)} required maxLength={255}/>
       <select aria-label={t("Staff role")} value={role} onChange={event => setRole(event.target.value)}><option value="official">{t("Official / Field officer")}</option><option value="supervisor">{t("Supervisor")}</option><option value="department_admin">{t("Department administrator")}</option></select>
       <select aria-label={t("Department")} value={departmentId} onChange={event => setDepartmentId(event.target.value)}><option value="">{t("No department yet")}</option>{departments.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select>
+      <select aria-label={t("State (optional)")} value={stateCode} onChange={async event => { const next = event.target.value; setStateCode(next); setLgaCode(""); setLgas(next ? await api.lgas(next) : []); }}><option value="">{t("No geographic restriction")}</option>{states.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select>
+      <select aria-label={t("Local government area")} value={lgaCode} disabled={!stateCode} onChange={event => setLgaCode(event.target.value)}><option value="">{t("Select LGA (optional)")}</option>{lgas.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select>
       <button className="button button-primary" disabled={busy || !email.trim() || fullName.trim().length < 2}>{busy ? t("Working…") : t("Create staff invitation")}</button>
     </form>
     <div className="admin-report-list">{items.map(item => <article className="admin-report" key={item.id}><div className="admin-report-top"><div><strong>{item.full_name}</strong><p>{item.email} · {t(item.role.replaceAll("_", " "))}</p></div><span className={item.status === "pending" ? "account-active" : "account-inactive"}>{t(item.status)}</span></div><p className="muted">{t("Expires:")} {new Date(item.expires_at).toLocaleString()}</p>{item.status === "pending" && <button className="button button-quiet button-small" disabled={busy} onClick={() => void revoke(item.id)}>{t("Revoke invitation")}</button>}</article>)}</div>
