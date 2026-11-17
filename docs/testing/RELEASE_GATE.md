@@ -7,8 +7,8 @@ Use this before merging each feature PR. A green build is necessary but does not
 - [ ] PR targets the intended base branch and is limited to the described phase.
 - [ ] No uncommitted/unpushed work is left locally; the PR head matches the tested commit.
 - [ ] Backend test workflow passes on the latest PR head.
-- [ ] Frontend typecheck/build workflow passes on the latest PR head.
-- [ ] Dependency audit/security workflow passes where configured; findings are reviewed, not blindly ignored.
+- [ ] Frontend typecheck/build workflow passes on the latest PR head, including Playwright browser tests where configured.
+- [ ] Production dependencies pass the high-severity audit; the full build-tool dependency tree is audited at critical severity until upstream publishes a fix for the newly disclosed unfixed picomatch advisory. Review and track all findings rather than blindly ignoring them.
 - [ ] Database compatibility/migration tests pass where models or schema change.
 - [ ] Authorization tests cover both allowed and denied roles/resources.
 - [ ] API request/response contracts match frontend types and usage.
@@ -29,7 +29,7 @@ Use this before merging each feature PR. A green build is necessary but does not
 - [ ] Confirm logging/monitoring and an incident/rollback procedure.
 - [ ] Verify no test accounts, test-only settings or sample secrets are enabled in production.
 
-## Current known release blockers
+## Automated browser coverage\n\nThe frontend CI runs Playwright Chromium checks for citizen registration, sign-in, and report submission with State/LGA/Ward/Community selection. These tests use isolated mocked API fixtures; they do not replace a live-backend/manual production regression run.\n\n## Current known release blockers
 
 - Manual end-to-end browser checks for Phase 6 have not yet been recorded.
 - Evidence files currently use local filesystem storage; production needs durable private storage and backups.
