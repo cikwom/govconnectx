@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import json
+import secrets
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -7,9 +8,15 @@ from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.dependencies import require_roles
+from app.core.security import hash_password
 from app.database import get_db
 from app.models.report import Report
 from app.models.notification_delivery import NotificationDelivery
+from app.models.notification import Notification
+from app.models.auth_security_event import AuthSecurityEvent
+from app.models.password_reset_token import PasswordResetToken
+from app.models.phone_verification import PhoneVerification
+from app.models.user_preference import UserPreference
 from app.models.audit_event import AuditEvent, record_audit_event
 from app.models.location import LocalGovernmentArea, State
 from app.models.report_assignment import ReportAssignment
@@ -161,6 +168,85 @@ def update_user_account_status(
         "is_active": target.is_active,
         "sessions_revoked": True,
         "message": "Account reactivated" if target.is_active else "Account suspended",
+    }
+
+
+class AccountDeletionRequest(BaseModel):
+    reason: str = Field(min_length=8, max_length=500)
+
+
+@router.delete("/users/{user_id}")
+def anonymize_user_account(
+    user_id: int,
+    payload: AccountDeletionRequest,
+    db: Session = Depends(get_db),
+    actor: User = Depends(require_roles("system_admin")),
+):
+    """Anonymize an account while preserving report and audit references."""
+    reason = payload.reason.strip()
+    if len(reason) < 8:
+        raise HTTPException(status_code=422, detail="A reason of at least 8 characters is required")
+    if user_id == actor.id:
+        raise HTTPException(status_code=400, detail="Administrators cannot delete their own account")
+
+    target = db.query(User).filter(User.id == user_id).with_for_update().first()
+    if target is None:
+        raise HTTPException(status_code=404, detail="User account not found")
+    if target.role == "deleted":
+        raise HTTPException(status_code=409, detail="This account has already been deleted")
+
+    if target.role == "system_admin" and target.is_active:
+        active_admins = db.query(func.count(User.id)).filter(
+            User.role == "system_admin", User.is_active.is_(True)
+        ).scalar() or 0
+        if active_admins <= 1:
+            raise HTTPException(status_code=409, detail="The last active system administrator cannot be deleted")
+
+    previous_email = target.email
+    db.query(PasswordResetToken).filter(PasswordResetToken.user_id == target.id).delete(synchronize_session=False)
+    db.query(PhoneVerification).filter(PhoneVerification.user_id == target.id).delete(synchronize_session=False)
+    db.query(UserPreference).filter(UserPreference.user_id == target.id).delete(synchronize_session=False)
+    db.query(Notification).filter(Notification.recipient_user_id == target.id).delete(synchronize_session=False)
+    db.query(NotificationDelivery).filter(NotificationDelivery.recipient_user_id == target.id).delete(synchronize_session=False)
+    db.query(AuthSecurityEvent).filter(AuthSecurityEvent.user_id == target.id).update(
+        {"ip_address": None, "user_agent": None}, synchronize_session=False
+    )
+
+    target.email = f"deleted-{target.id}@accounts.govconnectx.invalid"
+    target.full_name = "Deleted account"
+    target.password_hash = hash_password(secrets.token_urlsafe(48))
+    target.role = "deleted"
+    target.department_id = None
+    target.home_state_code = None
+    target.home_lga_code = None
+    target.phone_number = None
+    target.phone_verified_at = None
+    target.is_active = False
+    target.token_version += 1
+
+    record_audit_event(
+        db,
+        actor_user_id=actor.id,
+        action="user.account_anonymized",
+        entity_type="user",
+        entity_id=target.id,
+        summary="Administrator anonymized a user account while preserving civic report records",
+        details={
+            "reason": reason,
+            "previous_email": previous_email,
+            "email_reusable": True,
+            "reports_preserved": True,
+            "sessions_revoked": True,
+        },
+    )
+    db.commit()
+    return {
+        "user_id": target.id,
+        "anonymized": True,
+        "email_reusable": True,
+        "reports_preserved": True,
+        "sessions_revoked": True,
+        "message": "Account details anonymized. Civic reports and audit references were preserved.",
     }
 
 
