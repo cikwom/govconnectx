@@ -14,6 +14,7 @@ import PreferencesPage from "./pages/PreferencesPage";
 import TransparencyPage from "./pages/TransparencyPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import StaffInvitationPage from "./pages/StaffInvitationPage";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/admin/login" element={<LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/staff-invitation" element={<StaffInvitationPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
