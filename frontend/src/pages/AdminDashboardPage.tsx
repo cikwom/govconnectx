@@ -135,6 +135,49 @@ export default function AdminDashboardPage() {
       setFilterBusy(false);
     }
   }
+  async function deleteAccount(person: AdminUser) {
+    if (person.id === user?.id) return;
+    if (!window.confirm(t("Delete this account? Personal details will be anonymized, civic reports and audit records will be retained, and the email can be used for a new account."))) return;
+    const reason = window.prompt(t("Enter the reason for deleting this account (at least 8 characters):"));
+    if (reason === null) return;
+    if (reason.trim().length < 8) {
+      setError(t("Please provide a reason of at least 8 characters."));
+      return;
+    }
+    setError("");
+    setFilterBusy(true);
+    try {
+      const response = await fetch(`${API_URL}/api/v1/admin/users/${person.id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${tokenStore.get() ?? ""}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(body.detail ?? `Account deletion failed (${response.status})`);
+      setUsers(current => current.filter(item => item.id !== person.id));
+      setOverview(current => {
+        if (!current) return current;
+        const byRole = { ...current.users.by_role };
+        byRole[person.role] = Math.max(0, (byRole[person.role] ?? 0) - 1);
+        if (byRole[person.role] === 0) delete byRole[person.role];
+        return {
+          ...current,
+          users: {
+            ...current.users,
+            total: Math.max(0, current.users.total - 1),
+            active: Math.max(0, current.users.active - (person.is_active ? 1 : 0)),
+            inactive: Math.max(0, current.users.inactive - (person.is_active ? 0 : 1)),
+            by_role: byRole,
+          },
+        };
+      });
+      window.alert(t("Account anonymized. The email can now be used for a new account."));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("Could not delete account"));
+    } finally {
+      setFilterBusy(false);
+    }
+  }
   async function searchReports(e: React.FormEvent) {
     e.preventDefault(); setFilterBusy(true);
     try { const data = await adminRequest<{ items: AdminReport[] }>(`/reports?limit=100&search=${encodeURIComponent(reportSearch)}`); setReports(data.items); }
@@ -201,7 +244,7 @@ export default function AdminDashboardPage() {
       <div className="panel-heading"><div><h2>{t("People on the platform")}</h2><p className="muted">{t("Account directory and each citizen’s report contribution.")}</p></div><span className="admin-count">{users.length} {t("shown")}</span></div>
       <form className="admin-search" onSubmit={searchUsers}><input aria-label="Search users" placeholder={t("Search name or email")} value={search} onChange={e => setSearch(e.target.value)} /><button className="button button-quiet button-small" disabled={filterBusy}>{t("Search users")}</button></form>
       <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>{t("User")}</th><th>{t("Role")}</th><th>{t("Reports")}</th><th>{t("Account")}</th><th>{t("Joined")}</th><th>{t("Account actions")}</th></tr></thead><tbody>
-        {users.map(person => <tr key={person.id}><td><strong>{person.full_name}</strong><small>{person.email}</small></td><td><span className="admin-role">{t(person.role.replaceAll("_", " "))}</span></td><td>{person.reports_submitted}</td><td><span className={person.is_active ? "account-active" : "account-inactive"}>{person.is_active ? t("Active") : t("Inactive")}</span></td><td>{dateTime(person.created_at, locale)}</td><td><button className={person.is_active ? "button button-quiet button-small" : "button button-primary button-small"} disabled={filterBusy || person.id === user?.id} title={person.id === user?.id ? t("You cannot suspend your own account") : undefined} onClick={() => void changeAccountStatus(person)}>{person.is_active ? t("Suspend account") : t("Reactivate account")}</button></td></tr>)}
+        {users.map(person => <tr key={person.id}><td><strong>{person.full_name}</strong><small>{person.email}</small></td><td><span className="admin-role">{t(person.role.replaceAll("_", " "))}</span></td><td>{person.reports_submitted}</td><td><span className={person.is_active ? "account-active" : "account-inactive"}>{person.is_active ? t("Active") : t("Inactive")}</span></td><td>{dateTime(person.created_at, locale)}</td><td><div className="form-actions"><button className={person.is_active ? "button button-quiet button-small" : "button button-primary button-small"} disabled={filterBusy || person.id === user?.id} title={person.id === user?.id ? t("You cannot suspend your own account") : undefined} onClick={() => void changeAccountStatus(person)}>{person.is_active ? t("Suspend account") : t("Reactivate account")}</button><button className="button button-quiet button-small" disabled={filterBusy || person.id === user?.id} onClick={() => void deleteAccount(person)}>{t("Delete account")}</button></div></td></tr>)}
       </tbody></table>{users.length === 0 && <p className="empty-state">{t("No users match this search.")}</p>}</div>
     </section>
 
