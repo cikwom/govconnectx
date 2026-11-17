@@ -31,10 +31,10 @@ def get_overview(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles("system_admin")),
 ):
-    total_users = db.query(func.count(User.id)).scalar() or 0
-    active_users = db.query(func.count(User.id)).filter(User.is_active.is_(True)).scalar() or 0
+    total_users = db.query(func.count(User.id)).filter(User.role != "deleted").scalar() or 0
+    active_users = db.query(func.count(User.id)).filter(User.role != "deleted", User.is_active.is_(True)).scalar() or 0
     role_counts = dict(
-        db.query(User.role, func.count(User.id)).group_by(User.role).all()
+        db.query(User.role, func.count(User.id)).filter(User.role != "deleted").group_by(User.role).all()
     )
     total_reports = db.query(func.count(Report.id)).scalar() or 0
     status_counts = dict(
@@ -53,7 +53,7 @@ def get_overview(
     )
     new_users_30d = (
         db.query(func.count(User.id))
-        .filter(User.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0))
+        .filter(User.role != "deleted", User.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0))
         .scalar()
         or 0
     )
@@ -84,7 +84,7 @@ def list_users(
     db: Session = Depends(get_db),
     _: User = Depends(require_roles("system_admin")),
 ):
-    query = db.query(User)
+    query = db.query(User).filter(User.role != "deleted")
     if search:
         term = f"%{search.strip()}%"
         query = query.filter(or_(User.full_name.ilike(term), User.email.ilike(term)))
@@ -202,7 +202,6 @@ def anonymize_user_account(
         if active_admins <= 1:
             raise HTTPException(status_code=409, detail="The last active system administrator cannot be deleted")
 
-    previous_email = target.email
     db.query(PasswordResetToken).filter(PasswordResetToken.user_id == target.id).delete(synchronize_session=False)
     db.query(PhoneVerification).filter(PhoneVerification.user_id == target.id).delete(synchronize_session=False)
     db.query(UserPreference).filter(UserPreference.user_id == target.id).delete(synchronize_session=False)
@@ -233,7 +232,6 @@ def anonymize_user_account(
         summary="Administrator anonymized a user account while preserving civic report records",
         details={
             "reason": reason,
-            "previous_email": previous_email,
             "email_reusable": True,
             "reports_preserved": True,
             "sessions_revoked": True,
@@ -297,6 +295,7 @@ def get_activity(
 
     registration_rows = (
         db.query(User)
+        .filter(User.role != "deleted")
         .order_by(User.created_at.desc())
         .limit(limit)
         .all()
