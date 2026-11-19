@@ -46,7 +46,14 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
   await invitationPanel.getByRole("button", { name: "Create staff invitation" }).click();
   await expect(page.getByText("Invitation created. Email delivery will be attempted in the background.")).toBeVisible();
   await expect(page.getByLabel("Development invitation link")).toHaveValue(/sample-token/);
-  expect(created).toEqual([{ email: "officer@example.test", full_name: "Field Officer", role: "official", department_id: 5 }]);
+  expect(created).toEqual([{
+    email: "officer@example.test",
+    full_name: "Field Officer",
+    role: "official",
+    department_id: 5,
+    home_state_code: null,
+    home_lga_code: null,
+  }]);
   page.once("dialog", dialog => dialog.accept());
   await page.getByRole("button", { name: "Revoke invitation" }).click();
   await expect(page.getByText("revoked", { exact: true })).toBeVisible();
