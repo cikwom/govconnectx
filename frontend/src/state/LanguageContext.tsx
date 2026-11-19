@@ -614,7 +614,6 @@ const dictionaries: Record<Language, Dictionary> = {
     "Create staff invitation": "Ƙirƙiri gayyatar ma’aikaci",
     "Expires:": "Yana ƙarewa:",
     "Revoke invitation": "Soke gayyata",
-    "No staff invitations yet.": "Babu gayyatar ma’aikata tukuna.",
     "expired": "ta ƙare",
     "accepted": "an karɓa",
     "revoked": "an soke",
@@ -1166,7 +1165,6 @@ const dictionaries: Record<Language, Dictionary> = {
     "Create staff invitation": "Ṣẹ̀dá ìpè òṣìṣẹ́",
     "Expires:": "Ó máa parí:",
     "Revoke invitation": "Fagilé ìpè",
-    "No staff invitations yet.": "Kò tíì sí ìpè sí àwọn òṣìṣẹ́.",
     "expired": "ó ti parí",
     "accepted": "a ti gbà á",
     "revoked": "a fagilé",
@@ -1717,7 +1715,6 @@ const dictionaries: Record<Language, Dictionary> = {
     "Create staff invitation": "Mepụta ọkpụkpọ onye ọrụ",
     "Expires:": "Ọ ga-agwụ:",
     "Revoke invitation": "Kagbuo ọkpụkpọ",
-    "No staff invitations yet."
     "expired": "agwụla",
     "accepted": "anabatala",
     "revoked": "akagbuola",
