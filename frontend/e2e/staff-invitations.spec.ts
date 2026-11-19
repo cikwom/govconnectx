@@ -32,13 +32,14 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
   // The dashboard mounts several data panels after authentication. Wait for the
   // invitation panel's first load to finish before interacting with its form;
   // otherwise the initial React state updates can detach the input mid-fill.
-  await expect(page.getByText("No staff invitations yet.")).toBeVisible();
-  await expect(page.getByLabel("Department").last().locator("option", { hasText: "Public Works" })).toHaveCount(1);
-  await page.getByLabel("Staff full name").fill("Field Officer");
-  await page.getByLabel("Staff email").fill("officer@example.test");
-  await page.getByLabel("Staff role").selectOption("official");
-  await page.getByLabel("Department").last().selectOption("5");
-  await page.getByRole("button", { name: "Create staff invitation" }).click();
+  const invitationPanel = page.locator("section.panel").filter({ has: page.getByRole("heading", { name: "Staff invitations" }) });
+  await expect(invitationPanel.getByText("No staff invitations yet.")).toBeVisible();
+  await expect(invitationPanel.getByLabel("Department").locator("option", { hasText: "Public Works" })).toHaveCount(1);
+  await invitationPanel.getByLabel("Staff full name").fill("Field Officer");
+  await invitationPanel.getByLabel("Staff email").fill("officer@example.test");
+  await invitationPanel.getByLabel("Staff role").selectOption("official");
+  await invitationPanel.getByLabel("Department").selectOption("5");
+  await invitationPanel.getByRole("button", { name: "Create staff invitation" }).click();
   await expect(page.getByText("Invitation created. Email delivery will be attempted in the background.")).toBeVisible();
   await expect(page.getByLabel("Development invitation link")).toHaveValue(/sample-token/);
   expect(created).toEqual([{ email: "officer@example.test", full_name: "Field Officer", role: "official", department_id: 5 }]);
