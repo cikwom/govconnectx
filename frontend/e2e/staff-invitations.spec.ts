@@ -17,6 +17,7 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
     if (path === "/api/v1/admin/geography/overview") return route.fulfill({ json: { country: "Nigeria", total_states: 0, total_lgas: 0, geopolitical_zones: [] } });
     if (path === "/api/v1/admin/reports/unassigned") return route.fulfill({ json: { total: 0, items: [] } });
     if (path === "/api/v1/admin/notification-deliveries") return route.fulfill({ json: { summary: { by_status: {}, by_channel: {}, queued: 0, sending: 0, sent: 0, failed: 0 }, items: [] } });
+    if (path === "/api/v1/admin/audit-logs") return route.fulfill({ json: { items: [] } });
     if (path === "/api/v1/admin/users") return route.fulfill({ json: { items: [{ ...admin, reports_submitted: 0, created_at: "2026-11-01T10:00:00Z" }] } });
     if (path === "/api/v1/admin/reports") return route.fulfill({ json: { items: [] } });
     if (path === "/api/v1/admin/activity") return route.fulfill({ json: [] });
