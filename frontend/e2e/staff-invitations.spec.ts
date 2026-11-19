@@ -6,7 +6,7 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
   const created: Record<string, unknown>[] = [];
   let revoked = false;
   await page.route("**/api/v1/**", async route => {
-    const path = new URL(route.request().url()).pathname;
+    const path = new URL(route.request().url()).pathname.replace(/\\/+$/, "");
     const method = route.request().method();
     if (path === "/api/v1/auth/login") return route.fulfill({ json: { access_token: "staff-invite-token", token_type: "bearer", user: admin } });
     if (path === "/api/v1/auth/me") return route.fulfill({ json: admin });
