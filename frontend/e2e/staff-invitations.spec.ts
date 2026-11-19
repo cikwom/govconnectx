@@ -29,6 +29,11 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
   await page.getByLabel("Password").fill("AdminTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
   await expect(page).toHaveURL(/\/admin$/);
+  // The dashboard mounts several data panels after authentication. Wait for the
+  // invitation panel's first load to finish before interacting with its form;
+  // otherwise the initial React state updates can detach the input mid-fill.
+  await expect(page.getByText("No staff invitations yet.")).toBeVisible();
+  await expect(page.getByLabel("Department").last().locator("option", { hasText: "Public Works" })).toHaveCount(1);
   await page.getByLabel("Staff full name").fill("Field Officer");
   await page.getByLabel("Staff email").fill("officer@example.test");
   await page.getByLabel("Staff role").selectOption("official");
