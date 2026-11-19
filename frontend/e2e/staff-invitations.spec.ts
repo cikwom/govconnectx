@@ -7,7 +7,7 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
   let revoked = false;
   let departmentsRequestSeen = false;
   await page.route("**/api/v1/**", async route => {
-    const path = new URL(route.request().url()).pathname.replace(/\/+$/, "");
+    const path = new URL(route.request().url()).pathname.replace(/\\/+$/, "");
     const method = route.request().method();
     if (path === "/api/v1/auth/login") return route.fulfill({ json: { access_token: "staff-invite-token", token_type: "bearer", user: admin } });
     if (path === "/api/v1/auth/me") return route.fulfill({ json: admin });
@@ -16,6 +16,7 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
     if (path === "/api/v1/admin/overview") return route.fulfill({ json: { users: { total: 1, active: 1, inactive: 0, by_role: { system_admin: 1 }, registered_today: 0 }, reports: { total: 0, by_status: {}, open: 0, overdue: 0 } } });
     if (path === "/api/v1/admin/geography/overview") return route.fulfill({ json: { country: "Nigeria", total_states: 0, total_lgas: 0, geopolitical_zones: [] } });
     if (path === "/api/v1/admin/reports/unassigned") return route.fulfill({ json: { total: 0, items: [] } });
+    if (path === "/api/v1/admin/notification-deliveries") return route.fulfill({ json: { summary: { by_status: {}, by_channel: {}, queued: 0, sending: 0, sent: 0, failed: 0 }, items: [] } });
     if (path === "/api/v1/admin/users") return route.fulfill({ json: { items: [{ ...admin, reports_submitted: 0, created_at: "2026-11-01T10:00:00Z" }] } });
     if (path === "/api/v1/admin/reports") return route.fulfill({ json: { items: [] } });
     if (path === "/api/v1/admin/activity") return route.fulfill({ json: [] });
@@ -31,10 +32,8 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
   await page.getByLabel("Email address").fill("admin@example.test");
   await page.getByLabel("Password").fill("AdminTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
-  await expect(page).toHaveURL(/\/admin$/);
-  // The dashboard mounts several data panels after authentication. Wait for the
-  // invitation panel's first load to finish before interacting with its form;
-  // otherwise the initial React state updates can detach the input mid-fill.
+  await expect(page).toHaveURL(/\\/admin$/);
+  // Wait for the invitation panel's first load before interacting with its form.
   const invitationPanel = page.locator("section.panel").filter({ has: page.getByRole("heading", { name: "Staff invitations" }) });
   await expect(invitationPanel.getByText("No staff invitations yet.")).toBeVisible();
   expect(departmentsRequestSeen, "the invitation panel must request /api/v1/departments").toBe(true);
