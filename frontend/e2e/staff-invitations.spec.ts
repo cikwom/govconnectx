@@ -7,7 +7,7 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
   let revoked = false;
   let departmentsRequestSeen = false;
   await page.route("**/api/v1/**", async route => {
-    const path = new URL(route.request().url()).pathname.replace(/\\/+$/, "");
+    const path = new URL(route.request().url()).pathname.replace(/\/+$/, "");
     const method = route.request().method();
     if (path === "/api/v1/auth/login") return route.fulfill({ json: { access_token: "staff-invite-token", token_type: "bearer", user: admin } });
     if (path === "/api/v1/auth/me") return route.fulfill({ json: admin });
@@ -32,7 +32,7 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
   await page.getByLabel("Email address").fill("admin@example.test");
   await page.getByLabel("Password").fill("AdminTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
-  await expect(page).toHaveURL(/\\/admin$/);
+  await expect(page).toHaveURL(/\/admin$/);
   // Wait for the invitation panel's first load before interacting with its form.
   const invitationPanel = page.locator("section.panel").filter({ has: page.getByRole("heading", { name: "Staff invitations" }) });
   await expect(invitationPanel.getByText("No staff invitations yet.")).toBeVisible();
