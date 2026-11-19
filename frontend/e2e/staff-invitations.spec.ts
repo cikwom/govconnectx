@@ -14,6 +14,8 @@ test("system administrator creates and revokes a staff invitation", async ({ pag
     if (path === "/api/v1/preferences") return route.fulfill({ json: { email_notifications: true, in_app_notifications: true, sms_notifications: false, sms_consent_at: null, sms_consent_revoked_at: null, phone_number: null, phone_verified_at: null, preferred_language: "en", updated_at: "2026-11-17T12:00:00Z" } });
     if (path === "/api/v1/departments") { departmentsRequestSeen = true; return route.fulfill({ json: [{ id: 5, name: "Public Works", code: "PUBLIC-WORKS", is_active: true }] }); }
     if (path === "/api/v1/admin/overview") return route.fulfill({ json: { users: { total: 1, active: 1, inactive: 0, by_role: { system_admin: 1 }, registered_today: 0 }, reports: { total: 0, by_status: {}, open: 0, overdue: 0 } } });
+    if (path === "/api/v1/admin/geography/overview") return route.fulfill({ json: { country: "Nigeria", total_states: 0, total_lgas: 0, geopolitical_zones: [] } });
+    if (path === "/api/v1/admin/reports/unassigned") return route.fulfill({ json: { total: 0, items: [] } });
     if (path === "/api/v1/admin/users") return route.fulfill({ json: { items: [{ ...admin, reports_submitted: 0, created_at: "2026-11-01T10:00:00Z" }] } });
     if (path === "/api/v1/admin/reports") return route.fulfill({ json: { items: [] } });
     if (path === "/api/v1/admin/activity") return route.fulfill({ json: [] });
