@@ -20,6 +20,7 @@ export default function StaffInvitationPanel() {
   const [role, setRole] = useState("official");
   const [departmentId, setDepartmentId] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [devUrl, setDevUrl] = useState("");
@@ -32,6 +33,8 @@ export default function StaffInvitationPanel() {
       setStates(stateList);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t("Could not load staff invitations."));
+    } finally {
+      setLoading(false);
     }
   }, [t]);
   useEffect(() => { void load(); }, [load]);
@@ -70,7 +73,8 @@ export default function StaffInvitationPanel() {
       <select aria-label={t("Local government area")} value={lgaCode} disabled={!stateCode} onChange={event => setLgaCode(event.target.value)}><option value="">{t("Select LGA (optional)")}</option>{lgas.map(item => <option key={item.code} value={item.code}>{item.name}</option>)}</select>
       <button className="button button-primary" disabled={busy || !email.trim() || fullName.trim().length < 2}>{busy ? t("Working…") : t("Create staff invitation")}</button>
     </form>
+    {loading && <p className="muted" role="status">{t("Loading staff invitations…")}</p>}
     <div className="admin-report-list">{items.map(item => <article className="admin-report" key={item.id}><div className="admin-report-top"><div><strong>{item.full_name}</strong><p>{item.email} · {t(item.role.replaceAll("_", " "))}</p></div><span className={item.status === "pending" ? "account-active" : "account-inactive"}>{t(item.status)}</span></div><p className="muted">{t("Expires:")} {new Date(item.expires_at).toLocaleString()}</p>{item.status === "pending" && <button className="button button-quiet button-small" disabled={busy} onClick={() => void revoke(item.id)}>{t("Revoke invitation")}</button>}</article>)}</div>
-    {items.length === 0 && <p className="empty-state">{t("No staff invitations yet.")}</p>}
+    {!loading && items.length === 0 && <p className="empty-state">{t("No staff invitations yet.")}</p>}
   </section>;
 }
