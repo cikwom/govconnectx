@@ -5,7 +5,7 @@ const admin = { id: 1, email: "admin@example.test", full_name: "Platform Admin",
 test("system administrator creates and revokes a staff invitation", async ({ page }) => {
   const created: Record<string, unknown>[] = [];
   let revoked = false;
-  await page.route("http://localhost:8000/api/v1/**", async route => {
+  await page.route("**/api/v1/**", async route => {
     const path = new URL(route.request().url()).pathname;
     const method = route.request().method();
     if (path === "/api/v1/auth/login") return route.fulfill({ json: { access_token: "staff-invite-token", token_type: "bearer", user: admin } });
