@@ -115,3 +115,16 @@ Copy this section for each manual test session:
 - **PR checks:** PASS — GovConnectX CI [44180019091](https://github.com/cikwom/govconnectx/actions/runs/44180019091), backend tests [44180019031](https://github.com/cikwom/govconnectx/actions/runs/44180019031), frontend build [44180019157](https://github.com/cikwom/govconnectx/actions/runs/44180019157).
 - **Post-merge checks:** PASS — GovConnectX CI [44180484918](https://github.com/cikwom/govconnectx/actions/runs/44180484918), backend tests [44180484636](https://github.com/cikwom/govconnectx/actions/runs/44180484636), frontend build [44180484650](https://github.com/cikwom/govconnectx/actions/runs/44180484650).
 - **Limitations:** Browser API calls are mocked. This does not replace live-backend verification of staff provisioning, department membership persistence, or geographic access enforcement.
+
+
+## 2026-11-21 — Secure staff invitations and onboarding — PR #74
+
+- **PR:** [#74](https://github.com/cikwom/govconnectx/pull/74) — merged.
+- **Main merge commit:** `0b2bc05491194998e23aa2cd293fee43a4b697ea`.
+- **Final feature fix:** `071335b` — E2E assertion now includes nullable invitation home State/LGA fields sent by the frontend.
+- **Feature:** SHA-256 invitation token digests, 72-hour expiry, one-time acceptance, revocation, department and State/LGA scope, audit events, admin UI and invitee acceptance route.
+- **Post-merge full CI:** PASS — [run 44642161410](https://github.com/cikwom/govconnectx/actions/runs/44642161410).
+- **Post-merge backend tests:** PASS — [run 44642161493](https://github.com/cikwom/govconnectx/actions/runs/44642161493); 104 tests passed.
+- **Post-merge frontend build:** PASS — [run 44642161784](https://github.com/cikwom/govconnectx/actions/runs/44642161784); Playwright Chromium suite: 10 tests passed.
+- **Additional checks:** translation completeness and automated accessibility source checks passed.
+- **Limitations:** Playwright uses mocked API fixtures. Live-backend invitation persistence, real SMTP delivery, production database/infrastructure and manual mobile, keyboard-only and screen-reader checks remain NOT RUN.

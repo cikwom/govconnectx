@@ -56,3 +56,8 @@ See [TEST_EVIDENCE.md](TEST_EVIDENCE.md) for the exact Phase 6 CI run IDs and ou
 ## Geographical Zones Phase 2 test coverage
 
 The current Phase 2 branch adds automated regression coverage for department geographic scopes, State/LGA validation, staff access boundaries, category-based auto-routing, ambiguous routing to the national triage queue, and the national zone → State → LGA report summary. See the Phase 2 checkpoint in the root [README](../../README.md) and record only the latest completed CI results in [TEST_EVIDENCE.md](TEST_EVIDENCE.md). The Admin Geographic Operations panel is now implemented. Windows browser regression is still pending; do not mark it passed until tested.
+
+
+## Current baseline — 21 November 2026
+
+PR #74 is merged at main commit `0b2bc05491194998e23aa2cd293fee43a4b697ea`. Post-merge full CI, backend tests (104 tests) and frontend build passed; the Chromium browser suite passed 10 tests. These browser tests use mocked API fixtures. Live-backend integration, production infrastructure/provider checks and manual accessibility acceptance remain outstanding. See the latest PR #74 entry in [TEST_EVIDENCE.md](TEST_EVIDENCE.md) and the [release gate](RELEASE_GATE.md).

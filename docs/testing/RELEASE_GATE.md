@@ -36,3 +36,23 @@ Use this before merging each feature PR. A green build is necessary but does not
 - Frontend bearer token currently uses localStorage; a hardened refresh/session design remains planned.
 - Production database migration strategy, backups/restore, monitoring, rate limiting, HTTPS and audit logging need completion.
 - Main branch currently has no protection rules; require PR reviews/status checks if repository permissions allow.
+
+
+## Current verified baseline — 21 November 2026
+
+- Main commit: `0b2bc05491194998e23aa2cd293fee43a4b697ea` (PR #74 merge).
+- Full CI passed: [run 44642161410](https://github.com/cikwom/govconnectx/actions/runs/44642161410).
+- Backend tests passed: [run 44642161493](https://github.com/cikwom/govconnectx/actions/runs/44642161493) — 104 tests.
+- Frontend build passed: [run 44642161784](https://github.com/cikwom/govconnectx/actions/runs/44642161784); Playwright Chromium suite: 10 tests.
+- Browser tests use mocked API fixtures; live-backend and production integration are not proven by these runs.
+
+## Outstanding release verification
+
+- Live-backend end-to-end regression: NOT RUN.
+- Production PostgreSQL, migrations, backup/restore and monitoring: NOT VERIFIED.
+- Durable private evidence storage and production malware scanning: NOT VERIFIED; keep production evidence uploads disabled until configured and tested.
+- Real SMTP/SMS delivery, receipts, retries, worker and dead-letter operations: NOT VERIFIED.
+- Manual mobile, keyboard, screen-reader, zoom, contrast and forced-colors testing: NOT RUN.
+- Native-speaker translation review, external security testing and qualified privacy/legal review: NOT RUN.
+- Frontend session hardening and production secret/CORS/HTTPS/rate-limit settings require deployment review.
+- Branch protection and required status checks must be verified in GitHub settings; do not infer their state from this checklist.
