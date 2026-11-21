@@ -59,3 +59,5 @@ Frontend session hardening, legal operator/contact details and qualified Nigeria
 ## Next work
 
 Bring the historical handoff notes and test evidence fully up to date, run live-backend integration tests, then close production storage/recovery, notification delivery, security, privacy and accessibility release gaps. A green CI run is not by itself a production-readiness sign-off.
+
+- [Deferred production-readiness backlog](docs/PRODUCTION_READINESS_BACKLOG.md)
