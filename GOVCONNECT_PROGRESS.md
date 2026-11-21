@@ -80,3 +80,5 @@ Repository: C:\Users\gentle\govconnectx
 - Push and open a PR; merge with a regular merge commit only after required checks pass and the PR head is unchanged.
 - Verify post-merge workflows on the exact resulting main commit.
 - Record failures and NOT RUN checks honestly. Green mocked browser tests are not production integration evidence.
+
+- [Deferred production-readiness backlog](docs/PRODUCTION_READINESS_BACKLOG.md)
