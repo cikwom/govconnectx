@@ -61,3 +61,8 @@ Frontend: http://localhost:5173
 Transparency: http://localhost:5173/transparency  
 Admin: http://localhost:5173/admin  
 API docs: http://localhost:8000/docs
+
+
+## Historical checkpoint clarification — 21 November 2026
+
+This document describes the original accountability-engine feature branch and its pre-merge validation state. The statement above that PR #20 remained an open draft is historical; PR #20 and follow-on accountability work have since been merged into main. The current verified repository state and CI baseline are maintained in [GOVCONNECT_PROGRESS.md](../GOVCONNECT_PROGRESS.md) and [docs/testing/TEST_EVIDENCE.md](testing/TEST_EVIDENCE.md). Treat the implementation list here as a description of the original delivery, not as a current list of outstanding tasks.
