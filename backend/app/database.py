@@ -12,6 +12,13 @@ def resolve_database_url(environment=None, database_url=None):
     configured_url = database_url or os.getenv("DATABASE_URL") or "sqlite:///./govconnect.db"
     configured_url = configured_url.strip()
 
+    # Managed database providers commonly expose either postgres:// or
+    # postgresql:// URLs. Pin SQLAlchemy to the installed psycopg 3 driver.
+    if configured_url.startswith("postgres://"):
+        configured_url = "postgresql+psycopg://" + configured_url[len("postgres://"):]
+    elif configured_url.startswith("postgresql://"):
+        configured_url = "postgresql+psycopg://" + configured_url[len("postgresql://"):]
+
     if current_environment == "production" and configured_url.lower().startswith("sqlite"):
         raise RuntimeError(
             "DATABASE_URL must point to a managed production database; "

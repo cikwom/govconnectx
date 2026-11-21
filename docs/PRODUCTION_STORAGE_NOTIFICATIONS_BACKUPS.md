@@ -2,7 +2,9 @@
 
 ## Evidence storage architecture
 
-GovConnectX supports an S3-compatible private object storage backend for report evidence.
+GovConnectX supports PostgreSQL through SQLAlchemy and the Psycopg 3 driver, plus an S3-compatible private object storage backend for report evidence.
+
+Managed PostgreSQL connection strings supplied as `postgres://` or `postgresql://` are normalized to SQLAlchemy's `postgresql+psycopg://` dialect. The backend installs `psycopg[binary]`; use the provider-issued connection string, keep credentials in backend secrets, and require TLS/SSL according to the managed provider's connection instructions.
 
 - Local development can continue using the private local filesystem.
 - When S3 credentials and bucket configuration are present, new evidence is written to the S3-compatible bucket.

@@ -24,6 +24,17 @@ class DatabaseConfigurationTests(unittest.TestCase):
             url,
         )
 
+    def test_managed_provider_postgres_urls_use_psycopg_driver(self):
+        for url in (
+            "postgres://user:password@db.example.test/govconnect",
+            "postgresql://user:password@db.example.test/govconnect",
+        ):
+            with self.subTest(url=url):
+                self.assertEqual(
+                    resolve_database_url(environment="production", database_url=url),
+                    "postgresql+psycopg://user:password@db.example.test/govconnect",
+                )
+
     def test_development_keeps_sqlite_fallback(self):
         # CI may set DATABASE_URL for the application test database. This
         # unit test intentionally checks the resolver's no-config fallback.
