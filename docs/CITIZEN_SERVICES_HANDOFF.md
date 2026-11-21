@@ -67,3 +67,8 @@ npm.cmd install
 npm.cmd run typecheck
 npm.cmd run build
 ```
+
+
+## Historical checkpoint clarification — 21 November 2026
+
+This document records the original citizen-services implementation plan and pre-merge validation state. Its earlier statement that local tests and CI had not been run is historical; the relevant feature work and subsequent browser/CI coverage have since been merged. The current verified baseline and remaining live-integration limitations are recorded in [GOVCONNECT_PROGRESS.md](../GOVCONNECT_PROGRESS.md) and [docs/testing/TEST_EVIDENCE.md](testing/TEST_EVIDENCE.md). Do not interpret the original follow-up list as proof that each item remains unimplemented; check current source and merged PR history.
