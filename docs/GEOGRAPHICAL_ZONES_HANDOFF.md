@@ -74,3 +74,8 @@ Resume using the Phase 2 commands in the root README. Citizen home location rema
 - The review endpoint is `GET /api/v1/admin/reports/location-review?status=pending`; record a decision with `PATCH /api/v1/admin/reports/{report_id}/location-review` and JSON `{ "status": "verified|mismatch|unable_to_verify", "note": "..." }`.
 - GPS mismatch review does not change the citizen-selected incident State/LGA and does not change the geographic routing basis. No automated State/LGA boundary verdict is claimed.
 - Backend tests and frontend build are running in GitHub Actions on the feature branch. Manual browser verification remains outstanding.
+
+
+## Historical checkpoint clarification — 21 November 2026
+
+This handoff records the original Phase 1/Phase 2 implementation sequence and is retained for design context. Its earlier statements that PR #19 was a draft, that GPS review was pending, and that geographic scopes/routing were not yet implemented are historical, not the current repository state. PR #19 and subsequent geographic work have since been merged into main. The current verified main baseline is recorded in [GOVCONNECT_PROGRESS.md](../GOVCONNECT_PROGRESS.md) and [docs/testing/TEST_EVIDENCE.md](testing/TEST_EVIDENCE.md). Validate current endpoint behavior and authoritative boundary data against the live code before relying on this historical note.
