@@ -102,7 +102,12 @@ class AlembicBaselineTests(unittest.TestCase):
                     with self.assertRaisesRegex(RuntimeError, "not ready for Alembic baseline adoption"):
                         command.upgrade(self._config(), "head")
 
-                self.assertNotIn("alembic_version", inspect(engine).get_table_names())
+                self.assertIn("alembic_version", inspect(engine).get_table_names())
+                with engine.connect() as connection:
+                    recorded_revisions = connection.execute(
+                        text("SELECT version_num FROM alembic_version")
+                    ).all()
+                self.assertEqual(recorded_revisions, [])
             finally:
                 engine.dispose()
 
