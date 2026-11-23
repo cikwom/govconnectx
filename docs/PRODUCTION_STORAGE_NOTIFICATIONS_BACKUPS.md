@@ -77,3 +77,36 @@ Do not claim that backups are active until provider settings and a restore test 
 - Complete formal data retention/deletion workflows and a privacy impact assessment.
 - Review authentication token storage and hardened refresh/session handling.
 - Run dependency, API authorization, penetration, load and accessibility testing before public launch.
+
+
+## Versioned database migration foundation
+
+Alembic is now configured under `backend/alembic.ini` with application metadata registered from every model module. New schema changes should be introduced as reviewed, immutable migration revisions rather than adding more ad-hoc SQL to application startup.
+
+### Existing-schema adoption (phase 1)
+
+The first revision, `20261123_0001`, is intentionally a validation-only baseline. It checks that every registered application table and column already exists, then lets Alembic record the starting revision. It does not create, rename, or drop application tables and does not rewrite citizen data. This avoids falsely treating a production database with unknown history as an empty database.
+
+For an existing or new installation using the current bootstrap:
+
+1. Back up the database before any schema operation.
+2. Set the same `DATABASE_URL` and environment values used by the API.
+3. Start the backend once so the current `create_all()` and legacy idempotent schema extension can finish.
+4. From the `backend` directory, run `alembic upgrade head`.
+5. Confirm `alembic current` reports `20261123_0001` and run the backend test suite.
+
+Example commands:
+
+```powershell
+cd backend
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+# Stop the API after startup has completed, then:
+alembic upgrade head
+alembic current
+```
+
+Do not run the baseline against a database that has not completed application bootstrap. It fails with a list of missing tables/columns instead of stamping an incomplete schema. Do not use `alembic stamp` to bypass that validation.
+
+### Transitional limitation
+
+Phase 1 establishes revision tracking and safe adoption; it does not yet replace `Base.metadata.create_all()` or `migrate_existing_schema()` at application startup. Those legacy mechanisms remain in place until a separately reviewed, immutable initial schema migration and a tested rollout/rollback plan are available. Do not claim that all production schema changes are now Alembic-managed. A live managed-PostgreSQL migration and rollback drill still requires a configured provider database and a verified backup.
