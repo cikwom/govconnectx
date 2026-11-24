@@ -525,6 +525,8 @@ def upload_community_video(
             stored = True
         except StorageNotConfigured as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=415, detail=str(exc)) from exc
         attachment = CommunityPostAttachment(
             post_id=post.id, uploaded_by_user_id=actor.id,
             original_filename=re.sub(r"[^A-Za-z0-9._ -]", "_", Path(file.filename or "video").name)[:255],
