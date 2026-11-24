@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -44,11 +44,26 @@ class CommunityMembership(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     joined_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
     is_active = Column(Boolean, nullable=False, default=True, index=True)
-    __table_args__ = ({"sqlite_autoincrement": True},)
+    __table_args__ = (UniqueConstraint("community_code", "user_id", name="uq_community_membership_user"),)
 
 
 class CommunityPostImage(Base):
     __tablename__ = "community_post_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("community_posts.id"), nullable=False, index=True)
+    uploaded_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    original_filename = Column(String(255), nullable=False)
+    storage_key = Column(String(80), nullable=False, unique=True, index=True)
+    storage_backend = Column(String(16), nullable=False, default="local")
+    content_type = Column(String(100), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    sha256 = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
+
+
+class CommunityPostAttachment(Base):
+    __tablename__ = "community_post_attachments"
 
     id = Column(Integer, primary_key=True, index=True)
     post_id = Column(Integer, ForeignKey("community_posts.id"), nullable=False, index=True)
