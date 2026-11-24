@@ -34,3 +34,17 @@ class CommunityPostComment(Base):
     moderated_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     author_user = relationship("User", foreign_keys=[author_user_id])
+
+class CommunityPostImage(Base):
+    __tablename__ = "community_post_images"
+
+    id = Column(Integer, primary_key=True, index=True)
+    post_id = Column(Integer, ForeignKey("community_posts.id"), nullable=False, index=True)
+    uploaded_by_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    original_filename = Column(String(255), nullable=False)
+    storage_key = Column(String(80), nullable=False, unique=True, index=True)
+    storage_backend = Column(String(16), nullable=False, default="local")
+    content_type = Column(String(100), nullable=False)
+    size_bytes = Column(Integer, nullable=False)
+    sha256 = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
