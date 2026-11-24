@@ -234,6 +234,26 @@ class CommunitySpaceApiTests(unittest.TestCase):
             self.assertEqual(downloaded.status_code, 200)
             self.assertEqual(downloaded.content, image_bytes)
 
+
+    def test_joined_member_receives_live_websocket_post_events(self):
+        headers = self.create_user("citizen")
+        token = headers["Authorization"].split(" ", 1)[1]
+        with self.client.websocket_connect(
+            f"/api/v1/community-spaces/{self.community_code}/live"
+        ) as websocket:
+            websocket.send_json({"type": "authenticate", "token": token})
+            connected = websocket.receive_json()
+            self.assertEqual(connected["type"], "connected")
+            self.assertEqual(connected["community_code"], self.community_code)
+            created = self.client.post(
+                f"/api/v1/community-spaces/{self.community_code}/posts",
+                headers=headers, json={"body": "Live update from a community member"},
+            )
+            self.assertEqual(created.status_code, 201)
+            event = websocket.receive_json()
+            self.assertEqual(event["type"], "post_created")
+            self.assertEqual(event["post_id"], created.json()["id"])
+
     def test_discussion_endpoints_require_authentication(self):
         response = self.client.get(f"/api/v1/community-spaces/{self.community_code}/posts")
         self.assertEqual(response.status_code, 401)
