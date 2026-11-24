@@ -1,16 +1,20 @@
 from datetime import datetime, timezone
+import asyncio
 import hashlib
 import os
 import re
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
 
+import jwt
+
 from app.core.dependencies import get_current_user
+from app.core.security import decode_access_token
 from app.database import get_db
 from app.models.audit_event import record_audit_event
 from app.models.community_discussion import CommunityMembership, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage
@@ -21,6 +25,82 @@ from app.models.user import User
 from app.services.evidence_storage import StorageNotConfigured, delete_object, is_production_environment, read_object, s3_is_configured, scan_bytes, storage_is_production_ready, store_object
 
 router = APIRouter(prefix="/api/v1/community-spaces", tags=["Community Connect"])
+
+class CommunityLiveConnections:
+    def __init__(self):
+        self.connections: dict[str, list[tuple[WebSocket, asyncio.AbstractEventLoop]]] = {}
+
+    async def connect(self, community_code: str, websocket: WebSocket):
+        await websocket.accept()
+        self.connections.setdefault(community_code, []).append((websocket, asyncio.get_running_loop()))
+
+    def disconnect(self, community_code: str, websocket: WebSocket):
+        remaining = [
+            (connection, loop) for connection, loop in self.connections.get(community_code, [])
+            if connection is not websocket
+        ]
+        if remaining:
+            self.connections[community_code] = remaining
+        else:
+            self.connections.pop(community_code, None)
+
+    async def _send(self, websocket: WebSocket, event: dict):
+        try:
+            await websocket.send_json(event)
+        except Exception:
+            # A closed client is removed when its receive loop exits.
+            pass
+
+    def broadcast_sync(self, community_code: str, event: dict):
+        for websocket, loop in list(self.connections.get(community_code, [])):
+            if loop.is_running():
+                asyncio.run_coroutine_threadsafe(self._send(websocket, event), loop)
+
+
+community_live_connections = CommunityLiveConnections()
+
+
+@router.websocket("/{community_code}/live")
+async def community_live_updates(
+    websocket: WebSocket,
+    community_code: str,
+    token: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+):
+    await websocket.accept()
+    try:
+        payload = decode_access_token(token)
+        if payload.get("type") != "access":
+            await websocket.close(code=4401)
+            return
+        user_id = int(payload.get("sub", ""))
+        actor = db.query(User).filter(User.id == user_id).first()
+        if actor is None or not actor.is_active or payload.get("ver", 0) != actor.token_version:
+            await websocket.close(code=4401)
+            return
+        community = _community_or_404(db, community_code)
+        _require_membership(db, community.code, actor.id)
+    except (jwt.InvalidTokenError, TypeError, ValueError):
+        await websocket.close(code=4401)
+        return
+    except HTTPException as exc:
+        await websocket.close(code=4403 if exc.status_code == 403 else 4404)
+        return
+
+    community_live_connections.connections.setdefault(community.code, []).append(
+        (websocket, asyncio.get_running_loop())
+    )
+    try:
+        await websocket.send_json({"type": "connected", "community_code": community.code})
+        while True:
+            message = await websocket.receive_text()
+            if message == "ping":
+                await websocket.send_json({"type": "pong"})
+    except WebSocketDisconnect:
+        pass
+    finally:
+        community_live_connections.disconnect(community.code, websocket)
+
 ANNOUNCEMENT_ROLES = {"official", "department_admin", "supervisor", "system_admin"}
 MODERATOR_ROLES = {"department_admin", "supervisor", "system_admin"}
 MAX_IMAGE_BYTES = max(1, int(os.getenv("COMMUNITY_IMAGE_MAX_BYTES", str(10 * 1024 * 1024))))
@@ -200,6 +280,7 @@ def create_community_post(
     )
     db.commit()
     db.refresh(post)
+    community_live_connections.broadcast_sync(community.code, {"type": "post_created", "post_id": post.id})
     return {"id": post.id, "community_code": post.community_code, "author_user_id": actor.id,
             "author": actor, "body": post.body, "is_announcement": post.is_announcement,
             "created_at": post.created_at, "comment_count": 0, "converted_report_id": post.converted_report_id}
@@ -238,6 +319,7 @@ def create_post_comment(
     )
     db.commit()
     db.refresh(comment)
+    community_live_connections.broadcast_sync(post.community_code, {"type": "comment_created", "post_id": post.id, "comment_id": comment.id})
     return {"id": comment.id, "post_id": post.id, "author_user_id": actor.id,
             "author": actor, "body": comment.body, "created_at": comment.created_at}
 
@@ -261,6 +343,7 @@ def moderate_community_post(
         details={"hidden": payload.is_hidden, "community_code": post.community_code},
     )
     db.commit()
+    community_live_connections.broadcast_sync(post.community_code, {"type": "post_moderated", "post_id": post.id})
     return {"id": post.id, "is_hidden": post.is_hidden, "moderated_at": post.moderated_at}
 
 
@@ -467,6 +550,7 @@ def convert_community_post_to_report(
                  "evidence_count": report_evidence_count},
     )
     db.commit()
+    community_live_connections.broadcast_sync(community.code, {"type": "post_converted_to_report", "post_id": post.id, "report_id": report.id})
     return {"report_id": report.id, "title": report.title, "status": report.status,
             "location": payload.address.strip(), "community_code": community.code}
 
@@ -543,6 +627,7 @@ def upload_community_video(
         )
         db.commit()
         db.refresh(attachment)
+        community_live_connections.broadcast_sync(post.community_code, {"type": "evidence_uploaded", "post_id": post.id})
         return attachment
     except Exception:
         db.rollback()
