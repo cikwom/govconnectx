@@ -1,6 +1,6 @@
 import os
 
-from sqlalchemy import Float, create_engine, inspect, text
+from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app import config  # noqa: F401 - load .env before reading DATABASE_URL
@@ -97,19 +97,7 @@ def migrate_existing_schema(database_engine=None):
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_incident_lga_code ON reports (incident_lga_code)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_incident_ward_code ON reports (incident_ward_code)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_incident_community_code ON reports (incident_community_code)"))
-            # SQLite requires a table rebuild to relax NOT NULL; Alembic's
-            # batch operations preserve existing rows and indexes. PostgreSQL
-            # uses native ALTER COLUMN through the same operations API.
-            refreshed_columns = {column["name"]: column for column in inspect(connection).get_columns("reports")}
-            if any(name in refreshed_columns and refreshed_columns[name]["nullable"] is False for name in ("latitude", "longitude")):
-                from alembic.migration import MigrationContext
-                from alembic.operations import Operations
 
-                operations = Operations(MigrationContext.configure(connection))
-                batch_options = {"recreate": "always"} if connection.dialect.name == "sqlite" else {}
-                with operations.batch_alter_table("reports", **batch_options) as batch:
-                    batch.alter_column("latitude", existing_type=Float(), existing_nullable=False, nullable=True)
-                    batch.alter_column("longitude", existing_type=Float(), existing_nullable=False, nullable=True)
 
         if "community_posts" in tables:
             post_columns = {column["name"] for column in inspect(connection).get_columns("community_posts")}
