@@ -91,6 +91,7 @@ test("citizen signs in and submits a report with state, LGA, ward and community"
   await page.getByRole("button", { name: /Submit a report/ }).click();
   await page.getByLabel("Report title").fill("Blocked drainage on Market Road");
   await page.getByLabel("Description").fill("Floodwater is collecting beside the market after rainfall.");
+  await page.getByLabel("Infrastructure issue").selectOption("Drainage");
   await page.getByLabel("Incident state or FCT").selectOption("LA");
   await page.getByLabel("Incident LGA").selectOption("IKE");
   await page.getByLabel("Ward (optional)").selectOption("IKE-01");
