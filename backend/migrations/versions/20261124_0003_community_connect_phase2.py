@@ -65,7 +65,7 @@ def upgrade() -> None:
 
     if "reports" in tables:
         columns = {item["name"]: item for item in inspector.get_columns("reports")}
-        if "latitude" in columns and columns["latitude"]["nullable"] is False:
+        if any(name in columns and columns[name]["nullable"] is False for name in ("latitude", "longitude")):
             with op.batch_alter_table("reports") as batch:
                 batch.alter_column("latitude", existing_type=sa.Float(), nullable=True)
                 batch.alter_column("longitude", existing_type=sa.Float(), nullable=True)
