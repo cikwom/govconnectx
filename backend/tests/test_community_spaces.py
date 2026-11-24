@@ -15,6 +15,7 @@ from app.main import app
 from app.models.location import Community, Ward
 from app.models.user import User
 from app.models.report import Report
+from app.models.report_attachment import ReportAttachment
 from app.routers.locations import seed_location_directory
 
 
@@ -194,6 +195,44 @@ class CommunitySpaceApiTests(unittest.TestCase):
             self.assertEqual(downloaded.status_code, 200)
             self.assertEqual(downloaded.content, video)
             self.assertEqual(downloaded.headers["cache-control"], "private, no-store")
+
+
+    def test_community_photo_is_carried_into_official_report_evidence(self):
+        headers = self.create_user("citizen")
+        post = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/posts",
+            headers=headers, json={"body": "Photo evidence of the damaged public drain."},
+        )
+        post_id = post.json()["id"]
+        image_bytes = b"\xff\xd8\xff" + b"community-report-evidence"
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {
+            "COMMUNITY_MEDIA_DIR": directory,
+            "REPORT_ATTACHMENT_DIR": directory + "/report-evidence",
+        }):
+            uploaded = self.client.post(
+                f"/api/v1/community-spaces/posts/{post_id}/images",
+                headers=headers, files={"file": ("drain.jpg", image_bytes, "image/jpeg")},
+            )
+            self.assertEqual(uploaded.status_code, 201, uploaded.text)
+            converted = self.client.post(
+                f"/api/v1/community-spaces/posts/{post_id}/convert-to-report",
+                headers=headers,
+                json={"category": "Infrastructure", "address": "Beside the community market"},
+            )
+            self.assertEqual(converted.status_code, 201, converted.text)
+            db = self.Session()
+            evidence = db.query(ReportAttachment).filter(
+                ReportAttachment.report_id == converted.json()["report_id"]
+            ).all()
+            self.assertEqual(len(evidence), 1)
+            evidence_id = evidence[0].id
+            db.close()
+            downloaded = self.client.get(
+                f"/api/v1/reports/{converted.json()['report_id']}/attachments/{evidence_id}/download",
+                headers=headers,
+            )
+            self.assertEqual(downloaded.status_code, 200)
+            self.assertEqual(downloaded.content, image_bytes)
 
     def test_discussion_endpoints_require_authentication(self):
         response = self.client.get(f"/api/v1/community-spaces/{self.community_code}/posts")
