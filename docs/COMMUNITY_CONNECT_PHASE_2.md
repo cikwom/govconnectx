@@ -23,6 +23,10 @@
 - Only the original post author can convert that post into an official report; duplicate conversion is rejected.
 - Existing official announcement and moderation role checks remain in force.
 
+## Database migration
+
+The application applies pending Alembic revisions during startup before serving requests. Existing-schema extension runs first; the Alembic baseline then validates the registered schema and applies the phase-two nullable-coordinate change. The migration tests cover preservation of existing report rows.
+
 ## API additions
 
 - `GET /api/v1/community-spaces/{community_code}/membership`
