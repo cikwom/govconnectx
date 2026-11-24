@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { api } from "../services/api";
-import type { Community, CommunityPost, CommunityPostComment, CommunityPostImage, GeographicState, GeographicWard, LocalGovernmentArea } from "../types/api";
+import type { Community, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage, GeographicState, GeographicWard, LocalGovernmentArea } from "../types/api";
 import { useAuth } from "../state/AuthContext";
+import { Link } from "react-router-dom";
 
 const staffRoles = ["official", "department_admin", "supervisor", "system_admin"];
 
@@ -19,6 +20,13 @@ export default function CommunityConnectPage() {
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [comments, setComments] = useState<Record<number, CommunityPostComment[]>>({});
   const [images, setImages] = useState<Record<number, { id: number; filename: string; url: string }[]>>({});
+  const [attachments, setAttachments] = useState<Record<number, { id: number; filename: string; contentType: string; url: string }[]>>({});
+  const [isMember, setIsMember] = useState(false);
+  const [membershipLoading, setMembershipLoading] = useState(false);
+  const [conversionPostId, setConversionPostId] = useState<number | null>(null);
+  const [conversionTitle, setConversionTitle] = useState("");
+  const [conversionCategory, setConversionCategory] = useState("Infrastructure");
+  const [conversionAddress, setConversionAddress] = useState("");
   const [expandedPost, setExpandedPost] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [commentDraft, setCommentDraft] = useState("");
@@ -47,31 +55,89 @@ export default function CommunityConnectPage() {
   useEffect(() => {
     let active = true;
     const objectUrls: string[] = [];
-    async function loadImages() {
-      const grouped: Record<number, { id: number; filename: string; url: string }[]> = {};
-      await Promise.all(posts.map(async post => {
+    async function loadEvidence() {
+      const imageGroups: Record<number, { id: number; filename: string; url: string }[]> = {};
+      const attachmentGroups: Record<number, { id: number; filename: string; contentType: string; url: string }[]> = {};
+      if (isMember) await Promise.all(posts.map(async post => {
         try {
           const records: CommunityPostImage[] = await api.communityPostImages(post.id);
-          grouped[post.id] = await Promise.all(records.map(async record => {
+          imageGroups[post.id] = await Promise.all(records.map(async record => {
             const blob = await api.downloadCommunityPostImage(post.id, record.id);
-            const url = URL.createObjectURL(blob);
-            objectUrls.push(url);
+            const url = URL.createObjectURL(blob); objectUrls.push(url);
             return { id: record.id, filename: record.original_filename, url };
           }));
-        } catch { grouped[post.id] = []; }
+        } catch { imageGroups[post.id] = []; }
+        try {
+          const records: CommunityPostAttachment[] = await api.communityPostAttachments(post.id);
+          attachmentGroups[post.id] = await Promise.all(records.map(async record => {
+            const blob = await api.downloadCommunityPostAttachment(post.id, record.id);
+            const url = URL.createObjectURL(blob); objectUrls.push(url);
+            return { id: record.id, filename: record.original_filename, contentType: record.content_type, url };
+          }));
+        } catch { attachmentGroups[post.id] = []; }
       }));
-      if (active) setImages(grouped);
+      if (active) { setImages(imageGroups); setAttachments(attachmentGroups); }
       else objectUrls.forEach(URL.revokeObjectURL);
     }
-    void loadImages();
+    void loadEvidence();
     return () => { active = false; objectUrls.forEach(URL.revokeObjectURL); };
-  }, [posts]);
+  }, [posts, isMember]);
 
   useEffect(() => {
-    if (!communityCode) { setPosts([]); return; }
-    setLoading(true); setError("");
+    if (!communityCode) { setPosts([]); setIsMember(false); return; }
+    setLoading(true); setMembershipLoading(true); setError("");
     api.communityPosts(communityCode).then(setPosts).catch(reason => setError(reason instanceof Error ? reason.message : "Could not load community discussions.")).finally(() => setLoading(false));
+    api.communityMembership(communityCode).then(result => setIsMember(result.is_member)).catch(reason => setError(reason instanceof Error ? reason.message : "Could not check community membership.")).finally(() => setMembershipLoading(false));
   }, [communityCode]);
+
+  useEffect(() => {
+    if (!communityCode) return;
+    const timer = window.setInterval(() => {
+      api.communityPosts(communityCode).then(setPosts).catch(() => undefined);
+    }, 20000);
+    return () => window.clearInterval(timer);
+  }, [communityCode]);
+
+  async function joinCommunity() {
+    setBusy(true); setError("");
+    try { await api.joinCommunity(communityCode); setIsMember(true); setNotice("You joined this community. You can now post, comment and share evidence."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not join this community."); }
+    finally { setBusy(false); }
+  }
+
+  async function leaveCommunity() {
+    setBusy(true); setError("");
+    try { await api.leaveCommunity(communityCode); setIsMember(false); setImages({}); setAttachments({}); setNotice("You left this community. You can still read its public discussion feed."); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : "Could not leave this community."); }
+    finally { setBusy(false); }
+  }
+
+  async function uploadVideo(postId: number, file: File) {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      await api.uploadCommunityPostAttachment(postId, file);
+      setNotice("Video attached privately to the community discussion.");
+      setPosts(await api.communityPosts(communityCode));
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not upload the video."); }
+    finally { setBusy(false); }
+  }
+
+  async function convertPost(event: FormEvent, postId: number) {
+    event.preventDefault();
+    if (!conversionCategory.trim() || !conversionAddress.trim()) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const result = await api.convertCommunityPostToReport(postId, {
+        title: conversionTitle.trim() || undefined,
+        category: conversionCategory.trim(),
+        address: conversionAddress.trim(),
+      });
+      setConversionPostId(null); setConversionTitle(""); setConversionAddress("");
+      setPosts(await api.communityPosts(communityCode));
+      setNotice("Community discussion submitted as official report #" + result.report_id + ".");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not convert this discussion into a report."); }
+    finally { setBusy(false); }
+  }
 
   async function publish(event: FormEvent) {
     event.preventDefault();
@@ -141,7 +207,7 @@ export default function CommunityConnectPage() {
           <label className="field-wide">Share an update<textarea required minLength={1} maxLength={5000} rows={4} value={draft} onChange={e => setDraft(e.target.value)} placeholder="What is happening in your community? Add useful details and be respectful."/></label>
           {staffRoles.includes(user?.role ?? "") && <label className="field-wide checkbox-row"><input type="checkbox" checked={announcement} onChange={e => setAnnouncement(e.target.checked)}/> Publish as an official announcement</label>}
           <div className="field-wide form-actions"><button className="button button-primary" disabled={busy || !draft.trim()}>{busy ? "Publishing…" : "Share with community"}</button></div>
-        </form>
+        </form><div className="form-actions"><button type="button" className="button button-quiet button-small" disabled={busy} onClick={() => void leaveCommunity()}>Leave community</button></div></> : <div className="empty-state"><h3>Join this community</h3><p>Join to publish messages, comment and share photos or videos. You can still read the discussion feed without joining.</p><button className="button button-primary" disabled={busy} onClick={() => void joinCommunity()}>{busy ? "Please wait…" : "Join community"}</button></div>}
       </section>
       <section className="panel">
         <div className="panel-heading"><div><h2>Community discussions</h2><p className="muted">Announcements appear before the latest conversations.</p></div><button className="button button-quiet button-small" onClick={() => api.communityPosts(communityCode).then(setPosts).catch(() => setError("Could not refresh posts."))}>Refresh</button></div>
@@ -152,8 +218,10 @@ export default function CommunityConnectPage() {
               <p style={{ whiteSpace: "pre-wrap" }}>{post.body}</p>
               <small>{new Date(post.created_at).toLocaleString()}</small>
               {(images[post.id] ?? []).length > 0 && <div className="community-image-grid">{images[post.id].map(item => <figure key={item.id}><img src={item.url} alt={"Photo shared by " + post.author.full_name + ": " + item.filename}/><figcaption>{item.filename}</figcaption></figure>)}</div>}
-              <label className="button button-quiet button-small community-photo-upload">Attach a photo<input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" disabled={busy} onChange={event => { const file = event.target.files?.[0]; if (file) void uploadImage(post.id, file); event.target.value = ""; }}/></label>
-              <div className="form-actions"><button className="button button-quiet button-small" type="button" onClick={() => void toggleComments(post.id)}>{expandedPost === post.id ? "Hide comments" : "Comments (" + post.comment_count + ")"}</button></div>
+              {isMember && <><label className="button button-quiet button-small community-photo-upload">Attach a photo<input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" disabled={busy} onChange={event => { const file = event.target.files?.[0]; if (file) void uploadImage(post.id, file); event.target.value = ""; }}/></label><label className="button button-quiet button-small community-photo-upload">Attach a video<input type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.m4v,.webm,.mov" disabled={busy} onChange={event => { const file = event.target.files?.[0]; if (file) void uploadVideo(post.id, file); event.target.value = ""; }}/></label></>}
+              {(attachments[post.id] ?? []).length > 0 && <div className="community-video-grid">{attachments[post.id].map(item => <figure key={item.id}><video controls preload="metadata" src={item.url}/><figcaption>{item.filename}</figcaption></figure>)}</div>}
+              {isMember && post.author_user_id === user?.id && (post.converted_report_id ? <p className="muted">Official report created: <Link to={"/reports/" + post.converted_report_id}>View report #{post.converted_report_id}</Link></p> : <><button type="button" className="button button-quiet button-small" onClick={() => { setConversionPostId(conversionPostId === post.id ? null : post.id); setConversionTitle(post.body.split("\n")[0].slice(0,180)); setConversionAddress(""); }}>Turn into official report</button>{conversionPostId === post.id && <form className="community-convert-form" onSubmit={event => void convertPost(event, post.id)}><label>Report title<input maxLength={180} value={conversionTitle} onChange={event => setConversionTitle(event.target.value)}/></label><label>Report category<select value={conversionCategory} onChange={event => setConversionCategory(event.target.value)}>{["Infrastructure","Roads and Transport","Water and Sanitation","Electricity","Public Safety","Healthcare","Environment","Other"].map(item => <option key={item}>{item}</option>)}</select></label><label>Street, landmark or nearby building<input required minLength={3} maxLength={300} value={conversionAddress} onChange={event => setConversionAddress(event.target.value)} placeholder="e.g. beside the community health centre"/></label><p className="muted">The selected community supplies the State, LGA and Ward. No GPS coordinates will be requested.</p><div className="form-actions"><button type="button" className="button button-quiet" onClick={() => setConversionPostId(null)}>Cancel</button><button className="button button-primary" disabled={busy || !conversionAddress.trim()}>{busy ? "Submitting…" : "Submit official report"}</button></div></form>}</>)}
+              <div className="form-actions"><button className="button button-quiet button-small" type="button" disabled={!isMember} onClick={() => void toggleComments(post.id)}>{expandedPost === post.id ? "Hide comments" : "Comments (" + post.comment_count + ")"}</button></div>
               {expandedPost === post.id && <div className="community-comments">
                 {(comments[post.id] ?? []).map(comment => <div className="comment-row" key={comment.id}><strong>{comment.author.full_name}</strong><p>{comment.body}</p><small>{new Date(comment.created_at).toLocaleString()}</small></div>)}
                 <form className="form-actions" onSubmit={event => void submitComment(event, post.id)}><input aria-label="Write a comment" value={commentDraft} onChange={e => setCommentDraft(e.target.value)} maxLength={2000} placeholder="Write a respectful comment…"/><button className="button button-primary button-small" disabled={busy || !commentDraft.trim()}>Comment</button></form>
