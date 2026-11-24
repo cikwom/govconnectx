@@ -13,6 +13,7 @@ class LegacyDatabaseMigrationTests(unittest.TestCase):
         try:
             with engine.begin() as connection:
                 connection.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY)"))
+                connection.execute(text("CREATE TABLE departments (id INTEGER PRIMARY KEY)"))
                 connection.execute(text("CREATE TABLE reports (id INTEGER PRIMARY KEY, title VARCHAR(200) NOT NULL, latitude FLOAT NOT NULL, longitude FLOAT NOT NULL)"))
                 connection.execute(text("CREATE TABLE community_posts (id INTEGER PRIMARY KEY, body TEXT NOT NULL)"))
                 connection.execute(text("INSERT INTO reports (id, title, latitude, longitude) VALUES (9, 'Old report', 6.5, 3.3)"))
