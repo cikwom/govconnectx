@@ -56,6 +56,7 @@ class PostResponse(BaseModel):
     is_announcement: bool
     created_at: datetime
     comment_count: int = 0
+    converted_report_id: int | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -165,7 +166,7 @@ def list_community_posts(
         result.append({
             "id": post.id, "community_code": post.community_code, "author_user_id": post.author_user_id,
             "author": post.author_user, "body": post.body, "is_announcement": post.is_announcement,
-            "created_at": post.created_at,
+            "created_at": post.created_at, "converted_report_id": post.converted_report_id,
             "comment_count": db.query(CommunityPostComment).filter(
                 CommunityPostComment.post_id == post.id, CommunityPostComment.is_hidden.is_(False)
             ).count(),
@@ -201,14 +202,15 @@ def create_community_post(
     db.refresh(post)
     return {"id": post.id, "community_code": post.community_code, "author_user_id": actor.id,
             "author": actor, "body": post.body, "is_announcement": post.is_announcement,
-            "created_at": post.created_at, "comment_count": 0}
+            "created_at": post.created_at, "comment_count": 0, "converted_report_id": post.converted_report_id}
 
 
 @router.get("/posts/{post_id}/comments", response_model=list[CommentResponse])
 def list_post_comments(
     post_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)
 ):
-    _post_or_404(db, post_id)
+    post = _post_or_404(db, post_id)
+    _require_membership(db, post.community_code, _.id)
     comments = db.query(CommunityPostComment).filter(
         CommunityPostComment.post_id == post_id, CommunityPostComment.is_hidden.is_(False)
     ).order_by(CommunityPostComment.created_at.asc(), CommunityPostComment.id.asc()).all()
