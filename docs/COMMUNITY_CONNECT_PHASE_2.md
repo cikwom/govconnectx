@@ -7,7 +7,8 @@
 - Explicit community membership with join/leave controls and audit events.
 - Posting, commenting and private evidence uploads require active membership.
 - Read-only authenticated users can still view the text discussion feed without joining.
-- Discussion feed refreshes automatically every 20 seconds while a community room is open.
+- Authenticated, membership-gated WebSocket events update discussion feeds immediately for posts, comments, evidence uploads, moderation and report conversion.
+- The frontend falls back to 20-second polling if the live socket is unavailable.
 - Private MP4, WebM and QuickTime video uploads (50 MiB maximum) use content-signature validation, private storage and the existing malware-scanning service.
 - A post author can convert their discussion into one official report.
 - Conversion derives State, LGA, Ward and Community from the selected verified community record, asks the citizen for a street/landmark description, and does not request GPS.
@@ -34,7 +35,7 @@
 
 ## Remaining work
 
-- The 20-second refresh is near-real-time polling, not a WebSocket/push chat connection.
+- Live WebSocket broadcasts currently use an in-process connection manager; horizontal multi-worker deployments will need shared pub/sub (for example Redis) so events reach sockets connected to other workers.
 - Add moderation queues, post/member reporting, spam controls, and community admin roles.
 - Validate video playback and upload performance with production storage.
 - Run end-to-end tests for join/leave, evidence visibility, conversion, and the complete landmark-only citizen report flow.
