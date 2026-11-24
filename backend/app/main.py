@@ -1,4 +1,8 @@
 import os
+from pathlib import Path
+
+from alembic import command as alembic_command
+from alembic.config import Config as AlembicConfig
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +39,21 @@ with SessionLocal() as location_session:
     seed_location_directory(location_session)
 
 app = FastAPI(title="GovConnect Nigeria", version="1.7.0")
+
+@app.on_event("startup")
+def apply_database_migrations():
+    # Unit tests use isolated in-memory databases and run Alembic explicitly
+    # in migration tests. Real app processes apply pending revisions before
+    # serving requests.
+    if os.getenv("ENVIRONMENT", "development").strip().lower() == "test":
+        return
+    backend_dir = Path(__file__).resolve().parents[1]
+    migration_config = AlembicConfig(str(backend_dir / "alembic.ini"))
+    migration_config.set_main_option("script_location", str(backend_dir / "migrations"))
+    alembic_command.upgrade(migration_config, "head")
+
+
+
 cors_origins = [origin.strip() for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if origin.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=cors_origins, allow_credentials=False, allow_methods=["GET", "POST", "PUT", "PATCH", "OPTIONS"], allow_headers=["Authorization", "Content-Type"])
 
