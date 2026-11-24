@@ -106,9 +106,10 @@ def migrate_existing_schema(database_engine=None):
                 from alembic.operations import Operations
 
                 operations = Operations(MigrationContext.configure(connection))
-                with operations.batch_alter_table("reports") as batch:
-                    batch.alter_column("latitude", existing_type=Float(), nullable=True)
-                    batch.alter_column("longitude", existing_type=Float(), nullable=True)
+                batch_options = {"recreate": "always"} if connection.dialect.name == "sqlite" else {}
+                with operations.batch_alter_table("reports", **batch_options) as batch:
+                    batch.alter_column("latitude", existing_type=Float(), existing_nullable=False, nullable=True)
+                    batch.alter_column("longitude", existing_type=Float(), existing_nullable=False, nullable=True)
 
         if "community_posts" in tables:
             post_columns = {column["name"] for column in inspect(connection).get_columns("community_posts")}
