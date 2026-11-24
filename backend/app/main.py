@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine, migrate_existing_schema, SessionLocal
 from app.models import Community, Department, LocalGovernmentArea, Report, ReportAssignment, ReportAttachment, ReportComment, ReportStatusHistory, State, User, Ward
+from app.models.community_discussion import CommunityPost, CommunityPostComment, CommunityPostImage  # noqa: F401 - register Community Connect tables before create_all
 from app.models.audit_event import AuditEvent  # noqa: F401 - register audit table before create_all
 from app.models.citizen_services import CommunityListing, PublicServiceDirectoryEntry, ReportEscalation, ReportFeedback  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
@@ -19,6 +20,7 @@ from app.routers.attachments import router as attachments_router
 from app.routers.auth import router as auth_router
 from app.routers.departments import router as departments_router
 from app.routers.citizen_services import router as citizen_services_router
+from app.routers.community_spaces import router as community_spaces_router
 from app.routers.locations import router as locations_router, seed_location_directory
 from app.routers.notifications import router as notifications_router
 from app.routers.public import router as public_router
@@ -47,6 +49,7 @@ app.include_router(locations_router)
 app.include_router(admin_router)
 app.include_router(departments_router)
 app.include_router(citizen_services_router)
+app.include_router(community_spaces_router)
 app.include_router(reports_router)
 app.include_router(attachments_router)
 app.include_router(notifications_router)

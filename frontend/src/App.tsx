@@ -5,6 +5,7 @@ import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AgencyDashboardPage from "./pages/AgencyDashboardPage";
 import DashboardPage from "./pages/DashboardPage";
 import CommunityServicesPage from "./pages/CommunityServicesPage";
+import CommunityConnectPage from "./pages/CommunityConnectPage";
 import HomePage from "./pages/HomePage";
 import LegalPage from "./pages/LegalPage";
 import LoginPage from "./pages/LoginPage";
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/agency" element={<AgencyDashboardPage />} />
           <Route path="/community-services" element={<CommunityServicesPage />} />
+          <Route path="/community-connect" element={<CommunityConnectPage />} />
           <Route path="/preferences" element={<PreferencesPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/reports/:reportId" element={<ReportDetailPage />} />

@@ -22,6 +22,7 @@ export default function AppShell() {
       <header className="topbar">
         <NavLink className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></NavLink>
         <div className="topbar-user">
+          <NavLink className="admin-nav-link" to="/community-connect">Community Connect</NavLink>
           <NavLink className="admin-nav-link" to="/community-services">{t("Community services")}</NavLink>
           {staffUser && <NavLink className="admin-nav-link" to="/agency">{t("Agency operations")}</NavLink>}
           {user?.role === "system_admin" && <NavLink className="admin-nav-link" to="/admin">{t("Command Centre")}</NavLink>}
