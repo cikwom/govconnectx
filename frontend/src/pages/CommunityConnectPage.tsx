@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { api } from "../services/api";
+import { api, tokenStore } from "../services/api";
 import type { Community, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage, GeographicState, GeographicWard, LocalGovernmentArea } from "../types/api";
 import { useAuth } from "../state/AuthContext";
 import { Link } from "react-router-dom";
@@ -23,6 +23,7 @@ export default function CommunityConnectPage() {
   const [attachments, setAttachments] = useState<Record<number, { id: number; filename: string; contentType: string; url: string }[]>>({});
   const [isMember, setIsMember] = useState(false);
   const [membershipLoading, setMembershipLoading] = useState(false);
+  const [liveConnected, setLiveConnected] = useState(false);
   const [conversionPostId, setConversionPostId] = useState<number | null>(null);
   const [conversionTitle, setConversionTitle] = useState("");
   const [conversionCategory, setConversionCategory] = useState("Infrastructure");
@@ -91,12 +92,41 @@ export default function CommunityConnectPage() {
   }, [communityCode]);
 
   useEffect(() => {
-    if (!communityCode) return;
+    if (!communityCode || !isMember) { setLiveConnected(false); return; }
+    let disposed = false;
+    const socket = api.openCommunitySocket(communityCode);
+    socket.onopen = () => {
+      const token = tokenStore.get();
+      if (!token) { socket.close(); return; }
+      socket.send(JSON.stringify({ type: "authenticate", token }));
+    };
+    socket.onmessage = event => {
+      try {
+        const message = JSON.parse(String(event.data)) as { type?: string };
+        if (message.type === "connected") { setLiveConnected(true); return; }
+        if (message.type === "pong") return;
+        api.communityPosts(communityCode).then(setPosts).catch(() => undefined);
+      } catch { /* Ignore malformed live events and retain the polling fallback. */ }
+    };
+    socket.onclose = () => { if (!disposed) setLiveConnected(false); };
+    socket.onerror = () => { if (!disposed) setLiveConnected(false); };
+    const heartbeat = window.setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) socket.send("ping");
+    }, 25000);
+    return () => {
+      disposed = true;
+      window.clearInterval(heartbeat);
+      socket.close();
+    };
+  }, [communityCode, isMember]);
+
+  useEffect(() => {
+    if (!communityCode || liveConnected) return;
     const timer = window.setInterval(() => {
       api.communityPosts(communityCode).then(setPosts).catch(() => undefined);
     }, 20000);
     return () => window.clearInterval(timer);
-  }, [communityCode]);
+  }, [communityCode, liveConnected]);
 
   async function joinCommunity() {
     setBusy(true); setError("");
@@ -213,7 +243,7 @@ export default function CommunityConnectPage() {
         </> : <div className="empty-state"><h3>Join this community</h3><p>Join to publish messages, comment and share evidence. You can still read the discussion feed without joining.</p><button className="button button-primary" disabled={busy} onClick={() => void joinCommunity()}>{busy ? "Please wait…" : "Join community"}</button></div>}
       </section>
       <section className="panel">
-        <div className="panel-heading"><div><h2>Community discussions</h2><p className="muted">Announcements appear before the latest conversations. New messages refresh automatically every 20 seconds.</p></div><button className="button button-quiet button-small" onClick={() => api.communityPosts(communityCode).then(setPosts).catch(() => setError("Could not refresh posts."))}>Refresh</button></div>
+        <div className="panel-heading"><div><h2>Community discussions</h2><p className="muted">Announcements appear before the latest conversations. {liveConnected ? "Live updates are connected." : "Automatic refresh checks for new messages every 20 seconds while reconnecting."}</p></div><button className="button button-quiet button-small" onClick={() => api.communityPosts(communityCode).then(setPosts).catch(() => setError("Could not refresh posts."))}>Refresh</button></div>
         {loading ? <div className="empty-state">Loading community discussions…</div> : posts.length === 0 ? <div className="empty-state"><h3>Be the first to start a conversation</h3><p>Share a helpful update or describe an issue affecting this community.</p></div> :
           <div className="report-list">{posts.map(post => <article className="report-row" key={post.id}>
             <div className="report-main">
