@@ -112,6 +112,7 @@ test("citizen signs in and submits a report with state, LGA, ward and community"
 
 test("citizen can submit a report using a landmark without sharing GPS or coordinates", async ({ page }) => {
   let created: Record<string, unknown> | undefined;
+  let reports: Record<string, unknown>[] = [];
   await page.route("http://localhost:8000/api/v1/**", async route => {
     const path = new URL(route.request().url()).pathname;
     const method = route.request().method();
@@ -125,14 +126,16 @@ test("citizen can submit a report using a landmark without sharing GPS or coordi
     if (path === "/api/v1/auth/login") {
       return route.fulfill({ json: { access_token: "e2e-test-token", token_type: "bearer", user: citizen } });
     }
-    if (path === "/api/v1/reports" && method === "GET") return route.fulfill({ json: [] });
+    if (path === "/api/v1/reports" && method === "GET") return route.fulfill({ json: reports });
     if (path === "/api/v1/reports" && method === "POST") {
       created = route.request().postDataJSON() as Record<string, unknown>;
-      return route.fulfill({ status: 201, json: {
+      const report = {
         id: 702, ...created, latitude: null, longitude: null, gps_latitude: null, gps_longitude: null,
         status: "SUBMITTED", sla_due_at: null, resolved_at: null,
         created_at: "2026-11-24T12:00:00Z", updated_at: "2026-11-24T12:00:00Z",
-      } });
+      };
+      reports = [report];
+      return route.fulfill({ status: 201, json: report });
     }
     return route.fulfill({ status: 200, json: [] });
   });
