@@ -1,6 +1,6 @@
 import os
 
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import Float, create_engine, inspect, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 from app import config  # noqa: F401 - load .env before reading DATABASE_URL
@@ -107,7 +107,7 @@ def migrate_existing_schema(database_engine=None):
 
                 operations = Operations(MigrationContext.configure(connection))
                 with operations.batch_alter_table("reports") as batch:
-                    batch.alter_column("latitude", existing_type=__import__("sqlalchemy").Float(), nullable=True)
+                    batch.alter_column("latitude", existing_type=Float(), nullable=True)
                     batch.alter_column("longitude", existing_type=__import__("sqlalchemy").Float(), nullable=True)
 
         if "community_posts" in tables:
