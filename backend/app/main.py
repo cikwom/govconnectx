@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine, migrate_existing_schema, SessionLocal
 from app.models import Community, Department, LocalGovernmentArea, Report, ReportAssignment, ReportAttachment, ReportComment, ReportStatusHistory, State, User, Ward
-from app.models.community_discussion import CommunityPost, CommunityPostComment  # noqa: F401 - register Community Connect tables before create_all
+from app.models.community_discussion import CommunityPost, CommunityPostComment, CommunityPostImage  # noqa: F401 - register Community Connect tables before create_all
 from app.models.audit_event import AuditEvent  # noqa: F401 - register audit table before create_all
 from app.models.citizen_services import CommunityListing, PublicServiceDirectoryEntry, ReportEscalation, ReportFeedback  # noqa: F401
 from app.models.notification import Notification  # noqa: F401
