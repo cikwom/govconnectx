@@ -96,8 +96,8 @@ test("citizen signs in and submits a report with state, LGA, ward and community"
   await page.getByLabel("Incident LGA").selectOption("IKE");
   await page.getByLabel("Ward (optional)").selectOption("IKE-01");
   await page.getByLabel("Community (optional)").selectOption("IKE-01-A");
-  await page.getByLabel("Latitude").fill("6.6018");
-  await page.getByLabel("Longitude").fill("3.3515");
+  await page.getByLabel("Latitude (optional)").fill("6.6018");
+  await page.getByLabel("Longitude (optional)").fill("3.3515");
   await page.getByRole("button", { name: "Submit report" }).click();
 
   await expect(page.getByRole("heading", { name: "Blocked drainage on Market Road" })).toBeVisible();
