@@ -16,6 +16,8 @@ if str(BACKEND_DIR) not in sys.path:
 from app.database import Base  # noqa: E402
 from app.models import (  # noqa: E402,F401
     Community,
+    CommunityMembership,
+    CommunityPostAttachment,
     Department,
     DepartmentGeographicScope,
     DepartmentRoutingCategory,
@@ -82,7 +84,7 @@ class AlembicBaselineTests(unittest.TestCase):
                             text("SELECT email FROM users WHERE id = 91")
                         ).scalar_one()
 
-                self.assertEqual(revision, "20261124_0002")
+                self.assertEqual(revision, "20261124_0003")
                 self.assertEqual(existing_user, "existing@example.test")
             finally:
                 engine.dispose()
