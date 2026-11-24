@@ -42,6 +42,9 @@ function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promi
   const[title,setTitle]=useState("");
   const[description,setDescription]=useState("");
   const[category,setCategory]=useState("Infrastructure");
+  const[infrastructureType,setInfrastructureType]=useState("");
+  const[otherInfrastructureDetails,setOtherInfrastructureDetails]=useState("");
+  const isOtherInfrastructure=category==="Infrastructure"&&infrastructureType==="Others";
   const[latitude,setLatitude]=useState("");
   const[longitude,setLongitude]=useState("");
   const[address,setAddress]=useState("");
@@ -71,7 +74,7 @@ function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promi
   useEffect(()=>{setCommunityCode("");if(!wardCode){setCommunities([]);return}api.communities(wardCode).then(setCommunities).catch(()=>setError("Could not load communities for the selected ward."))},[wardCode]);
   async function submit(e:FormEvent){
     e.preventDefault();setError("");setBusy(true);
-    try{await onSubmit({title:title.trim(),description:description.trim(),category,latitude:Number(latitude),longitude:Number(longitude),gps_latitude:gps?.latitude,gps_longitude:gps?.longitude,address:address.trim()||undefined,incident_state_code:stateCode,incident_lga_code:lgaCode,incident_ward_code:wardCode||undefined,incident_community_code:communityCode||undefined})}
+    try{const reportDescription=isOtherInfrastructure?`Infrastructure issue type: Others\nOther infrastructure problem: ${otherInfrastructureDetails.trim()}\n\n${description.trim()}`:description.trim();await onSubmit({title:title.trim(),description:reportDescription,category,latitude:Number(latitude),longitude:Number(longitude),gps_latitude:gps?.latitude,gps_longitude:gps?.longitude,address:address.trim()||undefined,incident_state_code:stateCode,incident_lga_code:lgaCode,incident_ward_code:wardCode||undefined,incident_community_code:communityCode||undefined})}
     catch(err){setError(err instanceof Error?err.message:"Could not submit report")}
     finally{setBusy(false)}
   }
@@ -79,7 +82,9 @@ function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promi
     <div className="panel-heading"><div><h2>{t("Submit a community report")}</h2><p className="muted">{t("Tell us what happened and select where the incident occurred. This can be different from your home area.")}</p></div></div>
     <form className="form-grid" onSubmit={submit}>
       <label className="field-wide">{t("Report title")}<input required maxLength={180} value={title} onChange={e=>setTitle(e.target.value)} placeholder="e.g. Large pothole on Market Road"/></label>
-      <label>{t("Category")}<select value={category} onChange={e=>setCategory(e.target.value)}>{["Infrastructure","Roads and Transport","Water and Sanitation","Electricity","Public Safety","Healthcare","Environment","Other"].map(v=><option key={v}>{t(v)}</option>)}</select></label>
+      <label>{t("Category")}<select value={category} onChange={e=>{setCategory(e.target.value);setInfrastructureType("");setOtherInfrastructureDetails("");}}>{["Infrastructure","Roads and Transport","Water and Sanitation","Electricity","Public Safety","Healthcare","Environment","Other"].map(v=><option key={v}>{t(v)}</option>)}</select></label>
+      {category==="Infrastructure"&&<label>{t("Infrastructure issue")}<select required value={infrastructureType} onChange={e=>{setInfrastructureType(e.target.value);setOtherInfrastructureDetails("");}}><option value="">{t("Select infrastructure issue")}</option>{["Roads","Bridges","Drainage","Streetlights","Public facilities","Others"].map(v=><option key={v} value={v}>{t(v)}</option>)}</select></label>}
+      {isOtherInfrastructure&&<label className="field-wide">{t("Describe the other infrastructure problem")}<textarea required rows={3} maxLength={3000} value={otherInfrastructureDetails} onChange={e=>setOtherInfrastructureDetails(e.target.value)} placeholder={t("Write the infrastructure problem you want to report…")}/></label>}
       <label className="field-wide">{t("Description")}<textarea required rows={4} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Explain what happened, where it is, and how it affects the community."/></label>
       <label>{t("Incident state or FCT")}<select required value={stateCode} onChange={e=>setStateCode(e.target.value)}><option value="">{t("Select state")}</option>{states.map(state=><option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
       <label>{t("Incident LGA")}<select required disabled={!stateCode||lgas.length===0} value={lgaCode} onChange={e=>setLgaCode(e.target.value)}><option value="">{t("Select LGA")}</option>{lgas.map(lga=><option key={lga.code} value={lga.code}>{lga.name}</option>)}</select></label>
@@ -90,7 +95,7 @@ function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promi
       <label>{t("Longitude")}<input type="number" step="any" min="-180" max="180" required value={longitude} onChange={e=>setLongitude(e.target.value)} placeholder="e.g. 3.3792"/></label>
       <label className="field-wide">{t("Address or landmark (optional)")}<input value={address} onChange={e=>setAddress(e.target.value)} placeholder="Street, area, LGA, state"/></label>
       {error&&<p className="form-error field-wide" role="alert">{error}</p>}
-      <div className="form-actions field-wide"><button type="button" className="button button-quiet" onClick={onCancel}>{t("Cancel")}</button><button className="button button-primary" disabled={busy||!stateCode||!lgaCode}>{busy?t("Submitting…"):t("Submit report")}</button></div>
+      <div className="form-actions field-wide"><button type="button" className="button button-quiet" onClick={onCancel}>{t("Cancel")}</button><button className="button button-primary" disabled={busy||!stateCode||!lgaCode||(category==="Infrastructure"&&!infrastructureType)||(isOtherInfrastructure&&!otherInfrastructureDetails.trim())}>{busy?t("Submitting…"):t("Submit report")}</button></div>
     </form>
   </section>;
 }
