@@ -19,6 +19,7 @@ class CommunityPost(Base):
     moderated_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     updated_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+    converted_report_id = Column(Integer, ForeignKey("reports.id"), nullable=True, unique=True, index=True)
     author_user = relationship("User", foreign_keys=[author_user_id])
 
 
@@ -34,6 +35,17 @@ class CommunityPostComment(Base):
     moderated_at = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
     author_user = relationship("User", foreign_keys=[author_user_id])
+
+class CommunityMembership(Base):
+    __tablename__ = "community_memberships"
+
+    id = Column(Integer, primary_key=True, index=True)
+    community_code = Column(String(32), ForeignKey("communities.code"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    joined_at = Column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    is_active = Column(Boolean, nullable=False, default=True, index=True)
+    __table_args__ = ({"sqlite_autoincrement": True},)
+
 
 class CommunityPostImage(Base):
     __tablename__ = "community_post_images"
