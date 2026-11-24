@@ -1,5 +1,5 @@
 import type {
-  AuthResponse, CommentItem, CommunityPost, CommunityPostComment, CreateReportPayload, GeographicState, HistoryItem,
+  AuthResponse, CommentItem, CommunityPost, CommunityPostComment, CommunityPostImage, CreateReportPayload, GeographicState, HistoryItem,
   Community, GeographicWard, LocalGovernmentArea, RegisterPayload, Report, ReportAttachment, User,
 } from "../types/api";
 
@@ -91,6 +91,9 @@ export const api = {
   communityPosts: (communityCode: string) => request<CommunityPost[]>(`/community-spaces/${encodeURIComponent(communityCode)}/posts`),
   createCommunityPost: (communityCode: string, body: string, isAnnouncement = false) => request<CommunityPost>(`/community-spaces/${encodeURIComponent(communityCode)}/posts`, { method: "POST", body: JSON.stringify({ body, is_announcement: isAnnouncement }) }),
   communityPostComments: (postId: number) => request<CommunityPostComment[]>(`/community-spaces/posts/${postId}/comments`),
+  communityPostImages: (postId: number) => request<CommunityPostImage[]>(`/community-spaces/posts/${postId}/images`),
+  uploadCommunityPostImage: (postId: number, file: File) => { const form = new FormData(); form.append("file", file); return request<CommunityPostImage>(`/community-spaces/posts/${postId}/images`, { method: "POST", body: form }); },
+  downloadCommunityPostImage: (postId: number, imageId: number) => requestBlob(`/community-spaces/posts/${postId}/images/${imageId}`),
   addCommunityPostComment: (postId: number, body: string) => request<CommunityPostComment>(`/community-spaces/posts/${postId}/comments`, { method: "POST", body: JSON.stringify({ body }) }),
   moderateCommunityPost: (postId: number, isHidden: boolean) => request<{ id: number; is_hidden: boolean }>(`/community-spaces/posts/${postId}/moderation`, { method: "PATCH", body: JSON.stringify({ is_hidden: isHidden }) }),
   communityListings: () => request<CommunityListing[]>("/community/listings"),
