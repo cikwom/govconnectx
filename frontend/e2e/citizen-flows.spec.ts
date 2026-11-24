@@ -174,6 +174,11 @@ test("citizen can join a selected community before posting", async ({ page }) =>
     if (path === "/api/v1/locations/states/LA/lgas") return route.fulfill({ json: lgas });
     if (path === "/api/v1/locations/lgas/IKE/wards") return route.fulfill({ json: wards });
     if (path === "/api/v1/locations/wards/IKE-01/communities") return route.fulfill({ json: communities });
+    if (path === "/api/v1/preferences") return route.fulfill({ json: {
+      email_notifications: true, in_app_notifications: true, sms_notifications: false,
+      sms_consent_at: null, sms_consent_revoked_at: null, phone_number: null,
+      phone_verified_at: null, preferred_language: "en", updated_at: "2026-11-24T12:00:00Z",
+    } });
     if (path === "/api/v1/auth/login") {
       return route.fulfill({ json: { access_token: "e2e-test-token", token_type: "bearer", user: citizen } });
     }
