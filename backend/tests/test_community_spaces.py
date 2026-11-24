@@ -119,7 +119,7 @@ class CommunitySpaceApiTests(unittest.TestCase):
             headers=headers, json={"body": "Photo of the damaged streetlight."},
         )
         post_id = post.json()["id"]
-        image_bytes = b"\\xff\\xd8\\xff" + b"community-test-image"
+        image_bytes = b"\xff\xd8\xff" + b"community-test-image"
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"COMMUNITY_MEDIA_DIR": directory}):
             uploaded = self.client.post(
                 f"/api/v1/community-spaces/posts/{post_id}/images",
