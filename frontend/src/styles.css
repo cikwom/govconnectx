@@ -480,3 +480,15 @@ input[type="radio"] {
 :root[data-theme="dark"] .admin-department-select{background:#203431;border-color:#36534b;color:#d8eee6}
 .form-success{padding:11px 14px;border:1px solid #bfe3d7;border-radius:9px;background:#f0faf5;color:#176b50;font-size:.82rem}
 :root[data-theme="dark"] .form-success{background:#1d302c;border-color:#3c5c51;color:#a8e4c7}
+
+
+/* Community Connect */
+.page-stack{display:flex;flex-direction:column;gap:4px}
+.community-comments{margin-top:16px;padding:16px;background:#f7fafb;border:1px solid #e7edf2;border-radius:10px}
+.comment-row{padding:10px 0;border-bottom:1px solid #e4ebef}
+.comment-row strong{font-size:.82rem;color:#34495e}
+.comment-row p{margin:5px 0;font-size:.84rem;white-space:pre-wrap;color:#526477}
+.comment-row small{font-size:.7rem;color:#94a3b8}
+.checkbox-row{display:flex!important;flex-direction:row!important;align-items:center;gap:10px!important}
+.checkbox-row input{width:auto}
+@media(max-width:760px){.community-comments{padding:12px}.community-comments .form-actions{align-items:stretch;flex-direction:column}.community-comments .form-actions input{min-width:0}}
