@@ -432,12 +432,39 @@ def convert_community_post_to_report(
     )
     from app.routers.reports import create_report
     report = create_report(report_payload, BackgroundTasks(), db, actor)
+
+    # Carry community evidence into the official report's private evidence list.
+    source_evidence = (
+        db.query(CommunityPostImage).filter(CommunityPostImage.post_id == post.id).all()
+        + db.query(CommunityPostAttachment).filter(CommunityPostAttachment.post_id == post.id).all()
+    )
+    report_evidence_count = 0
+    report_media_root = Path(os.getenv("REPORT_ATTACHMENT_DIR", "./private_uploads/report-evidence")).expanduser().resolve()
+    report_media_root.mkdir(parents=True, exist_ok=True)
+    for item in source_evidence:
+        if item.storage_backend == "local":
+            source_path = _community_image_path(item.storage_key)
+            if not source_path.is_file():
+                continue
+            destination = (report_media_root / item.storage_key).resolve()
+            if destination.parent != report_media_root:
+                continue
+            destination.write_bytes(source_path.read_bytes())
+        db.add(ReportAttachment(
+            report_id=report.id, uploaded_by_user_id=item.uploaded_by_user_id,
+            original_filename=item.original_filename, storage_key=item.storage_key,
+            storage_backend=item.storage_backend, content_type=item.content_type,
+            size_bytes=item.size_bytes, sha256=item.sha256,
+        ))
+        report_evidence_count += 1
+
     post.converted_report_id = report.id
     record_audit_event(
         db, actor_user_id=actor.id, action="community.post_converted_to_report",
         entity_type="community_post", entity_id=post.id,
         summary="A community discussion was submitted as an official report",
-        details={"report_id": report.id, "community_code": community.code},
+        details={"report_id": report.id, "community_code": community.code,
+                 "evidence_count": report_evidence_count},
     )
     db.commit()
     return {"report_id": report.id, "title": report.title, "status": report.status,
