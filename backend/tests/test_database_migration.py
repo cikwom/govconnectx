@@ -7,6 +7,30 @@ from app.database import migrate_existing_schema
 
 
 class LegacyDatabaseMigrationTests(unittest.TestCase):
+
+    def test_existing_reports_become_landmark_compatible_and_posts_get_conversion_link(self):
+        engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
+        try:
+            with engine.begin() as connection:
+                connection.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY)"))
+                connection.execute(text("CREATE TABLE reports (id INTEGER PRIMARY KEY, title VARCHAR(200) NOT NULL, latitude FLOAT NOT NULL, longitude FLOAT NOT NULL)"))
+                connection.execute(text("CREATE TABLE community_posts (id INTEGER PRIMARY KEY, body TEXT NOT NULL)"))
+                connection.execute(text("INSERT INTO reports (id, title, latitude, longitude) VALUES (9, 'Old report', 6.5, 3.3)"))
+                connection.execute(text("INSERT INTO community_posts (id, body) VALUES (12, 'Old community post')"))
+            migrate_existing_schema(engine)
+            columns = {column["name"]: column for column in inspect(engine).get_columns("reports")}
+            self.assertTrue(columns["latitude"]["nullable"])
+            self.assertTrue(columns["longitude"]["nullable"])
+            post_columns = {column["name"] for column in inspect(engine).get_columns("community_posts")}
+            self.assertIn("converted_report_id", post_columns)
+            post_indexes = {index["name"] for index in inspect(engine).get_indexes("community_posts")}
+            self.assertIn("ix_community_posts_converted_report_id", post_indexes)
+            with engine.connect() as connection:
+                row = connection.execute(text("SELECT id, title FROM reports WHERE id = 9")).one()
+            self.assertEqual((row.id, row.title), (9, "Old report"))
+        finally:
+            engine.dispose()
+
     def test_legacy_schema_is_extended_without_losing_existing_reports(self):
         engine = create_engine(
             "sqlite://",
