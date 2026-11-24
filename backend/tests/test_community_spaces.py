@@ -183,7 +183,7 @@ class CommunitySpaceApiTests(unittest.TestCase):
         headers = self.create_user("citizen")
         post = self.client.post(f"/api/v1/community-spaces/{self.community_code}/posts", headers=headers, json={"body": "Short video showing the damaged bridge."})
         post_id = post.json()["id"]
-        video = b"\\x00\\x00\\x00\\x18ftypisom" + b"community-video-test"
+        video = b"\x00\x00\x00\x18ftypisom" + b"community-video-test"
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"COMMUNITY_MEDIA_DIR": directory}):
             uploaded = self.client.post(
                 f"/api/v1/community-spaces/posts/{post_id}/attachments",
