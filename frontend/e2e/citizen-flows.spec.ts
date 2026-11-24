@@ -154,10 +154,11 @@ test("citizen can submit a report using a landmark without sharing GPS or coordi
   await expect(page.getByText("Beside Ikeja community health centre, Alausa")).toBeVisible();
   expect(created).toMatchObject({
     title: "Flooding beside the health centre",
-    latitude: undefined, longitude: undefined,
     address: "Beside Ikeja community health centre, Alausa",
     incident_state_code: "LA", incident_lga_code: "IKE",
   });
+  expect(created).not.toHaveProperty("latitude");
+  expect(created).not.toHaveProperty("longitude");
   expect(created).not.toHaveProperty("gps_latitude");
   expect(created).not.toHaveProperty("gps_longitude");
 });
