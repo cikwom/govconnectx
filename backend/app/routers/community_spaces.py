@@ -64,11 +64,15 @@ community_live_connections = CommunityLiveConnections()
 async def community_live_updates(
     websocket: WebSocket,
     community_code: str,
-    token: str = Query(..., min_length=1),
     db: Session = Depends(get_db),
 ):
     await websocket.accept()
     try:
+        auth_message = await asyncio.wait_for(websocket.receive_json(), timeout=10)
+        token = auth_message.get("token") if isinstance(auth_message, dict) and auth_message.get("type") == "authenticate" else None
+        if not isinstance(token, str) or not token:
+            await websocket.close(code=4401)
+            return
         payload = decode_access_token(token)
         if payload.get("type") != "access":
             await websocket.close(code=4401)
@@ -430,6 +434,7 @@ def upload_community_image(
         )
         db.commit()
         db.refresh(image)
+        community_live_connections.broadcast_sync(post.community_code, {"type": "evidence_uploaded", "post_id": post.id})
         return image
     except Exception:
         db.rollback()
