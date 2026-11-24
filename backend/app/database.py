@@ -108,7 +108,7 @@ def migrate_existing_schema(database_engine=None):
                 operations = Operations(MigrationContext.configure(connection))
                 with operations.batch_alter_table("reports") as batch:
                     batch.alter_column("latitude", existing_type=Float(), nullable=True)
-                    batch.alter_column("longitude", existing_type=__import__("sqlalchemy").Float(), nullable=True)
+                    batch.alter_column("longitude", existing_type=Float(), nullable=True)
 
         if "community_posts" in tables:
             post_columns = {column["name"] for column in inspect(connection).get_columns("community_posts")}
