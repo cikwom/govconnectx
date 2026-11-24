@@ -84,6 +84,9 @@ async def community_live_updates(
             return
         community = _community_or_404(db, community_code)
         _require_membership(db, community.code, actor.id)
+    except asyncio.TimeoutError:
+        await websocket.close(code=4401)
+        return
     except (jwt.InvalidTokenError, TypeError, ValueError):
         await websocket.close(code=4401)
         return
@@ -91,6 +94,7 @@ async def community_live_updates(
         await websocket.close(code=4403 if exc.status_code == 403 else 4404)
         return
 
+    db.close()  # Do not hold a database connection for the lifetime of a live socket.
     community_live_connections.connections.setdefault(community.code, []).append(
         (websocket, asyncio.get_running_loop())
     )
