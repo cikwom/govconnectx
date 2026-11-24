@@ -1,4 +1,7 @@
 import unittest
+import os
+import tempfile
+from unittest.mock import patch
 from uuid import uuid4
 
 from fastapi.testclient import TestClient
@@ -107,6 +110,33 @@ class CommunitySpaceApiTests(unittest.TestCase):
         headers = self.create_user("citizen")
         response = self.client.get("/api/v1/community-spaces/UNKNOWN-COMMUNITY/posts", headers=headers)
         self.assertEqual(response.status_code, 404)
+
+
+    def test_photo_upload_is_private_and_download_requires_authentication(self):
+        headers = self.create_user("citizen")
+        post = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/posts",
+            headers=headers, json={"body": "Photo of the damaged streetlight."},
+        )
+        post_id = post.json()["id"]
+        image_bytes = b"\\xff\\xd8\\xff" + b"community-test-image"
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"COMMUNITY_MEDIA_DIR": directory}):
+            uploaded = self.client.post(
+                f"/api/v1/community-spaces/posts/{post_id}/images",
+                headers=headers,
+                files={"file": ("streetlight.jpg", image_bytes, "image/jpeg")},
+            )
+            self.assertEqual(uploaded.status_code, 201)
+            image_id = uploaded.json()["id"]
+            listing = self.client.get(f"/api/v1/community-spaces/posts/{post_id}/images", headers=headers)
+            self.assertEqual(listing.status_code, 200)
+            self.assertEqual(listing.json()[0]["content_type"], "image/jpeg")
+            download = self.client.get(f"/api/v1/community-spaces/posts/{post_id}/images/{image_id}", headers=headers)
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(download.content, image_bytes)
+            self.assertEqual(download.headers["cache-control"], "private, no-store")
+            unauthenticated = self.client.get(f"/api/v1/community-spaces/posts/{post_id}/images/{image_id}")
+            self.assertEqual(unauthenticated.status_code, 401)
 
     def test_discussion_endpoints_require_authentication(self):
         response = self.client.get(f"/api/v1/community-spaces/{self.community_code}/posts")
