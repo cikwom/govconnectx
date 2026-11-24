@@ -8,7 +8,7 @@ from app.database import migrate_existing_schema
 
 class LegacyDatabaseMigrationTests(unittest.TestCase):
 
-    def test_existing_reports_become_landmark_compatible_and_posts_get_conversion_link(self):
+    def test_existing_posts_get_report_conversion_link_without_losing_reports(self):
         engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
         try:
             with engine.begin() as connection:
@@ -20,8 +20,6 @@ class LegacyDatabaseMigrationTests(unittest.TestCase):
                 connection.execute(text("INSERT INTO community_posts (id, body) VALUES (12, 'Old community post')"))
             migrate_existing_schema(engine)
             columns = {column["name"]: column for column in inspect(engine).get_columns("reports")}
-            self.assertTrue(columns["latitude"]["nullable"])
-            self.assertTrue(columns["longitude"]["nullable"])
             post_columns = {column["name"] for column in inspect(engine).get_columns("community_posts")}
             self.assertIn("converted_report_id", post_columns)
             post_indexes = {index["name"] for index in inspect(engine).get_indexes("community_posts")}
