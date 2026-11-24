@@ -639,6 +639,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "No geographic restriction": "Babu takaita yanki",
     "Local government area": "Karamar hukuma",
     "Select LGA (optional)": "Zaɓi karamar hukuma (na zaɓi)",
+    "Latitude (optional)": "Latitude (na zaɓi)",
+    "Longitude (optional)": "Longitude (na zaɓi)",
+    "Street, landmark, nearby building or address": "Titi, sanannen wuri, gini na kusa ko adireshi",
   },
   yo: {
     "Infrastructure issue": "Ìṣòro àwọn ohun èlò ìlú",
@@ -1200,6 +1203,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "No geographic restriction": "Kò sí ìdíwọ̀ agbègbè",
     "Local government area": "Agbègbè ìjọba ìbílẹ̀",
     "Select LGA (optional)": "Yan agbègbè ìjọba ìbílẹ̀ (àṣàyàn)",
+    "Latitude (optional)": "Latitude (àṣàyàn)",
+    "Longitude (optional)": "Longitude (àṣàyàn)",
+    "Street, landmark, nearby building or address": "Òpópónà, ibi tí a mọ̀ sí, ilé tó wà nítòsí tàbí àdírẹ́sì",
   },
   ig: {
     "Infrastructure issue": "Nsogbu akụrụngwa obodo",
@@ -1760,6 +1766,9 @@ const dictionaries: Record<Language, Dictionary> = {
     "No geographic restriction": "Enweghị mmachi mpaghara",
     "Local government area": "Mpaghara ọchịchị ime obodo",
     "Select LGA (optional)": "Họrọ LGA (nhọrọ)",
+    "Latitude (optional)": "Latitude (nhọrọ)",
+    "Longitude (optional)": "Longitude (nhọrọ)",
+    "Street, landmark, nearby building or address": "Ụzọ, ebe ama ama, ụlọ dị nso ma ọ bụ adreesị",
   },
 
 };

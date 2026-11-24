@@ -8,8 +8,8 @@ class ReportCreate(BaseModel):
     title: str
     description: str
     category: str
-    latitude: float
-    longitude: float
+    latitude: float | None = None
+    longitude: float | None = None
     gps_latitude: float | None = None
     gps_longitude: float | None = None
     address: str | None = None
@@ -32,8 +32,14 @@ class ReportCreate(BaseModel):
 
     @model_validator(mode="after")
     def gps_coordinates_must_be_paired(self):
+        if (self.latitude is None) != (self.longitude is None):
+            raise ValueError("Provide both map coordinates, or neither")
         if (self.gps_latitude is None) != (self.gps_longitude is None):
             raise ValueError("Share both GPS latitude and longitude, or neither")
+        if self.latitude is None and not (self.address and self.address.strip()):
+            raise ValueError("Provide a street, landmark, or address when map coordinates are unavailable")
+        if self.latitude is None and (not self.incident_state_code or not self.incident_lga_code):
+            raise ValueError("Select the incident State and LGA when reporting by landmark without coordinates")
         return self
 
     @field_validator("incident_state_code", "incident_lga_code", "incident_ward_code", "incident_community_code")
@@ -47,8 +53,8 @@ class ReportResponse(BaseModel):
     title: str
     description: str
     category: str
-    latitude: float
-    longitude: float
+    latitude: float | None = None
+    longitude: float | None = None
     address: str | None
     incident_state_code: str | None = None
     incident_lga_code: str | None = None

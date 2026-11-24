@@ -97,6 +97,19 @@ def migrate_existing_schema(database_engine=None):
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_incident_lga_code ON reports (incident_lga_code)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_incident_ward_code ON reports (incident_ward_code)"))
             connection.execute(text("CREATE INDEX IF NOT EXISTS ix_reports_incident_community_code ON reports (incident_community_code)"))
+
+
+        if "community_posts" in tables:
+            post_columns = {column["name"] for column in inspect(connection).get_columns("community_posts")}
+            if "converted_report_id" not in post_columns:
+                connection.execute(text(
+                    "ALTER TABLE community_posts ADD COLUMN converted_report_id INTEGER REFERENCES reports(id)"
+                ))
+            connection.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_community_posts_converted_report_id "
+                "ON community_posts (converted_report_id)"
+            ))
+
         if "report_attachments" in tables:
             attachment_columns = {column["name"] for column in inspector.get_columns("report_attachments")}
             if "storage_backend" not in attachment_columns:

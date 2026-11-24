@@ -25,7 +25,8 @@ export interface LocalGovernmentArea {
 export interface GeographicWard { code: string; name: string; lga_code: string }
 export interface Community { code: string; name: string; ward_code: string }
 
-export interface CommunityPost { id: number; community_code: string; author_user_id: number; author: { id: number; full_name: string }; body: string; is_announcement: boolean; created_at: string; comment_count: number }
+export interface CommunityPost { id: number; community_code: string; author_user_id: number; author: { id: number; full_name: string }; body: string; is_announcement: boolean; created_at: string; comment_count: number; converted_report_id?: number | null }
+export interface CommunityPostAttachment { id: number; post_id: number; uploaded_by_user_id: number; original_filename: string; content_type: string; size_bytes: number; created_at: string }
 export interface CommunityPostImage { id: number; post_id: number; uploaded_by_user_id: number; original_filename: string; content_type: string; size_bytes: number; created_at: string }
 export interface CommunityPostComment { id: number; post_id: number; author_user_id: number; author: { id: number; full_name: string }; body: string; created_at: string }
 
@@ -35,8 +36,8 @@ export interface Report {
   title: string;
   description: string;
   category: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   gps_latitude?: number | null;
   gps_longitude?: number | null;
   location_review_status?: "not_provided" | "pending" | "verified" | "mismatch" | "unable_to_verify";
@@ -66,8 +67,8 @@ export interface CreateReportPayload {
   title: string;
   description: string;
   category: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
   gps_latitude?: number;
   gps_longitude?: number;
   address?: string;

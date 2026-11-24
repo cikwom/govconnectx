@@ -1,5 +1,5 @@
 import type {
-  AuthResponse, CommentItem, CommunityPost, CommunityPostComment, CommunityPostImage, CreateReportPayload, GeographicState, HistoryItem,
+  AuthResponse, CommentItem, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage, CreateReportPayload, GeographicState, HistoryItem,
   Community, GeographicWard, LocalGovernmentArea, RegisterPayload, Report, ReportAttachment, User,
 } from "../types/api";
 
@@ -88,6 +88,14 @@ export const api = {
   duplicateHint: (id: number) => request<{ possible_duplicate_count: number; review_recommended: boolean; message: string }>(`/reports/${id}/duplicate-hint`),
   requestEscalation: (id: number, urgency: "normal" | "high" | "critical", reason: string) => request<{ id: number; status: string; notice: string }>(`/reports/${id}/escalations`, { method: "POST", body: JSON.stringify({ urgency, reason }) }),
   submitReportFeedback: (id: number, rating: number, comment?: string) => request<{ id: number; report_id: number; rating: number; comment: string | null }>(`/reports/${id}/feedback`, { method: "POST", body: JSON.stringify({ rating, comment }) }),
+  openCommunitySocket: (communityCode: string) => new WebSocket(`${API_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:")}/api/v1/community-spaces/${encodeURIComponent(communityCode)}/live`),
+  communityMembership: (communityCode: string) => request<{ community_code: string; is_member: boolean; joined_at: string | null }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`),
+  joinCommunity: (communityCode: string) => request<{ community_code: string; is_member: boolean; joined_at: string }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`, { method: "POST" }),
+  leaveCommunity: (communityCode: string) => request<{ community_code: string; is_member: boolean }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`, { method: "DELETE" }),
+  convertCommunityPostToReport: (postId: number, payload: { title?: string; category: string; address: string }) => request<{ report_id: number; title: string; status: string; location: string; community_code: string }>(`/community-spaces/posts/${postId}/convert-to-report`, { method: "POST", body: JSON.stringify(payload) }),
+  communityPostAttachments: (postId: number) => request<CommunityPostAttachment[]>(`/community-spaces/posts/${postId}/attachments`),
+  uploadCommunityPostAttachment: (postId: number, file: File) => { const form = new FormData(); form.append("file", file); return request<CommunityPostAttachment>(`/community-spaces/posts/${postId}/attachments`, { method: "POST", body: form }); },
+  downloadCommunityPostAttachment: (postId: number, attachmentId: number) => requestBlob(`/community-spaces/posts/${postId}/attachments/${attachmentId}`),
   communityPosts: (communityCode: string) => request<CommunityPost[]>(`/community-spaces/${encodeURIComponent(communityCode)}/posts`),
   createCommunityPost: (communityCode: string, body: string, isAnnouncement = false) => request<CommunityPost>(`/community-spaces/${encodeURIComponent(communityCode)}/posts`, { method: "POST", body: JSON.stringify({ body, is_announcement: isAnnouncement }) }),
   communityPostComments: (postId: number) => request<CommunityPostComment[]>(`/community-spaces/posts/${postId}/comments`),
