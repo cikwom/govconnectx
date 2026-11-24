@@ -38,6 +38,8 @@ class ReportCreate(BaseModel):
             raise ValueError("Share both GPS latitude and longitude, or neither")
         if self.latitude is None and not (self.address and self.address.strip()):
             raise ValueError("Provide a street, landmark, or address when map coordinates are unavailable")
+        if self.latitude is None and (not self.incident_state_code or not self.incident_lga_code):
+            raise ValueError("Select the incident State and LGA when reporting by landmark without coordinates")
         return self
 
     @field_validator("incident_state_code", "incident_lga_code", "incident_ward_code", "incident_community_code")
