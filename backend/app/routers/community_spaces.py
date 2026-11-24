@@ -226,3 +226,98 @@ def _image_content_type(data: bytes) -> str | None:
     if data.startswith(b"\x89PNG\r\n\x1a\n"):
         return "image/png"
     return None
+
+
+@router.post("/posts/{post_id}/images", response_model=ImageResponse, status_code=status.HTTP_201_CREATED)
+def upload_community_image(
+    post_id: int, file: UploadFile = File(...),
+    db: Session = Depends(get_db), actor: User = Depends(get_current_user),
+):
+    post = _post_or_404(db, post_id)
+    if is_production_environment() and not storage_is_production_ready():
+        raise HTTPException(status_code=503, detail="Community image uploads require private durable storage and malware scanning.")
+    data = file.file.read(MAX_IMAGE_BYTES + 1)
+    if not data:
+        raise HTTPException(status_code=400, detail="The selected image is empty")
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Image exceeds the configured upload limit")
+    detected = _image_content_type(data)
+    declared = (file.content_type or "").lower().strip()
+    suffix = Path(file.filename or "").suffix.lower()
+    expected_suffix = {"image/jpeg": {".jpg", ".jpeg"}, "image/png": {".png"}}
+    if detected is None or detected != declared or suffix not in expected_suffix[detected]:
+        raise HTTPException(status_code=415, detail="Upload a valid JPEG or PNG image with a matching file type and extension")
+    storage_key = uuid.uuid4().hex
+    digest = hashlib.sha256(data).hexdigest()
+    backend = "s3" if s3_is_configured() else "local"
+    destination = _community_image_path(storage_key) if backend == "local" else None
+    stored = False
+    try:
+        try:
+            scan_bytes(data)
+            if backend == "s3":
+                store_object(storage_key, data, detected, digest)
+            else:
+                destination.write_bytes(data)
+            stored = True
+        except StorageNotConfigured as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        image = CommunityPostImage(
+            post_id=post.id, uploaded_by_user_id=actor.id,
+            original_filename=re.sub(r"[^A-Za-z0-9._ -]", "_", Path(file.filename or "image").name)[:255],
+            storage_key=storage_key, storage_backend=backend, content_type=detected,
+            size_bytes=len(data), sha256=digest,
+        )
+        db.add(image)
+        db.flush()
+        record_audit_event(
+            db, actor_user_id=actor.id, action="community.image_uploaded", entity_type="community_post",
+            entity_id=post.id, summary="A private image was attached to a community post",
+            details={"image_id": image.id, "content_type": detected, "size_bytes": len(data), "storage_backend": backend},
+        )
+        db.commit()
+        db.refresh(image)
+        return image
+    except Exception:
+        db.rollback()
+        if stored and backend == "s3":
+            delete_object(storage_key)
+        elif destination is not None:
+            destination.unlink(missing_ok=True)
+        raise
+    finally:
+        file.file.close()
+
+
+@router.get("/posts/{post_id}/images", response_model=list[ImageResponse])
+def list_community_images(
+    post_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user),
+):
+    _post_or_404(db, post_id)
+    return db.query(CommunityPostImage).filter(
+        CommunityPostImage.post_id == post_id
+    ).order_by(CommunityPostImage.created_at.asc()).all()
+
+
+@router.get("/posts/{post_id}/images/{image_id}")
+def download_community_image(
+    post_id: int, image_id: int,
+    db: Session = Depends(get_db), _: User = Depends(get_current_user),
+):
+    _post_or_404(db, post_id)
+    image = db.query(CommunityPostImage).filter(
+        CommunityPostImage.id == image_id, CommunityPostImage.post_id == post_id
+    ).first()
+    if image is None:
+        raise HTTPException(status_code=404, detail="Community image not found")
+    headers = {"X-Content-Type-Options": "nosniff", "Cache-Control": "private, no-store"}
+    if image.storage_backend == "s3":
+        try:
+            obj = read_object(image.storage_key)
+        except (StorageNotConfigured, FileNotFoundError) as exc:
+            raise HTTPException(status_code=404, detail="Community image is unavailable") from exc
+        return StreamingResponse(obj["Body"].iter_chunks(chunk_size=64 * 1024), media_type=image.content_type, headers=headers)
+    path = _community_image_path(image.storage_key)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Community image is unavailable")
+    return FileResponse(path, media_type=image.content_type, filename=image.original_filename, headers=headers)
