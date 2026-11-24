@@ -213,7 +213,7 @@ export default function CommunityConnectPage() {
         </> : <div className="empty-state"><h3>Join this community</h3><p>Join to publish messages, comment and share evidence. You can still read the discussion feed without joining.</p><button className="button button-primary" disabled={busy} onClick={() => void joinCommunity()}>{busy ? "Please wait…" : "Join community"}</button></div>}
       </section>
       <section className="panel">
-        <div className="panel-heading"><div><h2>Community discussions</h2><p className="muted">Announcements appear before the latest conversations.</p></div><button className="button button-quiet button-small" onClick={() => api.communityPosts(communityCode).then(setPosts).catch(() => setError("Could not refresh posts."))}>Refresh</button></div>
+        <div className="panel-heading"><div><h2>Community discussions</h2><p className="muted">Announcements appear before the latest conversations. New messages refresh automatically every 20 seconds.</p></div><button className="button button-quiet button-small" onClick={() => api.communityPosts(communityCode).then(setPosts).catch(() => setError("Could not refresh posts."))}>Refresh</button></div>
         {loading ? <div className="empty-state">Loading community discussions…</div> : posts.length === 0 ? <div className="empty-state"><h3>Be the first to start a conversation</h3><p>Share a helpful update or describe an issue affecting this community.</p></div> :
           <div className="report-list">{posts.map(post => <article className="report-row" key={post.id}>
             <div className="report-main">
