@@ -7,7 +7,9 @@ from unittest.mock import patch
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import create_engine, inspect, text
+from sqlalchemy import Float, create_engine, inspect, text
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 if str(BACKEND_DIR) not in sys.path:
@@ -86,6 +88,31 @@ class AlembicBaselineTests(unittest.TestCase):
 
                 self.assertEqual(revision, "20261124_0003")
                 self.assertEqual(existing_user, "existing@example.test")
+            finally:
+                engine.dispose()
+
+
+    def test_phase_two_migration_allows_landmark_only_reports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            database_url = f"sqlite:///{Path(directory) / 'landmark-reports.db'}"
+            engine = create_engine(database_url)
+            try:
+                Base.metadata.create_all(bind=engine)
+                with engine.begin() as connection:
+                    operations = Operations(MigrationContext.configure(connection))
+                    with operations.batch_alter_table("reports", recreate="always") as batch:
+                        batch.alter_column("latitude", existing_type=Float(), existing_nullable=True, nullable=False)
+                        batch.alter_column("longitude", existing_type=Float(), existing_nullable=True, nullable=False)
+
+                with patch.dict(
+                    os.environ,
+                    {"DATABASE_URL": database_url, "ENVIRONMENT": "test"},
+                ):
+                    command.upgrade(self._config(), "head")
+
+                columns = {column["name"]: column for column in inspect(engine).get_columns("reports")}
+                self.assertTrue(columns["latitude"]["nullable"])
+                self.assertTrue(columns["longitude"]["nullable"])
             finally:
                 engine.dispose()
 
