@@ -203,11 +203,14 @@ export default function CommunityConnectPage() {
     {communityCode && <>
       <section className="panel">
         <div className="panel-heading"><div><p className="eyebrow">COMMUNITY SPACE</p><h2>{communities.find(item => item.code === communityCode)?.name ?? "Community discussion"}</h2><p className="muted">A shared space for local conversations and useful updates.</p></div><span className="admin-count">{posts.length} posts</span></div>
-        <form className="form-grid" onSubmit={publish}>
-          <label className="field-wide">Share an update<textarea required minLength={1} maxLength={5000} rows={4} value={draft} onChange={e => setDraft(e.target.value)} placeholder="What is happening in your community? Add useful details and be respectful."/></label>
-          {staffRoles.includes(user?.role ?? "") && <label className="field-wide checkbox-row"><input type="checkbox" checked={announcement} onChange={e => setAnnouncement(e.target.checked)}/> Publish as an official announcement</label>}
-          <div className="field-wide form-actions"><button className="button button-primary" disabled={busy || !draft.trim()}>{busy ? "Publishing…" : "Share with community"}</button></div>
-        </form><div className="form-actions"><button type="button" className="button button-quiet button-small" disabled={busy} onClick={() => void leaveCommunity()}>Leave community</button></div></> : <div className="empty-state"><h3>Join this community</h3><p>Join to publish messages, comment and share photos or videos. You can still read the discussion feed without joining.</p><button className="button button-primary" disabled={busy} onClick={() => void joinCommunity()}>{busy ? "Please wait…" : "Join community"}</button></div>}
+        {membershipLoading ? <p className="muted">Checking membership…</p> : isMember ? <>
+          <form className="form-grid" onSubmit={publish}>
+            <label className="field-wide">Share an update<textarea required minLength={1} maxLength={5000} rows={4} value={draft} onChange={e => setDraft(e.target.value)} placeholder="What is happening in your community? Add useful details and be respectful."/></label>
+            {staffRoles.includes(user?.role ?? "") && <label className="field-wide checkbox-row"><input type="checkbox" checked={announcement} onChange={e => setAnnouncement(e.target.checked)}/> Publish as an official announcement</label>}
+            <div className="field-wide form-actions"><button className="button button-primary" disabled={busy || !draft.trim()}>{busy ? "Publishing…" : "Share with community"}</button></div>
+          </form>
+          <div className="form-actions"><button type="button" className="button button-quiet button-small" disabled={busy} onClick={() => void leaveCommunity()}>Leave community</button></div>
+        </> : <div className="empty-state"><h3>Join this community</h3><p>Join to publish messages, comment and share evidence. You can still read the discussion feed without joining.</p><button className="button button-primary" disabled={busy} onClick={() => void joinCommunity()}>{busy ? "Please wait…" : "Join community"}</button></div>}
       </section>
       <section className="panel">
         <div className="panel-heading"><div><h2>Community discussions</h2><p className="muted">Announcements appear before the latest conversations.</p></div><button className="button button-quiet button-small" onClick={() => api.communityPosts(communityCode).then(setPosts).catch(() => setError("Could not refresh posts."))}>Refresh</button></div>
