@@ -14,6 +14,7 @@ from app.database import Base, get_db
 from app.main import app
 from app.models.location import Community, Ward
 from app.models.user import User
+from app.models.report import Report
 from app.routers.locations import seed_location_directory
 
 
@@ -51,7 +52,7 @@ class CommunitySpaceApiTests(unittest.TestCase):
         db.commit()
         db.close()
 
-    def create_user(self, role):
+    def create_user(self, role, join=True):
         email = f"{role}-{uuid4().hex}@example.com"
         db = self.Session()
         db.add(User(email=email, full_name=f"{role.title()} User", password_hash=hash_password("Strong-Test-Password-42"), role=role, is_active=True))
@@ -59,7 +60,11 @@ class CommunitySpaceApiTests(unittest.TestCase):
         db.close()
         login = self.client.post("/api/v1/auth/login", json={"email": email, "password": "Strong-Test-Password-42"})
         self.assertEqual(login.status_code, 200)
-        return {"Authorization": "Bearer " + login.json()["access_token"]}
+        headers = {"Authorization": "Bearer " + login.json()["access_token"]}
+        if join:
+            joined = self.client.post(f"/api/v1/community-spaces/{self.community_code}/membership", headers=headers)
+            self.assertEqual(joined.status_code, 200)
+        return headers
 
     def test_citizen_can_create_post_and_comment_in_selected_community(self):
         headers = self.create_user("citizen")
@@ -137,6 +142,58 @@ class CommunitySpaceApiTests(unittest.TestCase):
             self.assertEqual(download.headers["cache-control"], "private, no-store")
             unauthenticated = self.client.get(f"/api/v1/community-spaces/posts/{post_id}/images/{image_id}")
             self.assertEqual(unauthenticated.status_code, 401)
+
+
+    def test_membership_is_required_to_post_and_can_be_revoked(self):
+        headers = self.create_user("citizen", join=False)
+        denied = self.client.post(f"/api/v1/community-spaces/{self.community_code}/posts", headers=headers, json={"body": "Not a member yet"})
+        self.assertEqual(denied.status_code, 403)
+        joined = self.client.post(f"/api/v1/community-spaces/{self.community_code}/membership", headers=headers)
+        self.assertEqual(joined.status_code, 200)
+        created = self.client.post(f"/api/v1/community-spaces/{self.community_code}/posts", headers=headers, json={"body": "Now I am a member"})
+        self.assertEqual(created.status_code, 201)
+        left = self.client.delete(f"/api/v1/community-spaces/{self.community_code}/membership", headers=headers)
+        self.assertFalse(left.json()["is_member"])
+        denied_again = self.client.post(f"/api/v1/community-spaces/{self.community_code}/posts", headers=headers, json={"body": "I have left"})
+        self.assertEqual(denied_again.status_code, 403)
+
+    def test_post_author_can_convert_discussion_to_landmark_report_without_gps(self):
+        headers = self.create_user("citizen")
+        created = self.client.post(f"/api/v1/community-spaces/{self.community_code}/posts", headers=headers, json={"body": "A large drainage blockage is flooding the market road."})
+        response = self.client.post(
+            f"/api/v1/community-spaces/posts/{created.json()['id']}/convert-to-report",
+            headers=headers, json={"category": "Infrastructure", "address": "Beside the community market entrance"},
+        )
+        self.assertEqual(response.status_code, 201, response.text)
+        db = self.Session()
+        report = db.get(Report, response.json()["report_id"])
+        self.assertIsNone(report.latitude)
+        self.assertIsNone(report.longitude)
+        self.assertEqual(report.address, "Beside the community market entrance")
+        self.assertEqual(report.incident_community_code, self.community_code)
+        db.close()
+        duplicate = self.client.post(
+            f"/api/v1/community-spaces/posts/{created.json()['id']}/convert-to-report",
+            headers=headers, json={"category": "Infrastructure", "address": "Beside the community market entrance"},
+        )
+        self.assertEqual(duplicate.status_code, 409)
+
+    def test_community_video_upload_is_private(self):
+        headers = self.create_user("citizen")
+        post = self.client.post(f"/api/v1/community-spaces/{self.community_code}/posts", headers=headers, json={"body": "Short video showing the damaged bridge."})
+        post_id = post.json()["id"]
+        video = b"\\x00\\x00\\x00\\x18ftypisom" + b"community-video-test"
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"COMMUNITY_MEDIA_DIR": directory}):
+            uploaded = self.client.post(
+                f"/api/v1/community-spaces/posts/{post_id}/attachments",
+                headers=headers, files={"file": ("bridge.mp4", video, "video/mp4")},
+            )
+            self.assertEqual(uploaded.status_code, 201, uploaded.text)
+            attachment_id = uploaded.json()["id"]
+            downloaded = self.client.get(f"/api/v1/community-spaces/posts/{post_id}/attachments/{attachment_id}", headers=headers)
+            self.assertEqual(downloaded.status_code, 200)
+            self.assertEqual(downloaded.content, video)
+            self.assertEqual(downloaded.headers["cache-control"], "private, no-store")
 
     def test_discussion_endpoints_require_authentication(self):
         response = self.client.get(f"/api/v1/community-spaces/{self.community_code}/posts")
