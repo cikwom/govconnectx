@@ -65,7 +65,7 @@ export default function CommunityConnectPage() {
   async function toggleComments(postId: number) {
     if (expandedPost === postId) { setExpandedPost(null); return; }
     setExpandedPost(postId); setCommentDraft(""); setError("");
-    try { setComments(current => ({ ...current, [postId]: await api.communityPostComments(postId) })); }
+    try { const loaded = await api.communityPostComments(postId); setComments(current => ({ ...current, [postId]: loaded })); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Could not load comments."); }
   }
 
