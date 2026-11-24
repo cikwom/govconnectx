@@ -24,6 +24,7 @@ export default function CommunityConnectPage() {
   const [isMember, setIsMember] = useState(false);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [liveConnected, setLiveConnected] = useState(false);
+  const [socketRetry, setSocketRetry] = useState(0);
   const [conversionPostId, setConversionPostId] = useState<number | null>(null);
   const [conversionTitle, setConversionTitle] = useState("");
   const [conversionCategory, setConversionCategory] = useState("Infrastructure");
@@ -94,6 +95,7 @@ export default function CommunityConnectPage() {
   useEffect(() => {
     if (!communityCode || !isMember) { setLiveConnected(false); return; }
     let disposed = false;
+    let retryTimer: number | undefined;
     const socket = api.openCommunitySocket(communityCode);
     socket.onopen = () => {
       const token = tokenStore.get();
@@ -108,7 +110,12 @@ export default function CommunityConnectPage() {
         api.communityPosts(communityCode).then(setPosts).catch(() => undefined);
       } catch { /* Ignore malformed live events and retain the polling fallback. */ }
     };
-    socket.onclose = () => { if (!disposed) setLiveConnected(false); };
+    socket.onclose = () => {
+      if (!disposed) {
+        setLiveConnected(false);
+        retryTimer = window.setTimeout(() => setSocketRetry(value => value + 1), 5000);
+      }
+    };
     socket.onerror = () => { if (!disposed) setLiveConnected(false); };
     const heartbeat = window.setInterval(() => {
       if (socket.readyState === WebSocket.OPEN) socket.send("ping");
@@ -116,9 +123,10 @@ export default function CommunityConnectPage() {
     return () => {
       disposed = true;
       window.clearInterval(heartbeat);
+      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
       socket.close();
     };
-  }, [communityCode, isMember]);
+  }, [communityCode, isMember, socketRetry]);
 
   useEffect(() => {
     if (!communityCode || liveConnected) return;
