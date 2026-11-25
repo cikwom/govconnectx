@@ -263,7 +263,7 @@ class CommunitySpaceApiTests(unittest.TestCase):
     def test_chat_photo_upload_is_member_only_and_download_is_private(self):
         member_headers = self.create_user("citizen")
         outsider_headers = self.create_user("citizen", join=False)
-        image_bytes = b"\\xff\\xd8\\xff" + b"community-chat-photo"
+        image_bytes = b"\xff\xd8\xff" + b"community-chat-photo"
         rejected_upload = self.client.post(
             f"/api/v1/community-spaces/{self.community_code}/chat/messages/image",
             headers=outsider_headers, data={"body": ""},
