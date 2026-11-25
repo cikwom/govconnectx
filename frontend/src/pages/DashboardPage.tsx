@@ -21,7 +21,7 @@ export default function DashboardPage(){
   useEffect(()=>{void load()},[load]);
   const active=reports.filter(r=>!["RESOLVED","REJECTED"].includes(r.status)).length;
   const resolved=reports.filter(r=>r.status==="RESOLVED").length;
-  async function submit(p:CreateReportPayload){await api.createReport(p);setShowForm(false);await load()}
+  async function submit(p:CreateReportPayload,file?:File){const created=await api.createReport(p);if(file)await api.uploadReportAttachment(created.id,file);setShowForm(false);await load()}
   return <>
     <section className="citizen-dashboard-banner"><div><p className="eyebrow">YOUR VOICE. YOUR COMMUNITY.</p><h2>{t("Progress starts with participation.")}</h2><p>{t("Keep track of the issues you have raised and the action that follows.")}</p></div><span className="dashboard-fist" aria-hidden="true">✊</span></section>
     {user?.role !== "citizen" && <DepartmentPerformancePanel/>}
@@ -37,10 +37,12 @@ export default function DashboardPage(){
 
 function Stat({label,value,hint}:{label:string;value:number;hint:string}){return <article className="stat-card"><span>{label}</span><strong>{value}</strong><small>{hint}</small></article>}
 
-function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promise<void>;onCancel:()=>void}){
+function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload,file?:File)=>Promise<void>;onCancel:()=>void}){
   const {t}=useLanguage();
   const[title,setTitle]=useState("");
   const[description,setDescription]=useState("");
+  const[evidenceFile,setEvidenceFile]=useState<File|null>(null);
+  const[evidencePreview,setEvidencePreview]=useState("");
   const[category,setCategory]=useState("Infrastructure");
   const[infrastructureType,setInfrastructureType]=useState("");
   const[otherInfrastructureDetails,setOtherInfrastructureDetails]=useState("");
@@ -69,6 +71,7 @@ function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promi
     },()=>{setError(t("Location was not shared. You can enter the incident coordinates manually."));setGpsBusy(false)},{enableHighAccuracy:true,timeout:15000,maximumAge:60000});
   }
   useEffect(()=>{api.states().then(setStates).catch(()=>setError(t("Could not load the state directory.")))},[]);
+  useEffect(()=>{if(!evidenceFile){setEvidencePreview("");return}const url=URL.createObjectURL(evidenceFile);setEvidencePreview(url);return()=>URL.revokeObjectURL(url)},[evidenceFile]);
   useEffect(()=>{setLgaCode("");setWardCode("");setCommunityCode("");setWards([]);setCommunities([]);if(!stateCode){setLgas([]);return}api.lgas(stateCode).then(setLgas).catch(()=>setError(t("Could not load LGAs for the selected state.")))},[stateCode]);
   useEffect(()=>{setWardCode("");setCommunityCode("");setCommunities([]);if(!lgaCode){setWards([]);return}api.wards(lgaCode).then(setWards).catch(()=>setError("Could not load wards for the selected LGA."))},[lgaCode]);
   useEffect(()=>{setCommunityCode("");if(!wardCode){setCommunities([]);return}api.communities(wardCode).then(setCommunities).catch(()=>setError("Could not load communities for the selected ward."))},[wardCode]);
@@ -76,7 +79,7 @@ function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promi
     e.preventDefault();setError("");setBusy(true);
     if((latitude.trim()==="")!==(longitude.trim()==="")){setError("Enter both map coordinates, or leave both blank.");setBusy(false);return}
     if(!latitude.trim()&&!longitude.trim()&&!address.trim()){setError("Enter a street, landmark, nearby building, or address if you do not want to share coordinates.");setBusy(false);return}
-    try{const reportDescription=isOtherInfrastructure?`Infrastructure issue type: Others\nOther infrastructure problem: ${otherInfrastructureDetails.trim()}\n\n${description.trim()}`:description.trim();await onSubmit({title:title.trim(),description:reportDescription,category,latitude:latitude.trim()?Number(latitude):undefined,longitude:longitude.trim()?Number(longitude):undefined,gps_latitude:gps?.latitude,gps_longitude:gps?.longitude,address:address.trim()||undefined,incident_state_code:stateCode,incident_lga_code:lgaCode,incident_ward_code:wardCode||undefined,incident_community_code:communityCode||undefined})}
+    try{const reportDescription=isOtherInfrastructure?`Infrastructure issue type: Others\nOther infrastructure problem: ${otherInfrastructureDetails.trim()}\n\n${description.trim()}`:description.trim();await onSubmit({title:title.trim(),description:reportDescription,category,latitude:latitude.trim()?Number(latitude):undefined,longitude:longitude.trim()?Number(longitude):undefined,gps_latitude:gps?.latitude,gps_longitude:gps?.longitude,address:address.trim()||undefined,incident_state_code:stateCode,incident_lga_code:lgaCode,incident_ward_code:wardCode||undefined,incident_community_code:communityCode||undefined},evidenceFile??undefined)}
     catch(err){setError(err instanceof Error?err.message:"Could not submit report")}
     finally{setBusy(false)}
   }
@@ -88,6 +91,7 @@ function ReportForm({onSubmit,onCancel}:{onSubmit:(p:CreateReportPayload)=>Promi
       {category==="Infrastructure"&&<label>{t("Infrastructure issue")}<select required value={infrastructureType} onChange={e=>{setInfrastructureType(e.target.value);setOtherInfrastructureDetails("");}}><option value="">{t("Select infrastructure issue")}</option>{["Roads","Bridges","Drainage","Streetlights","Public facilities","Others"].map(v=><option key={v} value={v}>{t(v)}</option>)}</select></label>}
       {isOtherInfrastructure&&<label className="field-wide">{t("Describe the other infrastructure problem")}<textarea required rows={3} maxLength={3000} value={otherInfrastructureDetails} onChange={e=>setOtherInfrastructureDetails(e.target.value)} placeholder={t("Write the infrastructure problem you want to report…")}/></label>}
       <label className="field-wide">{t("Description")}<textarea required rows={4} value={description} onChange={e=>setDescription(e.target.value)} placeholder="Explain what happened, where it is, and how it affects the community."/></label>
+      <div className="field-wide"><label>{t("Add a photo of the problem (optional)")}<input type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" capture="environment" onChange={e=>{const file=e.target.files?.[0];if(!file){setEvidenceFile(null);return}if(!["image/jpeg","image/png"].includes(file.type)){setError(t("Choose a JPEG or PNG photo."));e.target.value="";return}if(file.size>10*1024*1024){setError(t("Photo must be 10 MB or smaller."));e.target.value="";return}setError("");setEvidenceFile(file)}}/></label><p className="muted">{t("Use your camera or choose a photo from your device. You can submit without a photo.")}</p>{evidencePreview&&<div className="report-evidence-preview"><img src={evidencePreview} alt={t("Selected report evidence preview")}/><button type="button" className="button button-quiet button-small" onClick={()=>setEvidenceFile(null)}>{t("Remove photo")}</button></div>}</div>
       <label>{t("Incident state or FCT")}<select required value={stateCode} onChange={e=>setStateCode(e.target.value)}><option value="">{t("Select state")}</option>{states.map(state=><option key={state.code} value={state.code}>{state.name}</option>)}</select></label>
       <label>{t("Incident LGA")}<select required disabled={!stateCode||lgas.length===0} value={lgaCode} onChange={e=>setLgaCode(e.target.value)}><option value="">{t("Select LGA")}</option>{lgas.map(lga=><option key={lga.code} value={lga.code}>{lga.name}</option>)}</select></label>
       <label>{t("Ward (optional)")}<select disabled={!lgaCode||wards.length===0} value={wardCode} onChange={e=>setWardCode(e.target.value)}><option value="">{t("Select ward if known")}</option>{wards.map(ward=><option key={ward.code} value={ward.code}>{ward.name}</option>)}</select></label>
