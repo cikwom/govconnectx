@@ -18,7 +18,8 @@ export default function CommunityChatPage() {
   const [retry, setRetry] = useState(0);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState("");
-  const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
+  // undefined = not loaded, null = failed, string = object URL.
+  const [photoUrls, setPhotoUrls] = useState<Record<number, string | null>>({});
   const photoUrlsRef = useRef<string[]>([]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
@@ -75,14 +76,26 @@ export default function CommunityChatPage() {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      const targets = messages.filter(message => message.image_id && !photoUrls[message.id]);
+      const targets = messages.filter(message => message.image_id && photoUrls[message.id] === undefined);
       if (!targets.length) return;
       const loaded = await Promise.all(targets.map(async message => {
-        try { const url = URL.createObjectURL(await api.downloadCommunityChatPhoto(communityCode, message.id)); photoUrlsRef.current.push(url); return [message.id, url] as const; }
-        catch { return [message.id, ""] as const; }
+        try {
+          const url = URL.createObjectURL(await api.downloadCommunityChatPhoto(communityCode, message.id));
+          photoUrlsRef.current.push(url);
+          return [message.id, url] as const;
+        } catch {
+          return [message.id, null] as const;
+        }
       }));
-      if (cancelled) { loaded.forEach(([, url]) => { if (url) URL.revokeObjectURL(url); }); return; }
-      setPhotoUrls(current => { const next = { ...current }; loaded.forEach(([id, url]) => { if (url) next[id] = url; }); return next; });
+      if (cancelled) {
+        loaded.forEach(([, url]) => { if (url) { URL.revokeObjectURL(url); photoUrlsRef.current = photoUrlsRef.current.filter(item => item !== url); } });
+        return;
+      }
+      setPhotoUrls(current => {
+        const next = { ...current };
+        loaded.forEach(([id, url]) => { next[id] = url; });
+        return next;
+      });
     };
     void load();
     return () => { cancelled = true; };
@@ -90,17 +103,25 @@ export default function CommunityChatPage() {
 
   useEffect(() => () => photoUrlsRef.current.forEach(URL.revokeObjectURL), []);
 
+  // Revoke the previous preview when another photo is selected, removed, or the page unmounts.
+  useEffect(() => {
+    if (!photoPreview) return;
+    return () => URL.revokeObjectURL(photoPreview);
+  }, [photoPreview]);
+
   function selectPhoto(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] ?? null;
     if (!selected) return;
     if (!["image/jpeg", "image/png"].includes(selected.type)) { setError("Choose a JPEG or PNG photo."); event.target.value = ""; return; }
     if (selected.size > 10 * 1024 * 1024) { setError("Photos must be 10 MB or smaller."); event.target.value = ""; return; }
-    setError(""); setPhoto(selected); setPhotoPreview(URL.createObjectURL(selected)); event.target.value = "";
+    setError("");
+    setPhoto(selected);
+    setPhotoPreview(URL.createObjectURL(selected));
+    event.target.value = "";
   }
 
   function clearPhoto() {
     setPhoto(null);
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
     setPhotoPreview("");
   }
 
@@ -127,7 +148,7 @@ export default function CommunityChatPage() {
           <article className={message.author_user_id === user?.id ? "chat-message own" : "chat-message"} key={message.id}>
             <div className="chat-message-meta"><strong>{message.author.full_name}</strong><time dateTime={message.created_at}>{new Date(message.created_at).toLocaleString()}</time></div>
             {message.body && <p>{message.body}</p>}
-            {message.image_id && (photoUrls[message.id] ? <img className="chat-message-photo" src={photoUrls[message.id]} alt={message.image_original_filename || "Photo shared in community chat"}/> : <p className="muted">Loading photo…</p>)}
+            {message.image_id && (photoUrls[message.id] ? <img className="chat-message-photo" src={photoUrls[message.id] as string} alt={message.image_original_filename || "Photo shared in community chat"}/> : photoUrls[message.id] === null ? <p className="muted" role="status">This photo could not be loaded. Refresh the conversation to try again.</p> : <p className="muted">Loading photo…</p>)}
           </article>
         ))}
         <div ref={bottomRef}/>
