@@ -259,6 +259,53 @@ class CommunitySpaceApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 401)
 
 
+
+    def test_chat_photo_upload_is_member_only_and_download_is_private(self):
+        member_headers = self.create_user("citizen")
+        outsider_headers = self.create_user("citizen", join=False)
+        image_bytes = b"\\xff\\xd8\\xff" + b"community-chat-photo"
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"COMMUNITY_MEDIA_DIR": directory}):
+            uploaded = self.client.post(
+                f"/api/v1/community-spaces/{self.community_code}/chat/messages/image",
+                headers=member_headers,
+                data={"body": "The damaged streetlight."},
+                files={"file": ("streetlight.jpg", image_bytes, "image/jpeg")},
+            )
+            self.assertEqual(uploaded.status_code, 201, uploaded.text)
+            self.assertEqual(uploaded.json()["body"], "The damaged streetlight.")
+            self.assertEqual(uploaded.json()["image_content_type"], "image/jpeg")
+            message_id = uploaded.json()["id"]
+            history = self.client.get(
+                f"/api/v1/community-spaces/{self.community_code}/chat/messages",
+                headers=member_headers,
+            )
+            self.assertEqual(history.status_code, 200)
+            self.assertEqual(history.json()[0]["image_id"], message_id)
+            downloaded = self.client.get(
+                f"/api/v1/community-spaces/{self.community_code}/chat/messages/{message_id}/image",
+                headers=member_headers,
+            )
+            self.assertEqual(downloaded.status_code, 200)
+            self.assertEqual(downloaded.content, image_bytes)
+            self.assertEqual(downloaded.headers["cache-control"], "private, no-store")
+            denied = self.client.get(
+                f"/api/v1/community-spaces/{self.community_code}/chat/messages/{message_id}/image",
+                headers=outsider_headers,
+            )
+            self.assertEqual(denied.status_code, 403)
+
+    def test_chat_photo_rejects_invalid_file_type(self):
+        headers = self.create_user("citizen")
+        response = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages/image",
+            headers=headers,
+            data={"body": ""},
+            files={"file": ("not-image.txt", b"not an image", "text/plain")},
+        )
+        self.assertEqual(response.status_code, 415)
+
+
+
 if __name__ == "__main__":
     unittest.main()
 
