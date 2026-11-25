@@ -264,6 +264,12 @@ class CommunitySpaceApiTests(unittest.TestCase):
         member_headers = self.create_user("citizen")
         outsider_headers = self.create_user("citizen", join=False)
         image_bytes = b"\\xff\\xd8\\xff" + b"community-chat-photo"
+        rejected_upload = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages/image",
+            headers=outsider_headers, data={"body": ""},
+            files={"file": ("streetlight.jpg", image_bytes, "image/jpeg")},
+        )
+        self.assertEqual(rejected_upload.status_code, 403)
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"COMMUNITY_MEDIA_DIR": directory}):
             uploaded = self.client.post(
                 f"/api/v1/community-spaces/{self.community_code}/chat/messages/image",
