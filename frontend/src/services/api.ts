@@ -1,5 +1,5 @@
 import type {
-  AuthResponse, CommentItem, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage, CreateReportPayload, GeographicState, HistoryItem,
+  AuthResponse, CommentItem, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage, CommunityChatMessage, CreateReportPayload, GeographicState, HistoryItem,
   Community, GeographicWard, LocalGovernmentArea, RegisterPayload, Report, ReportAttachment, User,
 } from "../types/api";
 
@@ -89,6 +89,8 @@ export const api = {
   requestEscalation: (id: number, urgency: "normal" | "high" | "critical", reason: string) => request<{ id: number; status: string; notice: string }>(`/reports/${id}/escalations`, { method: "POST", body: JSON.stringify({ urgency, reason }) }),
   submitReportFeedback: (id: number, rating: number, comment?: string) => request<{ id: number; report_id: number; rating: number; comment: string | null }>(`/reports/${id}/feedback`, { method: "POST", body: JSON.stringify({ rating, comment }) }),
   openCommunitySocket: (communityCode: string) => new WebSocket(`${API_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:")}/api/v1/community-spaces/${encodeURIComponent(communityCode)}/live`),
+  communityChatMessages: (communityCode: string, beforeId?: number) => request<CommunityChatMessage[]>(`/community-spaces/${encodeURIComponent(communityCode)}/chat/messages${beforeId ? `?before_id=${beforeId}` : ""}`),
+  sendCommunityChatMessage: (communityCode: string, body: string) => request<CommunityChatMessage>(`/community-spaces/${encodeURIComponent(communityCode)}/chat/messages`, { method: "POST", body: JSON.stringify({ body }) }),
   communityMembership: (communityCode: string) => request<{ community_code: string; is_member: boolean; joined_at: string | null }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`),
   joinCommunity: (communityCode: string) => request<{ community_code: string; is_member: boolean; joined_at: string }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`, { method: "POST" }),
   leaveCommunity: (communityCode: string) => request<{ community_code: string; is_member: boolean }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`, { method: "DELETE" }),

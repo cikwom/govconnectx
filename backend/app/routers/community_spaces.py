@@ -18,6 +18,7 @@ from app.core.security import decode_access_token
 from app.database import get_db
 from app.models.audit_event import record_audit_event
 from app.models.community_discussion import CommunityMembership, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage
+from app.models.community_chat import CommunityChatMessage
 from app.models.location import Community, LocalGovernmentArea, State, Ward
 from app.models.report_attachment import ReportAttachment
 from app.schemas.report import ReportCreate
@@ -683,3 +684,81 @@ def download_community_attachment(
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Community attachment is unavailable")
     return FileResponse(path, media_type=attachment.content_type, filename=attachment.original_filename, headers=headers)
+
+
+class ChatMessageCreate(BaseModel):
+    body: str = Field(min_length=1, max_length=2000)
+
+
+class ChatMessageResponse(BaseModel):
+    id: int
+    community_code: str
+    author_user_id: int
+    author: AuthorSummary
+    body: str
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+@router.get("/{community_code}/chat/messages", response_model=list[ChatMessageResponse])
+def list_community_chat_messages(
+    community_code: str,
+    limit: int = Query(default=50, ge=1, le=100),
+    before_id: int | None = Query(default=None, ge=1),
+    db: Session = Depends(get_db),
+    actor: User = Depends(get_current_user),
+):
+    community = _community_or_404(db, community_code)
+    _require_membership(db, community.code, actor.id)
+    query = db.query(CommunityChatMessage).filter(
+        CommunityChatMessage.community_code == community.code,
+        CommunityChatMessage.is_deleted == 0,
+    )
+    if before_id is not None:
+        query = query.filter(CommunityChatMessage.id < before_id)
+    messages = query.order_by(CommunityChatMessage.id.desc()).limit(limit).all()
+    return [
+        {"id": item.id, "community_code": item.community_code,
+         "author_user_id": item.author_user_id, "author": item.author_user,
+         "body": item.body, "created_at": item.created_at}
+        for item in reversed(messages)
+    ]
+
+
+@router.post("/{community_code}/chat/messages", response_model=ChatMessageResponse, status_code=status.HTTP_201_CREATED)
+def create_community_chat_message(
+    community_code: str,
+    payload: ChatMessageCreate,
+    db: Session = Depends(get_db),
+    actor: User = Depends(get_current_user),
+):
+    community = _community_or_404(db, community_code)
+    _require_membership(db, community.code, actor.id)
+    body = payload.body.strip()
+    if not body:
+        raise HTTPException(status_code=422, detail="Chat message cannot be empty")
+    message = CommunityChatMessage(
+        community_code=community.code,
+        author_user_id=actor.id,
+        body=body,
+    )
+    db.add(message)
+    db.flush()
+    record_audit_event(
+        db, actor_user_id=actor.id, action="community.chat_message_created",
+        entity_type="community_chat_message", entity_id=message.id,
+        summary="A message was sent to a community chat",
+        details={"community_code": community.code},
+    )
+    db.commit()
+    db.refresh(message)
+    community_live_connections.broadcast_sync(
+        community.code,
+        {"type": "chat_message_created", "message_id": message.id},
+    )
+    return {
+        "id": message.id, "community_code": message.community_code,
+        "author_user_id": message.author_user_id, "author": actor,
+        "body": message.body, "created_at": message.created_at,
+    }
