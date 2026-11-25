@@ -19,6 +19,7 @@ export default function CommunityChatPage() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState("");
   const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
+  const photoUrlsRef = useRef<string[]>([]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
@@ -77,7 +78,7 @@ export default function CommunityChatPage() {
       const targets = messages.filter(message => message.image_id && !photoUrls[message.id]);
       if (!targets.length) return;
       const loaded = await Promise.all(targets.map(async message => {
-        try { return [message.id, URL.createObjectURL(await api.downloadCommunityChatPhoto(communityCode, message.id))] as const; }
+        try { const url = URL.createObjectURL(await api.downloadCommunityChatPhoto(communityCode, message.id)); photoUrlsRef.current.push(url); return [message.id, url] as const; }
         catch { return [message.id, ""] as const; }
       }));
       if (cancelled) { loaded.forEach(([, url]) => { if (url) URL.revokeObjectURL(url); }); return; }
@@ -87,7 +88,7 @@ export default function CommunityChatPage() {
     return () => { cancelled = true; };
   }, [communityCode, messages, photoUrls]);
 
-  useEffect(() => () => Object.values(photoUrls).forEach(URL.revokeObjectURL), [photoUrls]);
+  useEffect(() => () => photoUrlsRef.current.forEach(URL.revokeObjectURL), []);
 
   function selectPhoto(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] ?? null;
