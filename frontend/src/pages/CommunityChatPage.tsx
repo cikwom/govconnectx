@@ -43,7 +43,7 @@ export default function CommunityChatPage() {
   }, [refresh]);
 
   useEffect(() => {
-    if (!communityCode) return;
+    if (!communityCode || !isMember) return;
     let disposed = false;
     let retryTimer: number | undefined;
     const socket = api.openCommunitySocket(communityCode);
