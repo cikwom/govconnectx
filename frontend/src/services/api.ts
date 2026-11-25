@@ -91,6 +91,8 @@ export const api = {
   openCommunitySocket: (communityCode: string) => new WebSocket(`${API_URL.replace(/^http:/, "ws:").replace(/^https:/, "wss:")}/api/v1/community-spaces/${encodeURIComponent(communityCode)}/live`),
   communityChatMessages: (communityCode: string, beforeId?: number) => request<CommunityChatMessage[]>(`/community-spaces/${encodeURIComponent(communityCode)}/chat/messages${beforeId ? `?before_id=${beforeId}` : ""}`),
   sendCommunityChatMessage: (communityCode: string, body: string) => request<CommunityChatMessage>(`/community-spaces/${encodeURIComponent(communityCode)}/chat/messages`, { method: "POST", body: JSON.stringify({ body }) }),
+  uploadCommunityChatPhoto: (communityCode: string, file: File, body = "") => { const form = new FormData(); form.append("file", file); form.append("body", body); return request<CommunityChatMessage>(`/community-spaces/${encodeURIComponent(communityCode)}/chat/messages/image`, { method: "POST", body: form }); },
+  downloadCommunityChatPhoto: (communityCode: string, messageId: number) => requestBlob(`/community-spaces/${encodeURIComponent(communityCode)}/chat/messages/${messageId}/image`),
   communityMembership: (communityCode: string) => request<{ community_code: string; is_member: boolean; joined_at: string | null }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`),
   joinCommunity: (communityCode: string) => request<{ community_code: string; is_member: boolean; joined_at: string }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`, { method: "POST" }),
   leaveCommunity: (communityCode: string) => request<{ community_code: string; is_member: boolean }>(`/community-spaces/${encodeURIComponent(communityCode)}/membership`, { method: "DELETE" }),

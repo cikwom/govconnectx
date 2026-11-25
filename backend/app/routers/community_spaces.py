@@ -6,7 +6,7 @@ import re
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, UploadFile, WebSocket, WebSocketDisconnect, status
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy.orm import Session
@@ -697,6 +697,9 @@ class ChatMessageResponse(BaseModel):
     author: AuthorSummary
     body: str
     created_at: datetime
+    image_id: int | None = None
+    image_content_type: str | None = None
+    image_original_filename: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -721,7 +724,10 @@ def list_community_chat_messages(
     return [
         {"id": item.id, "community_code": item.community_code,
          "author_user_id": item.author_user_id, "author": item.author_user,
-         "body": item.body, "created_at": item.created_at}
+         "body": item.body, "created_at": item.created_at,
+         "image_id": item.id if item.image_storage_key else None,
+         "image_content_type": item.image_content_type,
+         "image_original_filename": item.image_original_filename}
         for item in reversed(messages)
     ]
 
@@ -761,4 +767,106 @@ def create_community_chat_message(
         "id": message.id, "community_code": message.community_code,
         "author_user_id": message.author_user_id, "author": actor,
         "body": message.body, "created_at": message.created_at,
+        "image_id": message.id if message.image_storage_key else None,
+        "image_content_type": message.image_content_type,
+        "image_original_filename": message.image_original_filename,
     }
+
+
+@router.post("/{community_code}/chat/messages/image", response_model=ChatMessageResponse, status_code=status.HTTP_201_CREATED)
+def create_community_chat_image_message(
+    community_code: str, file: UploadFile = File(...), body: str = Form(default=""),
+    db: Session = Depends(get_db), actor: User = Depends(get_current_user),
+):
+    community = _community_or_404(db, community_code)
+    _require_membership(db, community.code, actor.id)
+    if is_production_environment() and not storage_is_production_ready():
+        raise HTTPException(status_code=503, detail="Community photo sharing requires private durable storage and malware scanning.")
+    caption = body.strip()
+    if len(caption) > 2000:
+        raise HTTPException(status_code=422, detail="Photo caption cannot exceed 2,000 characters")
+    data = file.file.read(MAX_IMAGE_BYTES + 1)
+    if not data:
+        raise HTTPException(status_code=400, detail="The selected photo is empty")
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Photo exceeds the configured upload limit")
+    detected = _image_content_type(data)
+    declared = (file.content_type or "").lower().strip()
+    suffix = Path(file.filename or "").suffix.lower()
+    expected_suffix = {"image/jpeg": {".jpg", ".jpeg"}, "image/png": {".png"}}
+    if detected is None or detected != declared or suffix not in expected_suffix[detected]:
+        raise HTTPException(status_code=415, detail="Upload a valid JPEG or PNG photo with a matching file type and extension")
+    storage_key = uuid.uuid4().hex
+    digest = hashlib.sha256(data).hexdigest()
+    backend = "s3" if s3_is_configured() else "local"
+    destination = _community_image_path(storage_key) if backend == "local" else None
+    stored = False
+    try:
+        try:
+            scan_bytes(data)
+            if backend == "s3":
+                store_object(storage_key, data, detected, digest)
+            else:
+                destination.write_bytes(data)
+            stored = True
+        except StorageNotConfigured as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
+        except ValueError as exc:
+            raise HTTPException(status_code=415, detail=str(exc)) from exc
+        message = CommunityChatMessage(
+            community_code=community.code, author_user_id=actor.id, body=caption,
+            image_storage_key=storage_key, image_storage_backend=backend,
+            image_content_type=detected,
+            image_original_filename=re.sub(r"[^A-Za-z0-9._ -]", "_", Path(file.filename or "photo").name)[:255],
+            image_size_bytes=len(data), image_sha256=digest,
+        )
+        db.add(message)
+        db.flush()
+        record_audit_event(db, actor_user_id=actor.id, action="community.chat_photo_uploaded",
+            entity_type="community_chat_message", entity_id=message.id,
+            summary="A private photo was shared in a community chat",
+            details={"community_code": community.code, "content_type": detected, "size_bytes": len(data)})
+        db.commit()
+        db.refresh(message)
+        community_live_connections.broadcast_sync(community.code, {"type": "chat_message_created", "message_id": message.id})
+        return {"id": message.id, "community_code": message.community_code,
+            "author_user_id": message.author_user_id, "author": actor, "body": message.body,
+            "created_at": message.created_at, "image_id": message.id,
+            "image_content_type": message.image_content_type,
+            "image_original_filename": message.image_original_filename}
+    except Exception:
+        db.rollback()
+        if stored and backend == "s3":
+            delete_object(storage_key)
+        elif destination is not None:
+            destination.unlink(missing_ok=True)
+        raise
+    finally:
+        file.file.close()
+
+
+@router.get("/{community_code}/chat/messages/{message_id}/image")
+def download_community_chat_image(
+    community_code: str, message_id: int,
+    db: Session = Depends(get_db), actor: User = Depends(get_current_user),
+):
+    community = _community_or_404(db, community_code)
+    _require_membership(db, community.code, actor.id)
+    message = db.query(CommunityChatMessage).filter(
+        CommunityChatMessage.id == message_id,
+        CommunityChatMessage.community_code == community.code,
+        CommunityChatMessage.is_deleted == 0,
+    ).first()
+    if message is None or not message.image_storage_key:
+        raise HTTPException(status_code=404, detail="Community chat photo not found")
+    headers = {"X-Content-Type-Options": "nosniff", "Cache-Control": "private, no-store"}
+    if message.image_storage_backend == "s3":
+        try:
+            obj = read_object(message.image_storage_key)
+        except (StorageNotConfigured, FileNotFoundError) as exc:
+            raise HTTPException(status_code=404, detail="Community chat photo is unavailable") from exc
+        return StreamingResponse(obj["Body"].iter_chunks(chunk_size=64 * 1024), media_type=message.image_content_type, headers=headers)
+    path = _community_image_path(message.image_storage_key)
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Community chat photo is unavailable")
+    return FileResponse(path, media_type=message.image_content_type, filename=message.image_original_filename, headers=headers)

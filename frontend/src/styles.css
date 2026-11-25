@@ -536,3 +536,7 @@ input[type="radio"] {
 :root[data-theme="dark"] .chat-message{background:#203832;border-color:#36534b}
 :root[data-theme="dark"] .chat-message.own{background:#24483a}
 :root[data-theme="dark"] .chat-message p,:root[data-theme="dark"] .chat-message-meta strong{color:#d8eee6}
+
+
+/* Phase 4 — private photo sharing in community chat */
+.chat-compose-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;align-items:center}.chat-photo-preview{display:flex;align-items:flex-start;gap:12px;padding:12px;border:1px solid #dceeea;border-radius:10px;margin:12px 0;background:#f8fcfb}.chat-photo-preview img{max-width:min(220px,55vw);max-height:180px;object-fit:contain;border-radius:8px}.chat-message-photo{display:block;max-width:min(100%,420px);max-height:360px;object-fit:contain;border-radius:10px;margin-top:10px;border:1px solid #e7edf2}.community-chat-compose{display:flex;flex-direction:column;gap:10px}.chat-guidance{font-size:.74rem;margin-top:10px}@media(max-width:600px){.chat-compose-actions{justify-content:stretch}.chat-compose-actions .button{flex:1}.chat-photo-preview{flex-direction:column}}
