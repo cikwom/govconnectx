@@ -1,4 +1,5 @@
 from app.models.community_discussion import CommunityMembership, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage
+from app.models.community_chat import CommunityChatMessage
 from app.models.department import Department
 from app.models.department_geographic_scope import DepartmentGeographicScope
 from app.models.department_routing_category import DepartmentRoutingCategory
@@ -11,6 +12,7 @@ from app.models.user import User
 
 __all__ = [
     "Community",
+    "CommunityChatMessage",
     "CommunityMembership",
     "CommunityPost",
     "CommunityPostAttachment",

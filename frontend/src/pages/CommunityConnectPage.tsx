@@ -240,7 +240,7 @@ export default function CommunityConnectPage() {
     {notice && <p className="muted" role="status">{notice}</p>}
     {communityCode && <>
       <section className="panel">
-        <div className="panel-heading"><div><p className="eyebrow">COMMUNITY SPACE</p><h2>{communities.find(item => item.code === communityCode)?.name ?? "Community discussion"}</h2><p className="muted">A shared space for local conversations and useful updates.</p></div><span className="admin-count">{posts.length} posts</span></div>
+        <div className="panel-heading"><div><p className="eyebrow">COMMUNITY SPACE</p><h2>{communities.find(item => item.code === communityCode)?.name ?? "Community discussion"}</h2><p className="muted">A shared space for local conversations and useful updates.</p><Link className="button button-primary button-small" to={`/community-chat/${encodeURIComponent(communityCode)}`}>Open community group chat</Link></div><span className="admin-count">{posts.length} posts</span></div>
         {membershipLoading ? <p className="muted">Checking membership…</p> : isMember ? <>
           <form className="form-grid" onSubmit={publish}>
             <label className="field-wide">Share an update<textarea required minLength={1} maxLength={5000} rows={4} value={draft} onChange={e => setDraft(e.target.value)} placeholder="What is happening in your community? Add useful details and be respectful."/></label>

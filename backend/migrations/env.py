@@ -21,6 +21,7 @@ from app.models import (  # noqa: F401
     User,
     Ward,
 )
+from app.models.community_chat import CommunityChatMessage  # noqa: F401
 from app.models.audit_event import AuditEvent  # noqa: F401
 from app.models.auth_security_event import AuthSecurityEvent  # noqa: F401
 from app.models.citizen_services import (  # noqa: F401

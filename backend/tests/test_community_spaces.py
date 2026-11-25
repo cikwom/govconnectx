@@ -261,3 +261,53 @@ class CommunitySpaceApiTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+    def test_community_chat_persists_messages_and_requires_membership(self):
+        member_headers = self.create_user("citizen")
+        sent = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages",
+            headers=member_headers, json={"body": "Good evening, neighbours."},
+        )
+        self.assertEqual(sent.status_code, 201)
+        self.assertEqual(sent.json()["body"], "Good evening, neighbours.")
+        self.assertEqual(sent.json()["author"]["full_name"], "Citizen User")
+        history = self.client.get(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages",
+            headers=member_headers,
+        )
+        self.assertEqual(history.status_code, 200)
+        self.assertEqual(len(history.json()), 1)
+        self.assertEqual(history.json()[0]["id"], sent.json()["id"])
+        outsider_headers = self.create_user("citizen", join=False)
+        denied_read = self.client.get(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages",
+            headers=outsider_headers,
+        )
+        denied_send = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages",
+            headers=outsider_headers, json={"body": "I should not be able to send this."},
+        )
+        self.assertEqual(denied_read.status_code, 403)
+        self.assertEqual(denied_send.status_code, 403)
+
+    def test_community_chat_rejects_blank_messages_and_supports_history_cursor(self):
+        headers = self.create_user("citizen")
+        blank = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages",
+            headers=headers, json={"body": "   "},
+        )
+        self.assertEqual(blank.status_code, 422)
+        first = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages",
+            headers=headers, json={"body": "First message"},
+        )
+        second = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages",
+            headers=headers, json={"body": "Second message"},
+        )
+        older = self.client.get(
+            f"/api/v1/community-spaces/{self.community_code}/chat/messages?before_id={second.json()['id']}",
+            headers=headers,
+        )
+        self.assertEqual([item["id"] for item in older.json()], [first.json()["id"]])

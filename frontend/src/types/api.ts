@@ -25,6 +25,8 @@ export interface LocalGovernmentArea {
 export interface GeographicWard { code: string; name: string; lga_code: string }
 export interface Community { code: string; name: string; ward_code: string }
 
+export interface CommunityChatMessage { id: number; community_code: string; author_user_id: number; author: { id: number; full_name: string }; body: string; created_at: string }
+
 export interface CommunityPost { id: number; community_code: string; author_user_id: number; author: { id: number; full_name: string }; body: string; is_announcement: boolean; created_at: string; comment_count: number; converted_report_id?: number | null }
 export interface CommunityPostAttachment { id: number; post_id: number; uploaded_by_user_id: number; original_filename: string; content_type: string; size_bytes: number; created_at: string }
 export interface CommunityPostImage { id: number; post_id: number; uploaded_by_user_id: number; original_filename: string; content_type: string; size_bytes: number; created_at: string }
