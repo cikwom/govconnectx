@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { FormEvent } from "react";
+import type { FormEvent, ChangeEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api, tokenStore } from "../services/api";
 import type { CommunityChatMessage } from "../types/api";
@@ -16,7 +16,12 @@ export default function CommunityChatPage() {
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState("");
+  const [photoUrls, setPhotoUrls] = useState<Record<number, string>>({});
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   const refresh = useCallback(async () => {
     const result = await api.communityChatMessages(communityCode);
@@ -31,14 +36,10 @@ export default function CommunityChatPage() {
     api.communityMembership(communityCode).then(async membership => {
       if (!active) return;
       setIsMember(membership.is_member);
-      if (!membership.is_member) {
-        setError("Join this community from Community Connect before opening its group chat.");
-        return;
-      }
+      if (!membership.is_member) { setError("Join this community from Community Connect before opening its group chat."); return; }
       await refresh();
-    }).catch(reason => {
-      if (active) setError(reason instanceof Error ? reason.message : "Could not verify community membership.");
-    }).finally(() => { if (active) setLoading(false); });
+    }).catch(reason => { if (active) setError(reason instanceof Error ? reason.message : "Could not verify community membership."); })
+      .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [refresh]);
 
@@ -47,91 +48,105 @@ export default function CommunityChatPage() {
     let disposed = false;
     let retryTimer: number | undefined;
     const socket = api.openCommunitySocket(communityCode);
-    socket.onopen = () => {
-      const token = tokenStore.get();
-      if (!token) { socket.close(); return; }
-      socket.send(JSON.stringify({ type: "authenticate", token }));
-    };
+    socket.onopen = () => { const token = tokenStore.get(); if (!token) { socket.close(); return; } socket.send(JSON.stringify({ type: "authenticate", token })); };
     socket.onmessage = event => {
       try {
         const incoming = JSON.parse(String(event.data)) as { type?: string };
         if (incoming.type === "connected") { setConnected(true); return; }
         if (incoming.type === "pong") return;
-        if (incoming.type === "chat_message_created") {
-          api.communityChatMessages(communityCode).then(setMessages).catch(() => undefined);
-        }
+        if (incoming.type === "chat_message_created") api.communityChatMessages(communityCode).then(setMessages).catch(() => undefined);
       } catch { /* Ignore malformed live events. */ }
     };
-    socket.onclose = () => {
-      if (!disposed) {
-        setConnected(false);
-        retryTimer = window.setTimeout(() => setRetry(value => value + 1), 5000);
-      }
-    };
+    socket.onclose = () => { if (!disposed) { setConnected(false); retryTimer = window.setTimeout(() => setRetry(value => value + 1), 5000); } };
     socket.onerror = () => { if (!disposed) setConnected(false); };
-    const heartbeat = window.setInterval(() => {
-      if (socket.readyState === WebSocket.OPEN) socket.send("ping");
-    }, 25000);
-    return () => {
-      disposed = true;
-      window.clearInterval(heartbeat);
-      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
-      socket.close();
-    };
+    const heartbeat = window.setInterval(() => { if (socket.readyState === WebSocket.OPEN) socket.send("ping"); }, 25000);
+    return () => { disposed = true; window.clearInterval(heartbeat); if (retryTimer !== undefined) window.clearTimeout(retryTimer); socket.close(); };
   }, [communityCode, isMember, retry]);
 
   useEffect(() => {
     if (!communityCode || !isMember || connected) return;
-    const timer = window.setInterval(() => {
-      api.communityChatMessages(communityCode).then(setMessages).catch(() => undefined);
-    }, 10000);
+    const timer = window.setInterval(() => { api.communityChatMessages(communityCode).then(setMessages).catch(() => undefined); }, 10000);
     return () => window.clearInterval(timer);
   }, [communityCode, isMember, connected]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages.length]);
 
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      const targets = messages.filter(message => message.image_id && !photoUrls[message.id]);
+      if (!targets.length) return;
+      const loaded = await Promise.all(targets.map(async message => {
+        try { return [message.id, URL.createObjectURL(await api.downloadCommunityChatPhoto(communityCode, message.id))] as const; }
+        catch { return [message.id, ""] as const; }
+      }));
+      if (cancelled) { loaded.forEach(([, url]) => { if (url) URL.revokeObjectURL(url); }); return; }
+      setPhotoUrls(current => { const next = { ...current }; loaded.forEach(([id, url]) => { if (url) next[id] = url; }); return next; });
+    };
+    void load();
+    return () => { cancelled = true; };
+  }, [communityCode, messages, photoUrls]);
+
+  useEffect(() => () => Object.values(photoUrls).forEach(URL.revokeObjectURL), [photoUrls]);
+
+  function selectPhoto(event: ChangeEvent<HTMLInputElement>) {
+    const selected = event.target.files?.[0] ?? null;
+    if (!selected) return;
+    if (!["image/jpeg", "image/png"].includes(selected.type)) { setError("Choose a JPEG or PNG photo."); event.target.value = ""; return; }
+    if (selected.size > 10 * 1024 * 1024) { setError("Photos must be 10 MB or smaller."); event.target.value = ""; return; }
+    setError(""); setPhoto(selected); setPhotoPreview(URL.createObjectURL(selected)); event.target.value = "";
+  }
+
+  function clearPhoto() {
+    setPhoto(null);
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+    setPhotoPreview("");
+  }
+
   async function sendMessage(event: FormEvent) {
     event.preventDefault();
     const body = draft.trim();
-    if (!body || sending) return;
-    setSending(true);
-    setError("");
+    if ((!body && !photo) || sending) return;
+    setSending(true); setError("");
     try {
-      const created = await api.sendCommunityChatMessage(communityCode, body);
+      const created = photo ? await api.uploadCommunityChatPhoto(communityCode, photo, body) : await api.sendCommunityChatMessage(communityCode, body);
       setMessages(current => current.some(item => item.id === created.id) ? current : [...current, created]);
-      setDraft("");
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Message could not be sent.");
-    } finally { setSending(false); }
+      setDraft(""); clearPhoto();
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Message could not be sent."); }
+    finally { setSending(false); }
   }
 
   return <div className="page-stack community-chat-page">
-    <section className="citizen-dashboard-banner">
-      <div><p className="eyebrow">COMMUNITY CONNECT · GROUP CHAT</p><h1>Your community, in conversation.</h1><p>Share useful updates with verified members of this community. Keep messages respectful and relevant.</p></div>
-      <span className="dashboard-fist" aria-hidden="true">◎</span>
-    </section>
+    <section className="citizen-dashboard-banner"><div><p className="eyebrow">COMMUNITY CONNECT · GROUP CHAT</p><h1>Your community, in conversation.</h1><p>Share useful updates and photos with verified members of this community.</p></div><span className="dashboard-fist" aria-hidden="true">◎</span></section>
     <section className="panel community-chat-panel">
-      <div className="panel-heading">
-        <div><p className="eyebrow">COMMUNITY ROOM</p><h2>{communityCode}</h2><p className="muted">Messages are visible to active members of this community only.</p></div>
-        <span className={connected ? "chat-connection online" : "chat-connection"}>{connected ? "Live" : "Reconnecting"}</span>
-      </div>
+      <div className="panel-heading"><div><p className="eyebrow">COMMUNITY ROOM</p><h2>{communityCode}</h2><p className="muted">Messages and photos are visible to active members only.</p></div><span className={connected ? "chat-connection online" : "chat-connection"}>{connected ? "Live" : "Reconnecting"}</span></div>
       <div className="community-chat-toolbar"><Link to="/community-connect">← Back to Community Connect</Link><span>{messages.length} recent messages</span></div>
       <div className="community-chat-messages" aria-live="polite" aria-label="Community chat messages">
-        {loading ? <p className="muted">Loading conversation…</p> : messages.length === 0 ? <div className="chat-empty"><strong>Start the conversation</strong><p>There are no messages yet. Share a helpful update with your neighbours.</p></div> : messages.map(message => (
+        {loading ? <p className="muted">Loading conversation…</p> : messages.length === 0 ? <div className="chat-empty"><strong>Start the conversation</strong><p>There are no messages yet. Share a helpful update or photo with your neighbours.</p></div> : messages.map(message => (
           <article className={message.author_user_id === user?.id ? "chat-message own" : "chat-message"} key={message.id}>
             <div className="chat-message-meta"><strong>{message.author.full_name}</strong><time dateTime={message.created_at}>{new Date(message.created_at).toLocaleString()}</time></div>
-            <p>{message.body}</p>
+            {message.body && <p>{message.body}</p>}
+            {message.image_id && (photoUrls[message.id] ? <img className="chat-message-photo" src={photoUrls[message.id]} alt={message.image_original_filename || "Photo shared in community chat"}/> : <p className="muted">Loading photo…</p>)}
           </article>
         ))}
         <div ref={bottomRef}/>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
-      {isMember && <><form className="community-chat-compose" onSubmit={sendMessage}>
-        <label className="sr-only" htmlFor="community-chat-message">Write a message</label>
-        <textarea id="community-chat-message" value={draft} onChange={event => setDraft(event.target.value)} maxLength={2000} rows={2} placeholder="Write a message to your community…" required/>
-        <button className="button button-primary" type="submit" disabled={sending || !draft.trim()}>{sending ? "Sending…" : "Send message"}</button>
-      </form>
-      <p className="muted chat-guidance">Please do not share passwords, private personal details or unverified accusations.</p></>}
+      {isMember && <>
+        {photoPreview && <div className="chat-photo-preview"><img src={photoPreview} alt="Selected photo preview"/><button className="button button-quiet button-small" type="button" onClick={clearPhoto}>Remove photo</button></div>}
+        <form className="community-chat-compose" onSubmit={sendMessage}>
+          <label className="sr-only" htmlFor="community-chat-message">Write a message or photo caption</label>
+          <textarea id="community-chat-message" value={draft} onChange={event => setDraft(event.target.value)} maxLength={2000} rows={2} placeholder="Write a message or photo caption…"/>
+          <div className="chat-compose-actions">
+            <input ref={cameraInputRef} className="sr-only" type="file" accept="image/jpeg,image/png" capture="environment" onChange={selectPhoto}/>
+            <input ref={galleryInputRef} className="sr-only" type="file" accept="image/jpeg,image/png" onChange={selectPhoto}/>
+            <button className="button button-quiet" type="button" onClick={() => cameraInputRef.current?.click()}>Take photo</button>
+            <button className="button button-quiet" type="button" onClick={() => galleryInputRef.current?.click()}>Choose photo</button>
+            <button className="button button-primary" type="submit" disabled={sending || (!draft.trim() && !photo)}>{sending ? "Sending…" : photo ? "Share photo" : "Send message"}</button>
+          </div>
+        </form>
+        <p className="muted chat-guidance">JPEG and PNG photos up to 10 MB. Photos are scanned and stored privately. Do not share passwords or private personal details.</p>
+      </>}
     </section>
   </div>;
 }
