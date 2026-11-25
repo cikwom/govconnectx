@@ -5,6 +5,7 @@ Revises: 20261124_0003
 """
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy import inspect
 
 revision = "20261125_0004"
 down_revision = "20261124_0003"
@@ -13,6 +14,10 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # The application calls metadata.create_all before Alembic at startup.
+    # Skip creation when that compatibility path has already made the table.
+    if "community_chat_messages" in inspect(op.get_bind()).get_table_names():
+        return
     op.create_table(
         "community_chat_messages",
         sa.Column("id", sa.Integer(), primary_key=True),
