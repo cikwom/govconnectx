@@ -126,12 +126,12 @@ export default function CommunityChatPage() {
         <div ref={bottomRef}/>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
-      {isMember && <form className="community-chat-compose" onSubmit={sendMessage}>
+      {isMember && <><form className="community-chat-compose" onSubmit={sendMessage}>
         <label className="sr-only" htmlFor="community-chat-message">Write a message</label>
         <textarea id="community-chat-message" value={draft} onChange={event => setDraft(event.target.value)} maxLength={2000} rows={2} placeholder="Write a message to your community…" required/>
         <button className="button button-primary" type="submit" disabled={sending || !draft.trim()}>{sending ? "Sending…" : "Send message"}</button>
       </form>
-      <p className="muted chat-guidance">Please do not share passwords, private personal details or unverified accusations.</p>}
+      <p className="muted chat-guidance">Please do not share passwords, private personal details or unverified accusations.</p></>}
     </section>
   </div>;
 }
