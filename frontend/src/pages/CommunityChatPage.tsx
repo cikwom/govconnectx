@@ -11,6 +11,7 @@ export default function CommunityChatPage() {
   const [messages, setMessages] = useState<CommunityChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
+  const [isMember, setIsMember] = useState(false);
   const [sending, setSending] = useState(false);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState("");
@@ -27,8 +28,16 @@ export default function CommunityChatPage() {
     let active = true;
     setLoading(true);
     setError("");
-    refresh().catch(reason => {
-      if (active) setError(reason instanceof Error ? reason.message : "Could not load this community chat. Join the community first.");
+    api.communityMembership(communityCode).then(async membership => {
+      if (!active) return;
+      setIsMember(membership.is_member);
+      if (!membership.is_member) {
+        setError("Join this community from Community Connect before opening its group chat.");
+        return;
+      }
+      await refresh();
+    }).catch(reason => {
+      if (active) setError(reason instanceof Error ? reason.message : "Could not verify community membership.");
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [refresh]);
@@ -69,15 +78,15 @@ export default function CommunityChatPage() {
       if (retryTimer !== undefined) window.clearTimeout(retryTimer);
       socket.close();
     };
-  }, [communityCode, retry]);
+  }, [communityCode, isMember, retry]);
 
   useEffect(() => {
-    if (!communityCode || connected) return;
+    if (!communityCode || !isMember || connected) return;
     const timer = window.setInterval(() => {
       api.communityChatMessages(communityCode).then(setMessages).catch(() => undefined);
     }, 10000);
     return () => window.clearInterval(timer);
-  }, [communityCode, connected]);
+  }, [communityCode, isMember, connected]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages.length]);
 
@@ -117,12 +126,12 @@ export default function CommunityChatPage() {
         <div ref={bottomRef}/>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
-      <form className="community-chat-compose" onSubmit={sendMessage}>
+      {isMember && <form className="community-chat-compose" onSubmit={sendMessage}>
         <label className="sr-only" htmlFor="community-chat-message">Write a message</label>
         <textarea id="community-chat-message" value={draft} onChange={event => setDraft(event.target.value)} maxLength={2000} rows={2} placeholder="Write a message to your community…" required/>
         <button className="button button-primary" type="submit" disabled={sending || !draft.trim()}>{sending ? "Sending…" : "Send message"}</button>
       </form>
-      <p className="muted chat-guidance">Please do not share passwords, private personal details or unverified accusations.</p>
+      <p className="muted chat-guidance">Please do not share passwords, private personal details or unverified accusations.</p>}
     </section>
   </div>;
 }
