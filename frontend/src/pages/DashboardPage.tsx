@@ -21,7 +21,7 @@ export default function DashboardPage(){
   useEffect(()=>{void load()},[load]);
   const active=reports.filter(r=>!["RESOLVED","REJECTED"].includes(r.status)).length;
   const resolved=reports.filter(r=>r.status==="RESOLVED").length;
-  async function submit(p:CreateReportPayload,file?:File){const created=await api.createReport(p);if(file)await api.uploadReportAttachment(created.id,file);setShowForm(false);await load()}
+  async function submit(p:CreateReportPayload,file?:File){const created=await api.createReport(p);setShowForm(false);let uploadError="";if(file){try{await api.uploadReportAttachment(created.id,file)}catch(err){uploadError=err instanceof Error?err.message:"Photo upload failed"}}await load();if(uploadError)setError(`Report #${created.id} was submitted, but its photo could not be uploaded: ${uploadError}`)}
   return <>
     <section className="citizen-dashboard-banner"><div><p className="eyebrow">YOUR VOICE. YOUR COMMUNITY.</p><h2>{t("Progress starts with participation.")}</h2><p>{t("Keep track of the issues you have raised and the action that follows.")}</p></div><span className="dashboard-fist" aria-hidden="true">✊</span></section>
     {user?.role !== "citizen" && <DepartmentPerformancePanel/>}
