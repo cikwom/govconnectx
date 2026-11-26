@@ -201,11 +201,11 @@ test("citizen can enter an LGA chat and join before posting", async ({ page }) =
   await page.getByLabel("Email address").fill("citizen@example.test");
   await page.getByLabel("Password").fill("StrongTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
-  await expect(page).toHaveURL(/\\/dashboard$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link", { name: "Community Connect" }).click();
   await page.getByLabel("State").selectOption("LA");
   await page.getByLabel("Local Government Area").selectOption("IKE");
-  await expect(page).toHaveURL(/\\/community-chat\\/LGA-IKE$/);
+  await expect(page).toHaveURL(/\/community-chat\/LGA-IKE$/);
   await page.getByRole("button", { name: "Join LGA chat" }).click();
   await expect(page.getByLabel("Write a message or photo caption")).toBeVisible();
   await page.getByLabel("Write a message or photo caption").fill("Road damage near the market.");
