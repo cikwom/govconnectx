@@ -86,7 +86,7 @@ class AlembicBaselineTests(unittest.TestCase):
                             text("SELECT email FROM users WHERE id = 91")
                         ).scalar_one()
 
-                self.assertEqual(revision, "20261125_0005")
+                self.assertEqual(revision, "20261126_0006")
                 self.assertEqual(existing_user, "existing@example.test")
             finally:
                 engine.dispose()
