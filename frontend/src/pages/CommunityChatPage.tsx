@@ -7,11 +7,14 @@ import { useAuth } from "../state/AuthContext";
 
 export default function CommunityChatPage() {
   const { communityCode = "" } = useParams();
+  const isLgaRoom = communityCode.startsWith("LGA-");
+  const lgaCode = isLgaRoom ? communityCode.slice(4) : "";
   const { user } = useAuth();
   const [messages, setMessages] = useState<CommunityChatMessage[]>([]);
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [isMember, setIsMember] = useState(false);
+  const [roomName, setRoomName] = useState("");
   const [sending, setSending] = useState(false);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState("");
@@ -26,30 +29,31 @@ export default function CommunityChatPage() {
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
 
   const refresh = useCallback(async () => {
-    const result = await api.communityChatMessages(communityCode);
+    const result = isLgaRoom ? await api.lgaChatMessages(lgaCode) : await api.communityChatMessages(communityCode);
     setMessages(result);
     return result;
-  }, [communityCode]);
+  }, [communityCode, isLgaRoom, lgaCode]);
 
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError("");
-    api.communityMembership(communityCode).then(async membership => {
+    (isLgaRoom ? api.lgaChatMembership(lgaCode) : api.communityMembership(communityCode)).then(async membership => {
       if (!active) return;
       setIsMember(membership.is_member);
-      if (!membership.is_member) { setError("Join this community from Community Connect before opening its group chat."); return; }
+      if (isLgaRoom && "lga_name" in membership) setRoomName(membership.lga_name);
+      if (!membership.is_member) { if (!isLgaRoom) setError("Join this community from Community Connect before opening its group chat."); return; }
       await refresh();
     }).catch(reason => { if (active) setError(reason instanceof Error ? reason.message : "Could not verify community membership."); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [refresh]);
+  }, [refresh, isLgaRoom, lgaCode, communityCode]);
 
   useEffect(() => {
     if (!communityCode || !isMember) return;
     let disposed = false;
     let retryTimer: number | undefined;
-    const socket = api.openCommunitySocket(communityCode);
+    const socket = isLgaRoom ? api.openLgaChatSocket(lgaCode) : api.openCommunitySocket(communityCode);
     socket.onopen = () => { const token = tokenStore.get(); if (!token) { socket.close(); return; } socket.send(JSON.stringify({ type: "authenticate", token })); };
     socket.onmessage = event => {
       try {
@@ -63,13 +67,13 @@ export default function CommunityChatPage() {
     socket.onerror = () => { if (!disposed) setConnected(false); };
     const heartbeat = window.setInterval(() => { if (socket.readyState === WebSocket.OPEN) socket.send("ping"); }, 25000);
     return () => { disposed = true; window.clearInterval(heartbeat); if (retryTimer !== undefined) window.clearTimeout(retryTimer); socket.close(); };
-  }, [communityCode, isMember, retry]);
+  }, [communityCode, isMember, retry, isLgaRoom, lgaCode]);
 
   useEffect(() => {
     if (!communityCode || !isMember || connected) return;
-    const timer = window.setInterval(() => { api.communityChatMessages(communityCode).then(setMessages).catch(() => undefined); }, 10000);
+    const timer = window.setInterval(() => { (isLgaRoom ? api.lgaChatMessages(lgaCode) : api.communityChatMessages(communityCode)).then(setMessages).catch(() => undefined); }, 10000);
     return () => window.clearInterval(timer);
-  }, [communityCode, isMember, connected]);
+  }, [communityCode, isMember, connected, isLgaRoom, lgaCode]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [messages.length]);
 
@@ -80,7 +84,8 @@ export default function CommunityChatPage() {
       if (!targets.length) return;
       const loaded = await Promise.all(targets.map(async message => {
         try {
-          const url = URL.createObjectURL(await api.downloadCommunityChatPhoto(communityCode, message.id));
+          const blob = isLgaRoom ? await api.downloadLgaChatPhoto(lgaCode, message.id) : await api.downloadCommunityChatPhoto(communityCode, message.id);
+          const url = URL.createObjectURL(blob);
           photoUrlsRef.current.push(url);
           return [message.id, url] as const;
         } catch {
@@ -99,7 +104,7 @@ export default function CommunityChatPage() {
     };
     void load();
     return () => { cancelled = true; };
-  }, [communityCode, messages, photoUrls]);
+  }, [communityCode, messages, photoUrls, isLgaRoom, lgaCode]);
 
   useEffect(() => () => photoUrlsRef.current.forEach(URL.revokeObjectURL), []);
 
@@ -131,7 +136,7 @@ export default function CommunityChatPage() {
     if ((!body && !photo) || sending) return;
     setSending(true); setError("");
     try {
-      const created = photo ? await api.uploadCommunityChatPhoto(communityCode, photo, body) : await api.sendCommunityChatMessage(communityCode, body);
+      const created = photo ? (isLgaRoom ? await api.uploadLgaChatPhoto(lgaCode, photo, body) : await api.uploadCommunityChatPhoto(communityCode, photo, body)) : (isLgaRoom ? await api.sendLgaChatMessage(lgaCode, body) : await api.sendCommunityChatMessage(communityCode, body));
       setMessages(current => current.some(item => item.id === created.id) ? current : [...current, created]);
       setDraft(""); clearPhoto();
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Message could not be sent."); }
@@ -141,7 +146,7 @@ export default function CommunityChatPage() {
   return <div className="page-stack community-chat-page">
     <section className="citizen-dashboard-banner"><div><p className="eyebrow">COMMUNITY CONNECT · GROUP CHAT</p><h1>Your community, in conversation.</h1><p>Share useful updates and photos with verified members of this community.</p></div><span className="dashboard-fist" aria-hidden="true">◎</span></section>
     <section className="panel community-chat-panel">
-      <div className="panel-heading"><div><p className="eyebrow">COMMUNITY ROOM</p><h2>{communityCode}</h2><p className="muted">Messages and photos are visible to active members only.</p></div><span className={connected ? "chat-connection online" : "chat-connection"}>{connected ? "Live" : "Reconnecting"}</span></div>
+      <div className="panel-heading"><div><p className="eyebrow">COMMUNITY ROOM</p><h2>{roomName || communityCode}</h2><p className="muted">{isLgaRoom ? "Local Government Area shared room" : "Community room"} · Messages and photos are visible to active members only.</p></div><span className={connected ? "chat-connection online" : "chat-connection"}>{connected ? "Live" : "Reconnecting"}</span></div>
       <div className="community-chat-toolbar"><Link to="/community-connect">← Back to Community Connect</Link><span>{messages.length} recent messages</span></div>
       <div className="community-chat-messages" aria-live="polite" aria-label="Community chat messages">
         {loading ? <p className="muted">Loading conversation…</p> : messages.length === 0 ? <div className="chat-empty"><strong>Start the conversation</strong><p>There are no messages yet. Share a helpful update or photo with your neighbours.</p></div> : messages.map(message => (
@@ -154,6 +159,7 @@ export default function CommunityChatPage() {
         <div ref={bottomRef}/>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
+      {!isMember && isLgaRoom && !loading && <div className="empty-state"><h3>Join {roomName || "this LGA"} chat</h3><p>Join this Local Government Area room to send messages and share photos. Your access is limited to this LGA room.</p><button className="button button-primary" type="button" disabled={sending} onClick={async () => { setSending(true); setError(""); try { await api.joinLgaChat(lgaCode); setIsMember(true); await refresh(); } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not join this LGA chat."); } finally { setSending(false); } }}>{sending ? "Joining…" : "Join LGA chat"}</button></div>}
       {isMember && <>
         {photoPreview && <div className="chat-photo-preview"><img src={photoPreview} alt="Selected photo preview"/><button className="button button-quiet button-small" type="button" onClick={clearPhoto}>Remove photo</button></div>}
         <form className="community-chat-compose" onSubmit={sendMessage}>
