@@ -67,6 +67,46 @@ class CommunitySpaceApiTests(unittest.TestCase):
             self.assertEqual(joined.status_code, 200)
         return headers
 
+
+    def test_lga_chat_requires_membership_and_allows_joined_members_to_chat(self):
+        headers = self.create_user("citizen", join=False)
+        lga_code = "NG025011"
+        endpoint = f"/api/v1/community-spaces/lgas/{lga_code}/chat"
+        denied = self.client.get(endpoint + "/messages", headers=headers)
+        self.assertEqual(denied.status_code, 403)
+        joined = self.client.post(endpoint + "/membership", headers=headers)
+        self.assertEqual(joined.status_code, 200)
+        self.assertEqual(joined.json()["room_code"], "LGA-" + lga_code)
+        sent = self.client.post(endpoint + "/messages", headers=headers, json={"body": "Good morning, Otukpo."})
+        self.assertEqual(sent.status_code, 201, sent.text)
+        self.assertEqual(sent.json()["community_code"], "LGA-" + lga_code)
+        history = self.client.get(endpoint + "/messages", headers=headers)
+        self.assertEqual(history.status_code, 200)
+        self.assertEqual(history.json()[0]["body"], "Good morning, Otukpo.")
+        left = self.client.delete(endpoint + "/membership", headers=headers)
+        self.assertFalse(left.json()["is_member"])
+        denied_again = self.client.get(endpoint + "/messages", headers=headers)
+        self.assertEqual(denied_again.status_code, 403)
+
+    def test_lga_chat_photo_is_member_only_and_private(self):
+        headers = self.create_user("citizen", join=False)
+        other_headers = self.create_user("citizen", join=False)
+        lga_code = "NG025011"
+        endpoint = f"/api/v1/community-spaces/lgas/{lga_code}/chat"
+        self.client.post(endpoint + "/membership", headers=headers)
+        image_bytes = b"\\xff\\xd8\\xff" + b"lga-chat-test-image"
+        with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"COMMUNITY_MEDIA_DIR": directory}):
+            uploaded = self.client.post(endpoint + "/messages/image", headers=headers,
+                files={"file": ("otukpo.jpg", image_bytes, "image/jpeg")}, data={"body": "Road damage near the market."})
+            self.assertEqual(uploaded.status_code, 201, uploaded.text)
+            message_id = uploaded.json()["id"]
+            download = self.client.get(endpoint + f"/messages/{message_id}/image", headers=headers)
+            self.assertEqual(download.status_code, 200)
+            self.assertEqual(download.content, image_bytes)
+            self.assertEqual(download.headers["cache-control"], "private, no-store")
+            forbidden = self.client.get(endpoint + f"/messages/{message_id}/image", headers=other_headers)
+            self.assertEqual(forbidden.status_code, 403)
+
     def test_citizen_can_create_post_and_comment_in_selected_community(self):
         headers = self.create_user("citizen")
         created = self.client.post(
