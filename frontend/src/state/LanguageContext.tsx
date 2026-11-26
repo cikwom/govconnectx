@@ -642,6 +642,12 @@ const dictionaries: Record<Language, Dictionary> = {
     "Latitude (optional)": "Latitude (na zaɓi)",
     "Longitude (optional)": "Longitude (na zaɓi)",
     "Street, landmark, nearby building or address": "Titi, sanannen wuri, gini na kusa ko adireshi",
+    "Add a photo of the problem (optional)": "Ƙara hoton matsalar (na zaɓi)",
+    "Choose a JPEG or PNG photo.": "Zaɓi hoton JPEG ko PNG.",
+    "Photo must be 10 MB or smaller.": "Hoton dole ne ya kasance 10 MB ko ƙasa da haka.",
+    "Use your camera or choose a photo from your device. You can submit without a photo.": "Yi amfani da kyamararka ko zaɓi hoto daga na'urarka. Za ka iya aika rahoto ba tare da hoto ba.",
+    "Selected report evidence preview": "Duban hoton hujjar rahoto da aka zaɓa",
+    "Remove photo": "Cire hoto",
   },
   yo: {
     "Infrastructure issue": "Ìṣòro àwọn ohun èlò ìlú",
@@ -1206,6 +1212,12 @@ const dictionaries: Record<Language, Dictionary> = {
     "Latitude (optional)": "Latitude (àṣàyàn)",
     "Longitude (optional)": "Longitude (àṣàyàn)",
     "Street, landmark, nearby building or address": "Òpópónà, ibi tí a mọ̀ sí, ilé tó wà nítòsí tàbí àdírẹ́sì",
+    "Add a photo of the problem (optional)": "Fi àwòrán ìṣòro náà kún un (àṣàyàn)",
+    "Choose a JPEG or PNG photo.": "Yan àwòrán JPEG tàbí PNG.",
+    "Photo must be 10 MB or smaller.": "Àwòrán kò gbọdọ̀ ju 10 MB lọ.",
+    "Use your camera or choose a photo from your device. You can submit without a photo.": "Lo kámẹ́rà rẹ tàbí yan àwòrán láti inú ẹ̀rọ rẹ. O lè fi ìròyìn ránṣẹ́ láìsí àwòrán.",
+    "Selected report evidence preview": "Àwòrán àyẹ̀wò ẹ̀rí ìròyìn tí a yàn",
+    "Remove photo": "Yọ àwòrán kúrò",
   },
   ig: {
     "Infrastructure issue": "Nsogbu akụrụngwa obodo",
@@ -1769,6 +1781,12 @@ const dictionaries: Record<Language, Dictionary> = {
     "Latitude (optional)": "Latitude (nhọrọ)",
     "Longitude (optional)": "Longitude (nhọrọ)",
     "Street, landmark, nearby building or address": "Ụzọ, ebe ama ama, ụlọ dị nso ma ọ bụ adreesị",
+    "Add a photo of the problem (optional)": "Tinye foto nsogbu ahụ (nhọrọ)",
+    "Choose a JPEG or PNG photo.": "Họrọ foto JPEG ma ọ bụ PNG.",
+    "Photo must be 10 MB or smaller.": "Foto ahụ agaghị akarị 10 MB.",
+    "Use your camera or choose a photo from your device. You can submit without a photo.": "Jiri igwefoto gị ma ọ bụ họrọ foto n'ime ngwaọrụ gị. Ị nwere ike izipu mkpesa n'enweghị foto.",
+    "Selected report evidence preview": "Nlele foto akaebe mkpesa ahọpụtara",
+    "Remove photo": "Wepụ foto",
   },
 
 };
