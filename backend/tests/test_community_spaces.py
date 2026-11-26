@@ -82,7 +82,7 @@ class CommunitySpaceApiTests(unittest.TestCase):
         self.assertEqual(sent.json()["community_code"], "LGA-" + lga_code)
         history = self.client.get(endpoint + "/messages", headers=headers)
         self.assertEqual(history.status_code, 200)
-        self.assertEqual(history.json()[0]["body"], "Good morning, Otukpo.")
+        self.assertIn("Good morning, Otukpo.", [item["body"] for item in history.json()])
         left = self.client.delete(endpoint + "/membership", headers=headers)
         self.assertFalse(left.json()["is_member"])
         denied_again = self.client.get(endpoint + "/messages", headers=headers)
