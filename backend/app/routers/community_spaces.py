@@ -18,7 +18,7 @@ from app.core.security import decode_access_token
 from app.database import get_db
 from app.models.audit_event import record_audit_event
 from app.models.community_discussion import CommunityMembership, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage
-from app.models.community_chat import CommunityChatMessage
+from app.models.community_chat import CommunityChatMessage, LocalGovernmentChatMembership, LocalGovernmentChatMessage
 from app.models.location import Community, LocalGovernmentArea, State, Ward
 from app.models.report_attachment import ReportAttachment
 from app.schemas.report import ReportCreate
@@ -870,3 +870,230 @@ def download_community_chat_image(
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Community chat photo is unavailable")
     return FileResponse(path, media_type=message.image_content_type, filename=message.image_original_filename, headers=headers)
+
+
+# LGA-wide rooms are separate from ward/community rooms. Membership is scoped to
+# the selected LGA and does not grant access to any other geographic room.
+def _lga_or_404(db: Session, lga_code: str) -> LocalGovernmentArea:
+    lga = db.query(LocalGovernmentArea).filter(LocalGovernmentArea.code == lga_code).first()
+    if lga is None:
+        raise HTTPException(status_code=404, detail="Local Government Area not found")
+    return lga
+
+
+def _require_lga_chat_membership(db: Session, lga_code: str, user_id: int):
+    membership = db.query(LocalGovernmentChatMembership).filter(
+        LocalGovernmentChatMembership.lga_code == lga_code,
+        LocalGovernmentChatMembership.user_id == user_id,
+        LocalGovernmentChatMembership.is_active == 1,
+    ).first()
+    if membership is None:
+        raise HTTPException(status_code=403, detail="Join this LGA chat before reading or sharing messages")
+    return membership
+
+
+def _lga_room_code(lga_code: str) -> str:
+    return f"LGA-{lga_code}"
+
+
+@router.get("/lgas/{lga_code}/chat/membership")
+def get_lga_chat_membership(lga_code: str, db: Session = Depends(get_db), actor: User = Depends(get_current_user)):
+    lga = _lga_or_404(db, lga_code)
+    membership = db.query(LocalGovernmentChatMembership).filter(
+        LocalGovernmentChatMembership.lga_code == lga.code,
+        LocalGovernmentChatMembership.user_id == actor.id,
+        LocalGovernmentChatMembership.is_active == 1,
+    ).first()
+    return {"room_code": _lga_room_code(lga.code), "lga_code": lga.code, "lga_name": lga.name,
+            "is_member": membership is not None, "joined_at": membership.joined_at if membership else None}
+
+
+@router.post("/lgas/{lga_code}/chat/membership")
+def join_lga_chat(lga_code: str, db: Session = Depends(get_db), actor: User = Depends(get_current_user)):
+    lga = _lga_or_404(db, lga_code)
+    membership = db.query(LocalGovernmentChatMembership).filter(
+        LocalGovernmentChatMembership.lga_code == lga.code,
+        LocalGovernmentChatMembership.user_id == actor.id,
+    ).first()
+    if membership is None:
+        membership = LocalGovernmentChatMembership(lga_code=lga.code, user_id=actor.id, is_active=1)
+        db.add(membership)
+    else:
+        membership.is_active = 1
+        membership.joined_at = datetime.now(timezone.utc)
+    record_audit_event(db, actor_user_id=actor.id, action="community.lga_chat_joined",
+        entity_type="local_government_area", entity_id=None, summary="A citizen joined an LGA-wide chat",
+        details={"lga_code": lga.code})
+    db.commit()
+    return {"room_code": _lga_room_code(lga.code), "lga_code": lga.code, "lga_name": lga.name,
+            "is_member": True, "joined_at": membership.joined_at}
+
+
+@router.delete("/lgas/{lga_code}/chat/membership")
+def leave_lga_chat(lga_code: str, db: Session = Depends(get_db), actor: User = Depends(get_current_user)):
+    lga = _lga_or_404(db, lga_code)
+    membership = db.query(LocalGovernmentChatMembership).filter(
+        LocalGovernmentChatMembership.lga_code == lga.code,
+        LocalGovernmentChatMembership.user_id == actor.id,
+    ).first()
+    if membership is not None:
+        membership.is_active = 0
+        record_audit_event(db, actor_user_id=actor.id, action="community.lga_chat_left",
+            entity_type="local_government_area", entity_id=None, summary="A citizen left an LGA-wide chat",
+            details={"lga_code": lga.code})
+        db.commit()
+    return {"room_code": _lga_room_code(lga.code), "is_member": False}
+
+
+@router.get("/lgas/{lga_code}/chat/messages", response_model=list[ChatMessageResponse])
+def list_lga_chat_messages(lga_code: str, limit: int = Query(default=50, ge=1, le=100),
+    before_id: int | None = Query(default=None, ge=1), db: Session = Depends(get_db),
+    actor: User = Depends(get_current_user)):
+    lga = _lga_or_404(db, lga_code)
+    _require_lga_chat_membership(db, lga.code, actor.id)
+    query = db.query(LocalGovernmentChatMessage).filter(
+        LocalGovernmentChatMessage.lga_code == lga.code, LocalGovernmentChatMessage.is_deleted == 0)
+    if before_id is not None:
+        query = query.filter(LocalGovernmentChatMessage.id < before_id)
+    messages = query.order_by(LocalGovernmentChatMessage.id.desc()).limit(limit).all()
+    return [{"id": item.id, "community_code": _lga_room_code(lga.code),
+        "author_user_id": item.author_user_id, "author": item.author_user, "body": item.body,
+        "created_at": item.created_at, "image_id": item.id if item.image_storage_key else None,
+        "image_content_type": item.image_content_type, "image_original_filename": item.image_original_filename}
+        for item in reversed(messages)]
+
+
+@router.post("/lgas/{lga_code}/chat/messages", response_model=ChatMessageResponse, status_code=status.HTTP_201_CREATED)
+def create_lga_chat_message(lga_code: str, payload: ChatMessageCreate,
+    db: Session = Depends(get_db), actor: User = Depends(get_current_user)):
+    lga = _lga_or_404(db, lga_code)
+    _require_lga_chat_membership(db, lga.code, actor.id)
+    body = payload.body.strip()
+    if not body:
+        raise HTTPException(status_code=422, detail="Chat message cannot be empty")
+    message = LocalGovernmentChatMessage(lga_code=lga.code, author_user_id=actor.id, body=body)
+    db.add(message)
+    db.flush()
+    record_audit_event(db, actor_user_id=actor.id, action="community.lga_chat_message_created",
+        entity_type="lga_chat_message", entity_id=message.id, summary="A message was sent to an LGA-wide chat",
+        details={"lga_code": lga.code})
+    db.commit()
+    db.refresh(message)
+    community_live_connections.broadcast_sync(_lga_room_code(lga.code),
+        {"type": "chat_message_created", "message_id": message.id})
+    return {"id": message.id, "community_code": _lga_room_code(lga.code),
+        "author_user_id": actor.id, "author": actor, "body": message.body, "created_at": message.created_at}
+
+
+@router.post("/lgas/{lga_code}/chat/messages/image", response_model=ChatMessageResponse, status_code=status.HTTP_201_CREATED)
+def create_lga_chat_image_message(lga_code: str, file: UploadFile = File(...), body: str = Form(default=""),
+    db: Session = Depends(get_db), actor: User = Depends(get_current_user)):
+    lga = _lga_or_404(db, lga_code)
+    _require_lga_chat_membership(db, lga.code, actor.id)
+    if is_production_environment() and not storage_is_production_ready():
+        raise HTTPException(status_code=503, detail="LGA chat photo sharing requires private durable storage and malware scanning.")
+    caption = body.strip()
+    if len(caption) > 2000:
+        raise HTTPException(status_code=422, detail="Photo caption cannot exceed 2,000 characters")
+    data = file.file.read(MAX_IMAGE_BYTES + 1)
+    if not data:
+        raise HTTPException(status_code=400, detail="The selected photo is empty")
+    if len(data) > MAX_IMAGE_BYTES:
+        raise HTTPException(status_code=413, detail="Photo exceeds the configured upload limit")
+    detected = _image_content_type(data)
+    declared = (file.content_type or "").lower().strip()
+    suffix = Path(file.filename or "").suffix.lower()
+    expected_suffix = {"image/jpeg": {".jpg", ".jpeg"}, "image/png": {".png"}}
+    if detected is None or detected != declared or suffix not in expected_suffix[detected]:
+        raise HTTPException(status_code=415, detail="Upload a valid JPEG or PNG photo with a matching file type and extension")
+    storage_key = uuid.uuid4().hex
+    digest = hashlib.sha256(data).hexdigest()
+    backend = "s3" if s3_is_configured() else "local"
+    destination = _community_image_path(storage_key) if backend == "local" else None
+    stored = False
+    try:
+        scan_bytes(data)
+        if backend == "s3": store_object(storage_key, data, detected, digest)
+        else: destination.write_bytes(data)
+        stored = True
+        message = LocalGovernmentChatMessage(lga_code=lga.code, author_user_id=actor.id, body=caption,
+            image_storage_key=storage_key, image_storage_backend=backend, image_content_type=detected,
+            image_original_filename=re.sub(r"[^A-Za-z0-9._ -]", "_", Path(file.filename or "photo").name)[:255],
+            image_size_bytes=len(data), image_sha256=digest)
+        db.add(message)
+        db.flush()
+        record_audit_event(db, actor_user_id=actor.id, action="community.lga_chat_photo_uploaded",
+            entity_type="lga_chat_message", entity_id=message.id, summary="A private photo was shared in an LGA-wide chat",
+            details={"lga_code": lga.code, "content_type": detected, "size_bytes": len(data)})
+        db.commit()
+        db.refresh(message)
+        community_live_connections.broadcast_sync(_lga_room_code(lga.code),
+            {"type": "chat_message_created", "message_id": message.id})
+        return {"id": message.id, "community_code": _lga_room_code(lga.code), "author_user_id": actor.id,
+            "author": actor, "body": message.body, "created_at": message.created_at, "image_id": message.id,
+            "image_content_type": message.image_content_type, "image_original_filename": message.image_original_filename}
+    except Exception:
+        db.rollback()
+        if stored and backend == "s3": delete_object(storage_key)
+        elif destination is not None: destination.unlink(missing_ok=True)
+        raise
+    finally:
+        file.file.close()
+
+
+@router.get("/lgas/{lga_code}/chat/messages/{message_id}/image")
+def download_lga_chat_image(lga_code: str, message_id: int,
+    db: Session = Depends(get_db), actor: User = Depends(get_current_user)):
+    lga = _lga_or_404(db, lga_code)
+    _require_lga_chat_membership(db, lga.code, actor.id)
+    message = db.query(LocalGovernmentChatMessage).filter(
+        LocalGovernmentChatMessage.id == message_id, LocalGovernmentChatMessage.lga_code == lga.code,
+        LocalGovernmentChatMessage.is_deleted == 0).first()
+    if message is None or not message.image_storage_key:
+        raise HTTPException(status_code=404, detail="LGA chat photo not found")
+    headers = {"X-Content-Type-Options": "nosniff", "Cache-Control": "private, no-store"}
+    if message.image_storage_backend == "s3":
+        try: obj = read_object(message.image_storage_key)
+        except (StorageNotConfigured, FileNotFoundError) as exc:
+            raise HTTPException(status_code=404, detail="LGA chat photo is unavailable") from exc
+        return StreamingResponse(obj["Body"].iter_chunks(chunk_size=64 * 1024), media_type=message.image_content_type, headers=headers)
+    path = _community_image_path(message.image_storage_key)
+    if not path.is_file(): raise HTTPException(status_code=404, detail="LGA chat photo is unavailable")
+    return FileResponse(path, media_type=message.image_content_type, filename=message.image_original_filename, headers=headers)
+
+
+@router.websocket("/lgas/{lga_code}/live")
+async def lga_chat_live_updates(websocket: WebSocket, lga_code: str, db: Session = Depends(get_db)):
+    await websocket.accept()
+    try:
+        auth_message = await asyncio.wait_for(websocket.receive_json(), timeout=10)
+        token = auth_message.get("token") if isinstance(auth_message, dict) and auth_message.get("type") == "authenticate" else None
+        if not isinstance(token, str) or not token:
+            await websocket.close(code=4401); return
+        payload = decode_access_token(token)
+        if payload.get("type") != "access":
+            await websocket.close(code=4401); return
+        user_id = int(payload.get("sub", ""))
+        actor = db.query(User).filter(User.id == user_id).first()
+        if actor is None or not actor.is_active or payload.get("ver", 0) != actor.token_version:
+            await websocket.close(code=4401); return
+        lga = _lga_or_404(db, lga_code)
+        _require_lga_chat_membership(db, lga.code, actor.id)
+    except asyncio.TimeoutError:
+        await websocket.close(code=4401); return
+    except (jwt.InvalidTokenError, TypeError, ValueError):
+        await websocket.close(code=4401); return
+    except HTTPException as exc:
+        await websocket.close(code=4403 if exc.status_code == 403 else 4404); return
+    db.close()
+    room_code = _lga_room_code(lga.code)
+    community_live_connections.connections.setdefault(room_code, []).append((websocket, asyncio.get_running_loop()))
+    try:
+        await websocket.send_json({"type": "connected", "room_code": room_code})
+        while True:
+            message = await websocket.receive_text()
+            if message == "ping": await websocket.send_json({"type": "pong"})
+    except WebSocketDisconnect:
+        pass
+    finally:
+        community_live_connections.disconnect(room_code, websocket)
