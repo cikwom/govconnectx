@@ -94,7 +94,7 @@ class CommunitySpaceApiTests(unittest.TestCase):
         lga_code = "NG025011"
         endpoint = f"/api/v1/community-spaces/lgas/{lga_code}/chat"
         self.client.post(endpoint + "/membership", headers=headers)
-        image_bytes = b"\\xff\\xd8\\xff" + b"lga-chat-test-image"
+        image_bytes = b"\xff\xd8\xff" + b"lga-chat-test-image"
         with tempfile.TemporaryDirectory() as directory, patch.dict(os.environ, {"COMMUNITY_MEDIA_DIR": directory}):
             uploaded = self.client.post(endpoint + "/messages/image", headers=headers,
                 files={"file": ("otukpo.jpg", image_bytes, "image/jpeg")}, data={"body": "Road damage near the market."})
