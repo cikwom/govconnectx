@@ -166,14 +166,14 @@ test("citizen can submit a report using a landmark without sharing GPS or coordi
   expect(created).not.toHaveProperty("gps_longitude");
 });
 
-test("citizen can join a selected community before posting", async ({ page }) => {
+test("citizen can enter an LGA chat and join before posting", async ({ page }) => {
+  let joined = false;
+  let postedBody = "";
   await page.route("http://localhost:8000/api/v1/**", async route => {
     const path = new URL(route.request().url()).pathname;
     const method = route.request().method();
     if (path === "/api/v1/locations/states") return route.fulfill({ json: states });
     if (path === "/api/v1/locations/states/LA/lgas") return route.fulfill({ json: lgas });
-    if (path === "/api/v1/locations/lgas/IKE/wards") return route.fulfill({ json: wards });
-    if (path === "/api/v1/locations/wards/IKE-01/communities") return route.fulfill({ json: communities });
     if (path === "/api/v1/preferences") return route.fulfill({ json: {
       email_notifications: true, in_app_notifications: true, sms_notifications: false,
       sms_consent_at: null, sms_consent_revoked_at: null, phone_number: null,
@@ -182,12 +182,17 @@ test("citizen can join a selected community before posting", async ({ page }) =>
     if (path === "/api/v1/auth/login") {
       return route.fulfill({ json: { access_token: "e2e-test-token", token_type: "bearer", user: citizen } });
     }
-    if (path === "/api/v1/community-spaces/IKE-01-A/posts" && method === "GET") return route.fulfill({ json: [] });
-    if (path === "/api/v1/community-spaces/IKE-01-A/membership" && method === "GET") {
-      return route.fulfill({ json: { community_code: "IKE-01-A", is_member: false, joined_at: null } });
+    if (path === "/api/v1/community-spaces/lgas/IKE/chat/membership" && method === "GET") {
+      return route.fulfill({ json: { room_code: "LGA-IKE", lga_code: "IKE", lga_name: "Ikeja", is_member: joined, joined_at: joined ? "2026-11-24T12:00:00Z" : null } });
     }
-    if (path === "/api/v1/community-spaces/IKE-01-A/membership" && method === "POST") {
-      return route.fulfill({ json: { community_code: "IKE-01-A", is_member: true, joined_at: "2026-11-24T12:00:00Z" } });
+    if (path === "/api/v1/community-spaces/lgas/IKE/chat/membership" && method === "POST") {
+      joined = true;
+      return route.fulfill({ json: { room_code: "LGA-IKE", lga_code: "IKE", lga_name: "Ikeja", is_member: true, joined_at: "2026-11-24T12:00:00Z" } });
+    }
+    if (path === "/api/v1/community-spaces/lgas/IKE/chat/messages" && method === "GET") return route.fulfill({ json: [] });
+    if (path === "/api/v1/community-spaces/lgas/IKE/chat/messages" && method === "POST") {
+      postedBody = route.request().postDataJSON().body;
+      return route.fulfill({ json: { id: 1, community_code: "LGA-IKE", author_user_id: citizen.id, author: citizen, body: postedBody, created_at: "2026-11-24T12:00:00Z" }, status: 201 });
     }
     return route.fulfill({ status: 200, json: [] });
   });
@@ -196,12 +201,16 @@ test("citizen can join a selected community before posting", async ({ page }) =>
   await page.getByLabel("Email address").fill("citizen@example.test");
   await page.getByLabel("Password").fill("StrongTestPassword123");
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
-  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page).toHaveURL(/\\/dashboard$/);
   await page.getByRole("link", { name: "Community Connect" }).click();
   await page.getByLabel("State").selectOption("LA");
   await page.getByLabel("Local Government Area").selectOption("IKE");
-  await page.getByLabel("Ward").selectOption("IKE-01");
-  await page.getByLabel("Community").selectOption("IKE-01-A");
-  await page.getByRole("button", { name: "Join community" }).click();
-  await expect(page.getByLabel("Share an update")).toBeVisible();
+  await expect(page).toHaveURL(/\\/community-chat\\/LGA-IKE$/);
+  await page.getByRole("button", { name: "Join LGA chat" }).click();
+  await expect(page.getByLabel("Write a message or photo caption")).toBeVisible();
+  await page.getByLabel("Write a message or photo caption").fill("Road damage near the market.");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByText("Road damage near the market.")).toBeVisible();
+  expect(joined).toBe(true);
+  expect(postedBody).toBe("Road damage near the market.");
 });
