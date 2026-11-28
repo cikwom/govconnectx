@@ -31,12 +31,14 @@ export default function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/staff-invitation" element={<StaffInvitationPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route element={<AppShell />}>
+        <Route path="/community-connect" element={<CommunityConnectPage />} />
+      </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AppShell />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/agency" element={<AgencyDashboardPage />} />
           <Route path="/community-services" element={<CommunityServicesPage />} />
-          <Route path="/community-connect" element={<CommunityConnectPage />} />
           <Route path="/community-chat/:communityCode" element={<CommunityChatPage />} />
           <Route path="/preferences" element={<PreferencesPage />} />
           <Route path="/admin" element={<AdminDashboardPage />} />
