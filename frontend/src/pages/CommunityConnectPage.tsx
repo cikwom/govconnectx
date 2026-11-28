@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 import type { GeographicState, LocalGovernmentArea, PublicCommunityFeedPost } from "../types/api";
 
 export default function CommunityConnectPage() {
+  const navigate = useNavigate();
   const [states, setStates] = useState<GeographicState[]>([]);
   const [lgas, setLgas] = useState<LocalGovernmentArea[]>([]);
   const [stateCode, setStateCode] = useState("");
@@ -71,9 +72,12 @@ export default function CommunityConnectPage() {
           <div className="x-section-heading"><div><p className="eyebrow">{lgaCode ? "LOCAL GOVERNMENT AREA FEED" : "STATEWIDE PUBLIC FEED"}</p><h2>{lgaCode ? lgas.find(item => item.code === lgaCode)?.name : selectedState?.name}</h2><p className="muted">Public posts from communities in {lgaCode ? "this LGA" : "this state"}.</p></div><span className="x-count">{lgaCode ? "LGA" : lgas.length + " LGAs"}</span></div>
           <label className="x-search-label" htmlFor="lga-search">Find an LGA feed</label>
           <input id="lga-search" type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Search Local Government Areas…" />
-          {loadingLgas ? <p className="muted">Loading LGAs…</p> : <div className="x-lga-list">{visibleLgas.map(lga => <button className={lga.code === lgaCode ? "x-lga-card selected" : "x-lga-card"} type="button" key={lga.code} onClick={() => setLgaCode(lga.code)}>
-            <span className="x-lga-avatar">{lga.name.slice(0, 1).toUpperCase()}</span><span className="x-lga-copy"><strong>{lga.name}</strong><small>{selectedState?.name} · Public feed</small></span><span className="x-lga-open">{lga.code === lgaCode ? "Viewing feed" : "View feed"} <b>→</b></span>
-          </button>)}</div>}
+          {loadingLgas ? <p className="muted">Loading LGAs…</p> : <div className="x-lga-list">{visibleLgas.map(lga => <div className="x-lga-card-row" key={lga.code}>
+            <button className={lga.code === lgaCode ? "x-lga-card selected" : "x-lga-card"} type="button" onClick={() => setLgaCode(lga.code)}>
+              <span className="x-lga-avatar">{lga.name.slice(0, 1).toUpperCase()}</span><span className="x-lga-copy"><strong>{lga.name}</strong><small>{selectedState?.name} · Public feed</small></span><span className="x-lga-open">{lga.code === lgaCode ? "Viewing feed" : "View feed"} <b>→</b></span>
+            </button>
+            <button className="x-lga-open" type="button" onClick={() => navigate(`/community-chat/LGA-${lga.code}`)}>{lga.name} Open discussion</button>
+          </div>)}</div>}
         </section>}
         <section className="x-public-feed" aria-label="Public posts" aria-live="polite">
           <div className="x-feed-heading"><h2>{lgaCode ? "LGA conversations" : "Latest across the state"}</h2><span>{posts.length} posts</span></div>
