@@ -203,8 +203,9 @@ test("citizen can enter an LGA chat and join before posting", async ({ page }) =
   await page.getByRole("button", { name: /Sign in to GovConnect/ }).click();
   await expect(page).toHaveURL(/\/dashboard$/);
   await page.getByRole("link", { name: "Community Connect" }).click();
-  await page.getByLabel("State").selectOption("LA");
-  await page.getByLabel("Local Government Area").selectOption("IKE");
+  await page.getByLabel("Choose a state").selectOption("LA");
+  await expect(page.getByRole("button", { name: /Ikeja.*Open discussion/ })).toBeVisible();
+  await page.getByRole("button", { name: /Ikeja.*Open discussion/ }).click();
   await expect(page).toHaveURL(/\/community-chat\/LGA-IKE$/);
   await page.getByRole("button", { name: "Join LGA chat" }).click();
   await expect(page.getByLabel("Write a message or photo caption")).toBeVisible();
