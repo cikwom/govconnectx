@@ -1,6 +1,6 @@
 import type {
   AuthResponse, CommentItem, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage, CommunityChatMessage, CreateReportPayload, GeographicState, HistoryItem,
-  Community, GeographicWard, LocalGovernmentArea, RegisterPayload, Report, ReportAttachment, User,
+  Community, GeographicWard, LocalGovernmentArea, PublicCommunityFeedPost, RegisterPayload, Report, ReportAttachment, User,
 } from "../types/api";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
