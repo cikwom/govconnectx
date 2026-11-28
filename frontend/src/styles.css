@@ -593,3 +593,26 @@ input[type="radio"] {
 :root[data-theme="dark"] .x-sidebar-highlight{background:#075d43;border-color:#087653}
 @media(max-width:900px){.x-community-layout{grid-template-columns:1fr}.x-community-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){.x-community-header{padding:22px;align-items:flex-start}.x-community-mark{width:52px;height:52px;flex-basis:52px;font-size:1.8rem}.x-community-sidebar{grid-template-columns:1fr}.x-lga-card{gap:9px}.x-lga-open{font-size:.64rem}.x-community-tabs{gap:16px;padding:15px}}
+
+
+/* Public State and LGA discussion feeds */
+.x-community-tabs{display:flex;gap:8px;border-bottom:1px solid #e7edf2;margin-bottom:18px}
+.x-community-tabs button{border:0;background:transparent;padding:12px 15px;color:#718096;font-weight:800;border-bottom:3px solid transparent}
+.x-community-tabs button.active{color:#087f70;border-bottom-color:#087f70}
+.x-community-tabs button:disabled{opacity:.55;cursor:default}
+.x-lga-card.selected{border-color:#087f70;background:#f0faf7}
+.x-public-feed{margin-top:22px;background:#fff;border:1px solid #e7edf2;border-radius:14px;overflow:hidden}
+.x-feed-heading{display:flex;justify-content:space-between;align-items:center;padding:18px 20px;border-bottom:1px solid #edf1f5}
+.x-feed-heading span,.x-feed-meta span,.x-feed-actions{font-size:.75rem;color:#718096}
+.x-feed-post{display:flex;gap:13px;padding:20px;border-bottom:1px solid #edf1f5}
+.x-feed-avatar,.x-lga-avatar{flex:none;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:#e6f5f2;color:#087f70;font-weight:800}
+.x-feed-post-body{min-width:0;flex:1}
+.x-feed-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.x-feed-meta strong{font-size:.9rem;color:#243b53}
+.x-feed-post-body>p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;margin:10px 0;color:#34495e}
+.x-feed-actions{display:flex;gap:18px;padding-top:8px}
+.x-announcement-label{display:inline-block;margin-top:8px;padding:4px 8px;border-radius:999px;background:#e8f5f2;color:#087f70;font-size:.68rem;font-weight:800}
+.x-feed-empty{padding:35px 20px;text-align:center;color:#718096}
+.x-feed-empty strong{color:#243b53}
+.x-feed-empty p{font-size:.85rem;line-height:1.6}
+@media(max-width:760px){.x-feed-post{padding:15px}.x-feed-meta{flex-direction:column;gap:3px}}
