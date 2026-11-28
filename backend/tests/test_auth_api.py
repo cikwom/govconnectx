@@ -330,5 +330,51 @@ class AuthenticationApiTests(unittest.TestCase):
         self.assertEqual(response.json()["role"], "official")
 
 
+    def test_incorrect_password_and_unknown_email_are_rejected(self):
+        self.assertEqual(self.register("invalid-login@example.com").status_code, 201)
+
+        wrong_password = self.client.post(
+            "/api/v1/auth/login",
+            json={"email": "invalid-login@example.com", "password": "Definitely-Wrong-Password-99"},
+        )
+        unknown_email = self.client.post(
+            "/api/v1/auth/login",
+            json={"email": "nobody@example.com", "password": "Definitely-Wrong-Password-99"},
+        )
+
+        self.assertEqual(wrong_password.status_code, 401)
+        self.assertEqual(unknown_email.status_code, 401)
+        self.assertEqual(wrong_password.json()["detail"], "Incorrect email or password")
+        self.assertEqual(unknown_email.json()["detail"], "Incorrect email or password")
+        self.assertNotIn("access_token", wrong_password.json())
+        self.assertNotIn("access_token", unknown_email.json())
+
+    def test_inactive_account_cannot_sign_in_even_with_correct_password(self):
+        self.assertEqual(self.register("disabled-login@example.com").status_code, 201)
+        db = self.TestSession()
+        try:
+            user = db.query(User).filter(User.email == "disabled-login@example.com").first()
+            user.is_active = False
+            db.commit()
+        finally:
+            db.close()
+
+        response = self.client.post(
+            "/api/v1/auth/login",
+            json={"email": "disabled-login@example.com", "password": "Strong-Test-Password-42"},
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.json()["detail"], "This account is disabled")
+
+    def test_current_user_endpoint_rejects_missing_or_invalid_credentials(self):
+        missing = self.client.get("/api/v1/auth/me")
+        invalid = self.client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": "Bearer not-a-valid-token"},
+        )
+        self.assertEqual(missing.status_code, 401)
+        self.assertEqual(invalid.status_code, 401)
+
+
 if __name__ == "__main__":
     unittest.main()
