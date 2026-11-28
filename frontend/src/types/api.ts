@@ -82,3 +82,5 @@ export interface CreateReportPayload {
 export interface HistoryItem { id: number; report_id: number; changed_by_user_id: number; old_status: string | null; new_status: string; message: string | null; is_public: boolean; created_at: string }
 export interface CommentItem { id: number; report_id: number; author_user_id: number; body: string; is_internal: boolean; created_at: string }
 export interface ReportAttachment { id: number; report_id: number; uploaded_by_user_id: number; original_filename: string; content_type: string; size_bytes: number; sha256: string; created_at: string }
+
+export interface PublicCommunityFeedPost extends CommunityPost { state_code: string; state_name: string; lga_code: string; lga_name: string }

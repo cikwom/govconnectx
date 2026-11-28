@@ -188,6 +188,66 @@ def _post_or_404(db: Session, post_id: int) -> CommunityPost:
     return post
 
 
+@router.get("/public-feed")
+def list_public_state_lga_feed(
+    state_code: str = Query(min_length=2, max_length=12),
+    lga_code: str | None = Query(default=None, max_length=16),
+    limit: int = Query(default=30, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Read public community posts by State or LGA without chat/community membership."""
+    state = db.query(State).filter(State.code == state_code.strip().upper()).first()
+    if state is None:
+        raise HTTPException(status_code=404, detail="State not found")
+    selected_lga = None
+    if lga_code:
+        selected_lga = db.query(LocalGovernmentArea).filter(
+            LocalGovernmentArea.code == lga_code.strip().upper(),
+            LocalGovernmentArea.state_code == state.code,
+        ).first()
+        if selected_lga is None:
+            raise HTTPException(status_code=404, detail="LGA not found in the selected state")
+
+    query = (
+        db.query(CommunityPost, LocalGovernmentArea)
+        .join(Community, Community.code == CommunityPost.community_code)
+        .join(Ward, Ward.code == Community.ward_code)
+        .join(LocalGovernmentArea, LocalGovernmentArea.code == Ward.lga_code)
+        .filter(
+            CommunityPost.is_hidden.is_(False),
+            Community.is_active.is_(True),
+            Ward.is_active.is_(True),
+            LocalGovernmentArea.state_code == state.code,
+        )
+    )
+    if selected_lga is not None:
+        query = query.filter(LocalGovernmentArea.code == selected_lga.code)
+    rows = query.order_by(
+        CommunityPost.is_announcement.desc(),
+        CommunityPost.created_at.desc(),
+        CommunityPost.id.desc(),
+    ).offset(offset).limit(limit).all()
+
+    return [{
+        "id": post.id,
+        "community_code": post.community_code,
+        "author_user_id": post.author_user_id,
+        "author": {"id": post.author_user.id, "full_name": post.author_user.full_name},
+        "body": post.body,
+        "is_announcement": post.is_announcement,
+        "created_at": post.created_at,
+        "comment_count": db.query(CommunityPostComment).filter(
+            CommunityPostComment.post_id == post.id,
+            CommunityPostComment.is_hidden.is_(False),
+        ).count(),
+        "state_code": state.code,
+        "state_name": state.name,
+        "lga_code": lga.code,
+        "lga_name": lga.name,
+    } for post, lga in rows]
+
+
 @router.get("/{community_code}/membership")
 def get_community_membership(
     community_code: str, db: Session = Depends(get_db), actor: User = Depends(get_current_user),

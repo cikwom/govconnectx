@@ -351,6 +351,35 @@ class CommunitySpaceApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 415)
 
 
+    def test_public_state_and_lga_feed_is_readable_without_chat_membership_or_login(self):
+        member_headers = self.create_user("citizen")
+        created = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/posts",
+            headers=member_headers, json={"body": "Public update from Otukpo."},
+        )
+        self.assertEqual(created.status_code, 201, created.text)
+
+        state_feed = self.client.get("/api/v1/community-spaces/public-feed?state_code=NG025")
+        self.assertEqual(state_feed.status_code, 200, state_feed.text)
+        state_posts = state_feed.json()
+        self.assertIn(created.json()["id"], [post["id"] for post in state_posts])
+        item = next(post for post in state_posts if post["id"] == created.json()["id"])
+        self.assertEqual(item["lga_code"], "NG025011")
+        self.assertEqual(item["body"], "Public update from Otukpo.")
+
+        lga_feed = self.client.get(
+            "/api/v1/community-spaces/public-feed?state_code=NG025&lga_code=NG025011"
+        )
+        self.assertEqual(lga_feed.status_code, 200, lga_feed.text)
+        self.assertIn(created.json()["id"], [post["id"] for post in lga_feed.json()])
+
+    def test_public_feed_rejects_lga_outside_selected_state(self):
+        response = self.client.get(
+            "/api/v1/community-spaces/public-feed?state_code=NG025&lga_code=NG001001"
+        )
+        self.assertEqual(response.status_code, 404)
+
+
 
 if __name__ == "__main__":
     unittest.main()
