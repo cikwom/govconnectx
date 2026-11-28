@@ -355,12 +355,49 @@ def create_community_post(
             "created_at": post.created_at, "comment_count": 0, "converted_report_id": post.converted_report_id}
 
 
+@router.get("/posts/{post_id}")
+def get_public_community_post(
+    post_id: int, db: Session = Depends(get_db),
+):
+    """Read an individual public post without authentication or community membership."""
+    post = _post_or_404(db, post_id)
+    community = _community_or_404(db, post.community_code)
+    ward = db.query(Ward).filter(Ward.code == community.ward_code, Ward.is_active.is_(True)).first()
+    if ward is None:
+        raise HTTPException(status_code=404, detail="Community location not found")
+    lga = db.query(LocalGovernmentArea).filter(
+        LocalGovernmentArea.code == ward.lga_code,
+        LocalGovernmentArea.state_code.is_not(None),
+    ).first()
+    if lga is None:
+        raise HTTPException(status_code=404, detail="Community location not found")
+    state = db.query(State).filter(State.code == lga.state_code).first()
+    if state is None:
+        raise HTTPException(status_code=404, detail="Community location not found")
+    return {
+        "id": post.id,
+        "community_code": post.community_code,
+        "author_user_id": post.author_user_id,
+        "author": {"id": post.author_user.id, "full_name": post.author_user.full_name},
+        "body": post.body,
+        "is_announcement": post.is_announcement,
+        "created_at": post.created_at,
+        "comment_count": db.query(CommunityPostComment).filter(
+            CommunityPostComment.post_id == post.id,
+            CommunityPostComment.is_hidden.is_(False),
+        ).count(),
+        "state_code": state.code,
+        "state_name": state.name,
+        "lga_code": lga.code,
+        "lga_name": lga.name,
+    }
+
+
 @router.get("/posts/{post_id}/comments", response_model=list[CommentResponse])
 def list_post_comments(
-    post_id: int, db: Session = Depends(get_db), _: User = Depends(get_current_user)
+    post_id: int, db: Session = Depends(get_db)
 ):
     post = _post_or_404(db, post_id)
-    _require_membership(db, post.community_code, _.id)
     comments = db.query(CommunityPostComment).filter(
         CommunityPostComment.post_id == post_id, CommunityPostComment.is_hidden.is_(False)
     ).order_by(CommunityPostComment.created_at.asc(), CommunityPostComment.id.asc()).all()
@@ -374,7 +411,6 @@ def create_post_comment(
     db: Session = Depends(get_db), actor: User = Depends(get_current_user),
 ):
     post = _post_or_404(db, post_id)
-    _require_membership(db, post.community_code, actor.id)
     body = payload.body.strip()
     if not body:
         raise HTTPException(status_code=422, detail="Comment cannot be empty")
