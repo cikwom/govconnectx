@@ -108,6 +108,7 @@ export const api = {
   communityPostAttachments: (postId: number) => request<CommunityPostAttachment[]>(`/community-spaces/posts/${postId}/attachments`),
   uploadCommunityPostAttachment: (postId: number, file: File) => { const form = new FormData(); form.append("file", file); return request<CommunityPostAttachment>(`/community-spaces/posts/${postId}/attachments`, { method: "POST", body: form }); },
   downloadCommunityPostAttachment: (postId: number, attachmentId: number) => requestBlob(`/community-spaces/posts/${postId}/attachments/${attachmentId}`),
+  publicCommunityFeed: (stateCode: string, lgaCode?: string) => request<PublicCommunityFeedPost[]>(`/community-spaces/public-feed?state_code=${encodeURIComponent(stateCode)}${lgaCode ? `&lga_code=${encodeURIComponent(lgaCode)}` : ""}`),
   communityPosts: (communityCode: string) => request<CommunityPost[]>(`/community-spaces/${encodeURIComponent(communityCode)}/posts`),
   createCommunityPost: (communityCode: string, body: string, isAnnouncement = false) => request<CommunityPost>(`/community-spaces/${encodeURIComponent(communityCode)}/posts`, { method: "POST", body: JSON.stringify({ body, is_announcement: isAnnouncement }) }),
   communityPostComments: (postId: number) => request<CommunityPostComment[]>(`/community-spaces/posts/${postId}/comments`),
