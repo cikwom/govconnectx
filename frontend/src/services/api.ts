@@ -1,6 +1,6 @@
 import type {
   AuthResponse, CommentItem, CommunityPost, CommunityPostAttachment, CommunityPostComment, CommunityPostImage, CommunityChatMessage, CreateReportPayload, GeographicState, HistoryItem,
-  Community, GeographicWard, LocalGovernmentArea, PublicCommunityFeedPost, RegisterPayload, Report, ReportAttachment, User,
+  Community, GeographicWard, LocalGovernmentArea, PublicCommunityFeedPost, PublicCommunityPostDetail, RegisterPayload, Report, ReportAttachment, User,
 } from "../types/api";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "http://localhost:8000").replace(/\/$/, "");
@@ -109,6 +109,9 @@ export const api = {
   uploadCommunityPostAttachment: (postId: number, file: File) => { const form = new FormData(); form.append("file", file); return request<CommunityPostAttachment>(`/community-spaces/posts/${postId}/attachments`, { method: "POST", body: form }); },
   downloadCommunityPostAttachment: (postId: number, attachmentId: number) => requestBlob(`/community-spaces/posts/${postId}/attachments/${attachmentId}`),
   publicCommunityFeed: (stateCode: string, lgaCode?: string) => request<PublicCommunityFeedPost[]>(`/community-spaces/public-feed?state_code=${encodeURIComponent(stateCode)}${lgaCode ? `&lga_code=${encodeURIComponent(lgaCode)}` : ""}`),
+  publicCommunityPost: (postId: number) => request<PublicCommunityPostDetail>(`/community-spaces/posts/${postId}`),
+  publicCommunityPostComments: (postId: number) => request<CommunityPostComment[]>(`/community-spaces/posts/${postId}/comments`),
+  addPublicCommunityPostComment: (postId: number, body: string) => request<CommunityPostComment>(`/community-spaces/posts/${postId}/comments`, { method: "POST", body: JSON.stringify({ body }) }),
   communityPosts: (communityCode: string) => request<CommunityPost[]>(`/community-spaces/${encodeURIComponent(communityCode)}/posts`),
   createCommunityPost: (communityCode: string, body: string, isAnnouncement = false) => request<CommunityPost>(`/community-spaces/${encodeURIComponent(communityCode)}/posts`, { method: "POST", body: JSON.stringify({ body, is_announcement: isAnnouncement }) }),
   communityPostComments: (postId: number) => request<CommunityPostComment[]>(`/community-spaces/posts/${postId}/comments`),
