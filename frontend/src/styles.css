@@ -616,3 +616,28 @@ input[type="radio"] {
 .x-feed-empty strong{color:#243b53}
 .x-feed-empty p{font-size:.85rem;line-height:1.6}
 @media(max-width:760px){.x-feed-post{padding:15px}.x-feed-meta{flex-direction:column;gap:3px}}
+
+
+/* Public post detail and discussion */
+.x-feed-post-link{display:block;color:inherit;text-decoration:none}
+.x-feed-post-link:hover p{text-decoration:underline;text-decoration-color:#087f70}
+.x-feed-actions a{color:#087f70;text-decoration:none;font-weight:700}
+.x-feed-actions a:hover{text-decoration:underline}
+.x-post-detail{max-width:850px;margin:0 auto;display:grid;gap:18px}
+.x-post-detail-card,.x-comments-card{background:var(--surface,#fff);border:1px solid var(--border,#e7edf2);border-radius:16px;padding:22px}
+.x-post-detail-card h1{font-size:clamp(1.35rem,3vw,2rem);line-height:1.25;margin:12px 0}
+.x-post-detail-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.8;font-size:1.02rem;color:var(--text,#34495e)}
+.x-post-location{color:#718096;font-size:.85rem}
+.x-post-back{color:#087f70;text-decoration:none;font-weight:800}
+.x-comments-list{display:grid;gap:0}
+.x-comment-item{padding:16px 0;border-bottom:1px solid #edf1f5}
+.x-comment-item:last-child{border-bottom:0}
+.x-comment-meta{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.x-comment-meta span{font-size:.75rem;color:#718096}
+.x-comment-item p{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.6;margin:8px 0 0}
+.x-comment-form{display:grid;gap:10px;margin-top:18px}
+.x-comment-form textarea{min-height:100px;resize:vertical}
+.x-comment-form button{justify-self:start}
+.x-comment-signin{margin-top:18px;padding:14px;border-radius:10px;background:#f0faf7;color:#365b52}
+:root[data-theme="dark"] .x-post-detail-card,:root[data-theme="dark"] .x-comments-card{background:#142a25;border-color:#29483e}
+:root[data-theme="dark"] .x-comment-signin{background:#193d32;color:#d8eee5}
