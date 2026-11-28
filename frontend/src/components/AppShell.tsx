@@ -23,14 +23,13 @@ export default function AppShell() {
         <NavLink className="brand" to="/"><span className="brand-mark">G</span><span>GovConnect<span className="brand-light"> Nigeria</span></span></NavLink>
         <div className="topbar-user">
           <NavLink className="admin-nav-link" to="/community-connect">Community Connect</NavLink>
-          <NavLink className="admin-nav-link" to="/community-services">{t("Community services")}</NavLink>
+          {user && <NavLink className="admin-nav-link" to="/community-services">{t("Community services")}</NavLink>}
           {staffUser && <NavLink className="admin-nav-link" to="/agency">{t("Agency operations")}</NavLink>}
           {user?.role === "system_admin" && <NavLink className="admin-nav-link" to="/admin">{t("Command Centre")}</NavLink>}
-          <NavLink className="admin-nav-link" to="/preferences">{t("Preferences")}</NavLink>
+          {user && <NavLink className="admin-nav-link" to="/preferences">{t("Preferences")}</NavLink>}
           <LanguageSelector />
           <ThemeToggle />
-          <div className="user-copy"><strong>{user?.full_name}</strong><span>{user?.role ? t(user.role.replaceAll("_", " ")) : ""}</span></div>
-          <button className="button button-quiet button-small" onClick={signOut}>{t("Sign out")}</button>
+          {user ? <><div className="user-copy"><strong>{user.full_name}</strong><span>{t(user.role.replaceAll("_", " "))}</span></div><button className="button button-quiet button-small" onClick={signOut}>{t("Sign out")}</button></> : <NavLink className="admin-nav-link" to="/login">Sign in</NavLink>}
         </div>
       </header>
       <main id="main-content" className="page-content" tabIndex={-1}><Outlet /></main>
