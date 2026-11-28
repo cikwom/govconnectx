@@ -381,6 +381,68 @@ class CommunitySpaceApiTests(unittest.TestCase):
 
 
 
+    def test_public_post_details_and_comments_are_readable_without_login(self):
+        member_headers = self.create_user("citizen")
+        created = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/posts",
+            headers=member_headers, json={"body": "A public neighbourhood update."},
+        )
+        self.assertEqual(created.status_code, 201, created.text)
+        post_id = created.json()["id"]
+        comment = self.client.post(
+            f"/api/v1/community-spaces/posts/{post_id}/comments",
+            headers=member_headers, json={"body": "Thanks for sharing this update."},
+        )
+        self.assertEqual(comment.status_code, 201, comment.text)
+
+        detail = self.client.get(f"/api/v1/community-spaces/posts/{post_id}")
+        self.assertEqual(detail.status_code, 200, detail.text)
+        self.assertEqual(detail.json()["body"], "A public neighbourhood update.")
+        self.assertEqual(detail.json()["lga_code"], "NG025011")
+        self.assertEqual(detail.json()["comment_count"], 1)
+
+        comments = self.client.get(f"/api/v1/community-spaces/posts/{post_id}/comments")
+        self.assertEqual(comments.status_code, 200, comments.text)
+        self.assertEqual(comments.json()[0]["body"], "Thanks for sharing this update.")
+
+    def test_signed_in_non_member_can_comment_but_anonymous_user_cannot(self):
+        member_headers = self.create_user("citizen")
+        created = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/posts",
+            headers=member_headers, json={"body": "A post open for public discussion."},
+        )
+        post_id = created.json()["id"]
+        outsider_headers = self.create_user("citizen", join=False)
+
+        anonymous = self.client.post(
+            f"/api/v1/community-spaces/posts/{post_id}/comments",
+            json={"body": "Anonymous comment should be rejected."},
+        )
+        self.assertEqual(anonymous.status_code, 401)
+
+        comment = self.client.post(
+            f"/api/v1/community-spaces/posts/{post_id}/comments",
+            headers=outsider_headers, json={"body": "I can comment without joining."},
+        )
+        self.assertEqual(comment.status_code, 201, comment.text)
+        self.assertEqual(comment.json()["body"], "I can comment without joining.")
+
+    def test_hidden_post_is_not_publicly_readable(self):
+        headers = self.create_user("system_admin")
+        created = self.client.post(
+            f"/api/v1/community-spaces/{self.community_code}/posts",
+            headers=headers, json={"body": "This post will be hidden."},
+        )
+        post_id = created.json()["id"]
+        hidden = self.client.patch(
+            f"/api/v1/community-spaces/posts/{post_id}/moderation",
+            headers=headers, json={"is_hidden": True},
+        )
+        self.assertEqual(hidden.status_code, 200)
+        self.assertEqual(self.client.get(f"/api/v1/community-spaces/posts/{post_id}").status_code, 404)
+        self.assertEqual(self.client.get(f"/api/v1/community-spaces/posts/{post_id}/comments").status_code, 404)
+
+
 if __name__ == "__main__":
     unittest.main()
 

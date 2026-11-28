@@ -85,8 +85,8 @@ export default function CommunityConnectPage() {
             <div className="x-feed-avatar">{post.author.full_name.slice(0, 1).toUpperCase()}</div><div className="x-feed-post-body">
               <div className="x-feed-meta"><strong>{post.author.full_name}</strong><span>{post.lga_name} · {new Date(post.created_at).toLocaleString()}</span></div>
               {post.is_announcement && <span className="x-announcement-label">Official announcement</span>}
-              <p>{post.body}</p>
-              <div className="x-feed-actions"><span>◯ {post.comment_count} comments</span><span>Public discussion</span></div>
+              <Link className="x-feed-post-link" to={`/community-posts/${post.id}`}><p>{post.body}</p></Link>
+              <div className="x-feed-actions"><Link to={`/community-posts/${post.id}`}>◯ {post.comment_count} comments · View discussion</Link><span>Public discussion</span></div>
             </div>
           </article>) : <div className="x-feed-empty"><strong>No public posts here yet</strong><p>When neighbours share updates in this area, they will appear here. You can still explore other LGAs.</p></div>}
         </section>

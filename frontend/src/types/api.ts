@@ -84,3 +84,4 @@ export interface CommentItem { id: number; report_id: number; author_user_id: nu
 export interface ReportAttachment { id: number; report_id: number; uploaded_by_user_id: number; original_filename: string; content_type: string; size_bytes: number; sha256: string; created_at: string }
 
 export interface PublicCommunityFeedPost extends CommunityPost { state_code: string; state_name: string; lga_code: string; lga_name: string }
+export interface PublicCommunityPostDetail extends PublicCommunityFeedPost {}
